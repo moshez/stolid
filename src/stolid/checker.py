@@ -8,20 +8,20 @@ from typing import Iterator
 
 from ._constants import (
     ALLOWED_BASES,
-    STOLID102,
-    STOLID201,
-    STOLID202,
-    STOLID301,
-    STOLID302,
-    STOLID303,
-    STOLID401,
-    STOLID501,
-    STOLID502,
-    STOLID503,
-    STOLID601,
-    STOLID602,
-    STOLID603,
-    STOLID604,
+    SLD102,
+    SLD201,
+    SLD202,
+    SLD301,
+    SLD302,
+    SLD303,
+    SLD401,
+    SLD501,
+    SLD502,
+    SLD503,
+    SLD601,
+    SLD602,
+    SLD603,
+    SLD604,
     MAX_CLASS_METHODS,
     MAX_FUNCTION_ARGS,
     MAX_FUNCTION_LINES,
@@ -83,18 +83,18 @@ def _check_import_from(node: ast.ImportFrom) -> Iterator[Error]:
         for alias in node.names:
             if alias.name == "patch":
                 yield Error(
-                    lineno=node.lineno, col_offset=node.col_offset, message=STOLID102
+                    lineno=node.lineno, col_offset=node.col_offset, message=SLD102
                 )
 
     if node.module == "abc":
         for alias in node.names:
             if alias.name == "ABC":
                 yield Error(
-                    lineno=node.lineno, col_offset=node.col_offset, message=STOLID201
+                    lineno=node.lineno, col_offset=node.col_offset, message=SLD201
                 )
             if alias.name == "abstractmethod":
                 yield Error(
-                    lineno=node.lineno, col_offset=node.col_offset, message=STOLID202
+                    lineno=node.lineno, col_offset=node.col_offset, message=SLD202
                 )
 
 
@@ -104,12 +104,12 @@ def _check_attribute(node: ast.Attribute) -> Iterator[Error]:
         if isinstance(node.value, ast.Attribute):
             if node.value.attr == "mock":
                 yield Error(
-                    lineno=node.lineno, col_offset=node.col_offset, message=STOLID102
+                    lineno=node.lineno, col_offset=node.col_offset, message=SLD102
                 )
         elif isinstance(node.value, ast.Name):  # pragma: no branch
             if node.value.id == "mock":
                 yield Error(
-                    lineno=node.lineno, col_offset=node.col_offset, message=STOLID102
+                    lineno=node.lineno, col_offset=node.col_offset, message=SLD102
                 )
 
 
@@ -123,9 +123,7 @@ def _check_call(node: ast.Call, patch_names: set[str]) -> Iterator[Error]:
     """Check function calls."""
     if isinstance(node.func, ast.Name):
         if node.func.id in patch_names:
-            yield Error(
-                lineno=node.lineno, col_offset=node.col_offset, message=STOLID102
-            )
+            yield Error(lineno=node.lineno, col_offset=node.col_offset, message=SLD102)
     elif isinstance(node.func, ast.Attribute):  # pragma: no branch
         if node.func.attr == "object":
             if isinstance(node.func.value, ast.Name):
@@ -133,14 +131,14 @@ def _check_call(node: ast.Call, patch_names: set[str]) -> Iterator[Error]:
                     yield Error(
                         lineno=node.lineno,
                         col_offset=node.col_offset,
-                        message=STOLID102,
+                        message=SLD102,
                     )
             elif isinstance(node.func.value, ast.Attribute):  # pragma: no branch
                 if node.func.value.attr == "patch":
                     yield Error(
                         lineno=node.lineno,
                         col_offset=node.col_offset,
-                        message=STOLID102,
+                        message=SLD102,
                     )
 
 
@@ -154,7 +152,7 @@ def _check_with(node: ast.With, patch_names: set[str]) -> Iterator[Error]:
                     yield Error(
                         lineno=node.lineno,
                         col_offset=node.col_offset,
-                        message=STOLID102,
+                        message=SLD102,
                     )
 
 
@@ -168,7 +166,7 @@ def _check_class_decorators(
             yield Error(
                 lineno=decorator.lineno,
                 col_offset=decorator.col_offset,
-                message=STOLID202,
+                message=SLD202,
             )
 
 
@@ -180,7 +178,7 @@ def _check_class_bases(node: ast.ClassDef) -> Iterator[Error]:
             yield Error(
                 lineno=base.lineno,
                 col_offset=base.col_offset,
-                message=STOLID401.format(node.name, base_name),
+                message=SLD401.format(node.name, base_name),
             )
 
 
@@ -192,19 +190,19 @@ def _check_dataclass_flags(
         yield Error(
             lineno=node.lineno,
             col_offset=node.col_offset,
-            message=STOLID501.format(node.name),
+            message=SLD501.format(node.name),
         )
     if not keywords.get("slots", False):
         yield Error(
             lineno=node.lineno,
             col_offset=node.col_offset,
-            message=STOLID502.format(node.name),
+            message=SLD502.format(node.name),
         )
     if not keywords.get("kw_only", False):
         yield Error(
             lineno=node.lineno,
             col_offset=node.col_offset,
-            message=STOLID503.format(node.name),
+            message=SLD503.format(node.name),
         )
 
 
@@ -229,7 +227,7 @@ def _check_class(node: ast.ClassDef, abstractmethod_names: set[str]) -> Iterator
         yield Error(
             lineno=node.lineno,
             col_offset=node.col_offset,
-            message=STOLID603.format(node.name, method_count, MAX_CLASS_METHODS),
+            message=SLD603.format(node.name, method_count, MAX_CLASS_METHODS),
         )
 
     for child in node.body:
@@ -247,7 +245,7 @@ def _check_abstractmethod_decorator(
             yield Error(
                 lineno=decorator.lineno,
                 col_offset=decorator.col_offset,
-                message=STOLID202,
+                message=SLD202,
             )
         elif (
             isinstance(decorator, ast.Attribute) and decorator.attr == "abstractmethod"
@@ -255,7 +253,7 @@ def _check_abstractmethod_decorator(
             yield Error(
                 lineno=decorator.lineno,
                 col_offset=decorator.col_offset,
-                message=STOLID202,
+                message=SLD202,
             )
 
 
@@ -264,12 +262,12 @@ def _check_method_naming(
 ) -> Iterator[Error]:
     """Check method naming conventions."""
     if node.name == "__init__":
-        yield Error(lineno=node.lineno, col_offset=node.col_offset, message=STOLID301)
+        yield Error(lineno=node.lineno, col_offset=node.col_offset, message=SLD301)
     if node.name.startswith("_") and not is_dunder_method(node.name):
         yield Error(
             lineno=node.lineno,
             col_offset=node.col_offset,
-            message=STOLID302.format(node.name),
+            message=SLD302.format(node.name),
         )
 
 
@@ -292,7 +290,7 @@ def _check_method_in_class(
         yield Error(
             lineno=node.lineno,
             col_offset=node.col_offset,
-            message=STOLID303.format(node.name),
+            message=SLD303.format(node.name),
         )
 
 
@@ -303,7 +301,7 @@ def _check_function(node: ast.FunctionDef | ast.AsyncFunctionDef) -> Iterator[Er
         yield Error(
             lineno=node.lineno,
             col_offset=node.col_offset,
-            message=STOLID601.format(node.name, line_count, MAX_FUNCTION_LINES),
+            message=SLD601.format(node.name, line_count, MAX_FUNCTION_LINES),
         )
 
     arg_count = get_function_arg_count(node)
@@ -311,12 +309,12 @@ def _check_function(node: ast.FunctionDef | ast.AsyncFunctionDef) -> Iterator[Er
         yield Error(
             lineno=node.lineno,
             col_offset=node.col_offset,
-            message=STOLID602.format(node.name, arg_count, MAX_FUNCTION_ARGS),
+            message=SLD602.format(node.name, arg_count, MAX_FUNCTION_ARGS),
         )
 
 
 @dataclass(slots=True)
-class Checker:  # noqa: STOLID501 STOLID503
+class Checker:  # noqa: SLD501 SLD503
     """Flake8 checker for stolid conventions."""
 
     name = "stolid"
@@ -325,13 +323,13 @@ class Checker:  # noqa: STOLID501 STOLID503
     tree: ast.AST
     lines: list[str]
 
-    def run(self) -> Iterator[tuple[int, int, str, type]]:  # noqa: STOLID303
+    def run(self) -> Iterator[tuple[int, int, str, type]]:  # noqa: SLD303
         """Run all checks and yield errors."""
         if len(self.lines) > MAX_MODULE_LINES:
             yield (
                 1,
                 0,
-                STOLID604.format(len(self.lines), MAX_MODULE_LINES),
+                SLD604.format(len(self.lines), MAX_MODULE_LINES),
                 type(self),
             )
 

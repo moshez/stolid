@@ -22,7 +22,7 @@ class TestComplexScenarios(unittest.TestCase):
         """
         codes = get_error_codes(code)
         # Both Outer and Inner have __init__ issues
-        assert_that(codes, has_item("STOLID301"))
+        assert_that(codes, has_item("SLD301"))
 
     def test_async_method(self) -> None:
         code = """
@@ -31,7 +31,7 @@ class TestComplexScenarios(unittest.TestCase):
                 pass
         """
         codes = get_error_codes(code)
-        assert_that(codes, has_item("STOLID302"))
+        assert_that(codes, has_item("SLD302"))
 
     def test_method_with_public_self_async(self) -> None:
         code = """
@@ -40,7 +40,7 @@ class TestComplexScenarios(unittest.TestCase):
                 return self.url
         """
         codes = get_error_codes(code)
-        assert_that(codes, has_item("STOLID303"))
+        assert_that(codes, has_item("SLD303"))
 
     def test_clean_code_no_errors(self) -> None:
         """A well-written class following all conventions."""
@@ -63,7 +63,7 @@ class TestComplexScenarios(unittest.TestCase):
         """
         codes = get_error_codes(code)
         # Protocol definition is fine, dataclass is properly configured
-        # __str__ and __repr__ are dunders so exempt from STOLID303
+        # __str__ and __repr__ are dunders so exempt from SLD303
         assert_that(codes, empty())
 
     def test_clean_protocol_no_errors(self) -> None:
@@ -124,7 +124,7 @@ class TestErrorMessages(unittest.TestCase):
                 return self.value
         """
         errors = check_code(code)
-        messages = [msg for _, _, msg in errors if "STOLID303" in msg]
+        messages = [msg for _, _, msg in errors if "SLD303" in msg]
         assert_that(messages[0], contains_string("my_public_method"))
         assert_that(messages[0], contains_string("functools.singledispatch"))
 
@@ -137,7 +137,7 @@ class TestErrorMessages(unittest.TestCase):
             pass
         """
         errors = check_code(code)
-        messages = [msg for _, _, msg in errors if "STOLID401" in msg]
+        messages = [msg for _, _, msg in errors if "SLD401" in msg]
         assert_that(messages[0], contains_string("Child"))
         assert_that(messages[0], contains_string("Parent"))
 
@@ -150,7 +150,7 @@ class TestErrorMessages(unittest.TestCase):
             x: int
         """
         errors = check_code(code)
-        messages = [msg for _, _, msg in errors if "STOLID501" in msg]
+        messages = [msg for _, _, msg in errors if "SLD501" in msg]
         assert_that(messages[0], contains_string("MyDataClass"))
 
 
@@ -202,7 +202,7 @@ class TestEdgeCases(unittest.TestCase):
         assert_that(codes, empty())
 
     def test_deleter_property_exempt(self) -> None:
-        """Property deleters are exempt from STOLID303."""
+        """Property deleters are exempt from SLD303."""
         code = """
         class MyClass:
             @name.deleter
@@ -210,4 +210,4 @@ class TestEdgeCases(unittest.TestCase):
                 del self.first_name
         """
         codes = get_error_codes(code)
-        assert_that("STOLID303" in codes, equal_to(False))
+        assert_that("SLD303" in codes, equal_to(False))

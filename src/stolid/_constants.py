@@ -3,30 +3,28 @@
 from __future__ import annotations
 
 # Error codes and messages
-STOLID102 = (
-    "STOLID102 Use of patch/patch.object is prohibited (use dependency injection)"
-)
-STOLID201 = "STOLID201 Import of ABC is prohibited (use Protocol instead)"
-STOLID202 = "STOLID202 Use of @abstractmethod is prohibited (use Protocol instead)"
-STOLID301 = (
-    "STOLID301 __init__ method is prohibited (use @dataclass with default_factory "
+SLD102 = "SLD102 Use of patch/patch.object is prohibited (use dependency injection)"
+SLD201 = "SLD201 Import of ABC is prohibited (use Protocol instead)"
+SLD202 = "SLD202 Use of @abstractmethod is prohibited (use Protocol instead)"
+SLD301 = (
+    "SLD301 __init__ method is prohibited (use @dataclass with default_factory "
     "for attribute initialization; use @classmethod for ergonomic parameter "
     "computation)"
 )
-STOLID302 = "STOLID302 Private method '{}' defined (extract to separate class)"
-STOLID303 = (
-    "STOLID303 Method '{}' only accesses public members of self "
+SLD302 = "SLD302 Private method '{}' defined (extract to separate class)"
+SLD303 = (
+    "SLD303 Method '{}' only accesses public members of self "
     "(convert to module-level function; use functools.singledispatch "
     "if polymorphism is needed)"
 )
-STOLID401 = "STOLID401 Class '{}' inherits from concrete class '{}' (use composition)"
-STOLID501 = "STOLID501 Dataclass '{}' missing frozen=True"
-STOLID502 = "STOLID502 Dataclass '{}' missing slots=True"
-STOLID503 = "STOLID503 Dataclass '{}' missing kw_only=True"
-STOLID601 = "STOLID601 Function '{}' has {} lines (limit: {})"
-STOLID602 = "STOLID602 Function '{}' has {} arguments (limit: {})"
-STOLID603 = "STOLID603 Class '{}' has {} methods (limit: {})"
-STOLID604 = "STOLID604 Module has {} lines (limit: {})"
+SLD401 = "SLD401 Class '{}' inherits from concrete class '{}' (use composition)"
+SLD501 = "SLD501 Dataclass '{}' missing frozen=True"
+SLD502 = "SLD502 Dataclass '{}' missing slots=True"
+SLD503 = "SLD503 Dataclass '{}' missing kw_only=True"
+SLD601 = "SLD601 Function '{}' has {} lines (limit: {})"
+SLD602 = "SLD602 Function '{}' has {} arguments (limit: {})"
+SLD603 = "SLD603 Class '{}' has {} methods (limit: {})"
+SLD604 = "SLD604 Module has {} lines (limit: {})"
 
 # Code limits
 MAX_FUNCTION_LINES = 30

@@ -52,4 +52,4 @@ is_main_match = ".*/trunk$"
 placeholder = "stolid:__version__"
 
 [project.entry-points."flake8.extension"]
-STOLID = "stolid.checker:Checker"
+SLD = "stolid.checker:Checker"

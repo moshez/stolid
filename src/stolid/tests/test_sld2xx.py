@@ -1,4 +1,4 @@
-"""Tests for STOLID2xx error codes (ABC and abstractmethod related)."""
+"""Tests for SLD2xx error codes (ABC and abstractmethod related)."""
 
 from __future__ import annotations
 
@@ -9,22 +9,22 @@ from hamcrest import assert_that, equal_to, has_item
 from .test_helpers import get_error_codes
 
 
-class TestSTOLID201ABCProhibited(unittest.TestCase):
-    """Tests for STOLID201: ABC import is prohibited."""
+class TestSLD201ABCProhibited(unittest.TestCase):
+    """Tests for SLD201: ABC import is prohibited."""
 
     def test_import_abc_from_abc(self) -> None:
         code = """
         from abc import ABC
         """
         codes = get_error_codes(code)
-        assert_that(codes, has_item("STOLID201"))
+        assert_that(codes, has_item("SLD201"))
 
     def test_import_abc_with_alias(self) -> None:
         code = """
         from abc import ABC as AbstractBaseClass
         """
         codes = get_error_codes(code)
-        assert_that(codes, has_item("STOLID201"))
+        assert_that(codes, has_item("SLD201"))
 
     def test_import_abcmeta_allowed(self) -> None:
         """ABCMeta is not explicitly banned (only ABC is)."""
@@ -32,18 +32,18 @@ class TestSTOLID201ABCProhibited(unittest.TestCase):
         from abc import ABCMeta
         """
         codes = get_error_codes(code)
-        assert_that("STOLID201" in codes, equal_to(False))
+        assert_that("SLD201" in codes, equal_to(False))
 
 
-class TestSTOLID202AbstractMethodProhibited(unittest.TestCase):
-    """Tests for STOLID202: @abstractmethod is prohibited."""
+class TestSLD202AbstractMethodProhibited(unittest.TestCase):
+    """Tests for SLD202: @abstractmethod is prohibited."""
 
     def test_import_abstractmethod(self) -> None:
         code = """
         from abc import abstractmethod
         """
         codes = get_error_codes(code)
-        assert_that(codes, has_item("STOLID202"))
+        assert_that(codes, has_item("SLD202"))
 
     def test_abstractmethod_decorator_direct(self) -> None:
         code = """
@@ -56,7 +56,7 @@ class TestSTOLID202AbstractMethodProhibited(unittest.TestCase):
         """
         codes = get_error_codes(code)
         # Import + decorator usage
-        lps202_count = codes.count("STOLID202")
+        lps202_count = codes.count("SLD202")
         assert_that(lps202_count, equal_to(2))
 
     def test_abstractmethod_via_abc_module(self) -> None:
@@ -69,7 +69,7 @@ class TestSTOLID202AbstractMethodProhibited(unittest.TestCase):
                 pass
         """
         codes = get_error_codes(code)
-        assert_that(codes, has_item("STOLID202"))
+        assert_that(codes, has_item("SLD202"))
 
     def test_abstractmethod_aliased(self) -> None:
         """abstractmethod imported with alias."""
@@ -82,7 +82,7 @@ class TestSTOLID202AbstractMethodProhibited(unittest.TestCase):
                 pass
         """
         codes = get_error_codes(code)
-        assert_that("STOLID202" in codes, equal_to(True))
+        assert_that("SLD202" in codes, equal_to(True))
 
     def test_abstractmethod_on_class_decorator(self) -> None:
         """Test @abstractmethod on class (unusual but should be caught)."""
@@ -94,7 +94,7 @@ class TestSTOLID202AbstractMethodProhibited(unittest.TestCase):
             pass
         """
         codes = get_error_codes(code)
-        lps202_count = codes.count("STOLID202")
+        lps202_count = codes.count("SLD202")
         assert_that(lps202_count, equal_to(2))
 
     def test_abstractmethod_decorator_with_import_abc(self) -> None:
@@ -108,4 +108,4 @@ class TestSTOLID202AbstractMethodProhibited(unittest.TestCase):
                 pass
         """
         codes = get_error_codes(code)
-        assert_that(codes, has_item("STOLID202"))
+        assert_that(codes, has_item("SLD202"))

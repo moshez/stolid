@@ -1,4 +1,4 @@
-"""Tests for STOLID3xx error codes (init, private methods, public access)."""
+"""Tests for SLD3xx error codes (init, private methods, public access)."""
 
 from __future__ import annotations
 
@@ -9,8 +9,8 @@ from hamcrest import assert_that, equal_to, has_item
 from .test_helpers import get_error_codes
 
 
-class TestSTOLID301InitProhibited(unittest.TestCase):
-    """Tests for STOLID301: __init__ method is prohibited."""
+class TestSLD301InitProhibited(unittest.TestCase):
+    """Tests for SLD301: __init__ method is prohibited."""
 
     def test_init_in_regular_class(self) -> None:
         code = """
@@ -19,10 +19,10 @@ class TestSTOLID301InitProhibited(unittest.TestCase):
                 pass
         """
         codes = get_error_codes(code)
-        assert_that(codes, has_item("STOLID301"))
+        assert_that(codes, has_item("SLD301"))
 
     def test_dataclass_no_explicit_init(self) -> None:
-        """Dataclass without explicit __init__ should not trigger STOLID301."""
+        """Dataclass without explicit __init__ should not trigger SLD301."""
         code = """
         from dataclasses import dataclass
 
@@ -31,7 +31,7 @@ class TestSTOLID301InitProhibited(unittest.TestCase):
             x: int
         """
         codes = get_error_codes(code)
-        assert_that("STOLID301" in codes, equal_to(False))
+        assert_that("SLD301" in codes, equal_to(False))
 
     def test_init_explicitly_in_dataclass_flagged(self) -> None:
         """Explicit __init__ in dataclass should be flagged."""
@@ -46,7 +46,7 @@ class TestSTOLID301InitProhibited(unittest.TestCase):
                 pass
         """
         codes = get_error_codes(code)
-        assert_that(codes, has_item("STOLID301"))
+        assert_that(codes, has_item("SLD301"))
 
     def test_init_in_testcase_flagged(self) -> None:
         """TestCase __init__ is still flagged (no special handling)."""
@@ -58,11 +58,11 @@ class TestSTOLID301InitProhibited(unittest.TestCase):
                 super().__init__(*args, **kwargs)
         """
         codes = get_error_codes(code)
-        assert_that("STOLID301" in codes, equal_to(True))
+        assert_that("SLD301" in codes, equal_to(True))
 
 
-class TestSTOLID302PrivateMethodsProhibited(unittest.TestCase):
-    """Tests for STOLID302: Private methods are prohibited."""
+class TestSLD302PrivateMethodsProhibited(unittest.TestCase):
+    """Tests for SLD302: Private methods are prohibited."""
 
     def test_private_method(self) -> None:
         code = """
@@ -71,7 +71,7 @@ class TestSTOLID302PrivateMethodsProhibited(unittest.TestCase):
                 pass
         """
         codes = get_error_codes(code)
-        assert_that(codes, has_item("STOLID302"))
+        assert_that(codes, has_item("SLD302"))
 
     def test_double_underscore_private(self) -> None:
         code = """
@@ -80,7 +80,7 @@ class TestSTOLID302PrivateMethodsProhibited(unittest.TestCase):
                 pass
         """
         codes = get_error_codes(code)
-        assert_that(codes, has_item("STOLID302"))
+        assert_that(codes, has_item("SLD302"))
 
     def test_dunder_methods_allowed(self) -> None:
         code = """
@@ -95,7 +95,7 @@ class TestSTOLID302PrivateMethodsProhibited(unittest.TestCase):
                 return True
         """
         codes = get_error_codes(code)
-        assert_that("STOLID302" in codes, equal_to(False))
+        assert_that("SLD302" in codes, equal_to(False))
 
     def test_public_method_allowed(self) -> None:
         code = """
@@ -104,11 +104,11 @@ class TestSTOLID302PrivateMethodsProhibited(unittest.TestCase):
                 pass
         """
         codes = get_error_codes(code)
-        assert_that("STOLID302" in codes, equal_to(False))
+        assert_that("SLD302" in codes, equal_to(False))
 
 
-class TestSTOLID303Detection(unittest.TestCase):
-    """Tests for STOLID303: Detection of methods that only access public members."""
+class TestSLD303Detection(unittest.TestCase):
+    """Tests for SLD303: Detection of methods that only access public members."""
 
     def test_method_accesses_only_public(self) -> None:
         code = """
@@ -117,7 +117,7 @@ class TestSTOLID303Detection(unittest.TestCase):
                 return f"{self.name}: {self.value}"
         """
         codes = get_error_codes(code)
-        assert_that(codes, has_item("STOLID303"))
+        assert_that(codes, has_item("SLD303"))
 
     def test_method_accesses_private_allowed(self) -> None:
         code = """
@@ -126,7 +126,7 @@ class TestSTOLID303Detection(unittest.TestCase):
                 return self._data + 1
         """
         codes = get_error_codes(code)
-        assert_that("STOLID303" in codes, equal_to(False))
+        assert_that("SLD303" in codes, equal_to(False))
 
     def test_method_accesses_mixed(self) -> None:
         """If method accesses both public and private, it's allowed."""
@@ -136,17 +136,17 @@ class TestSTOLID303Detection(unittest.TestCase):
                 return f"{self.name}: {self._internal}"
         """
         codes = get_error_codes(code)
-        assert_that("STOLID303" in codes, equal_to(False))
+        assert_that("SLD303" in codes, equal_to(False))
 
     def test_method_no_self_access_allowed(self) -> None:
-        """Method that doesn't access self at all doesn't trigger STOLID303."""
+        """Method that doesn't access self at all doesn't trigger SLD303."""
         code = """
         class MyClass:
             def compute(self):
                 return 42
         """
         codes = get_error_codes(code)
-        assert_that("STOLID303" in codes, equal_to(False))
+        assert_that("SLD303" in codes, equal_to(False))
 
     def test_async_method_with_private_access(self) -> None:
         """Async method accessing private state."""
@@ -156,7 +156,7 @@ class TestSTOLID303Detection(unittest.TestCase):
                 return self._data
         """
         codes = get_error_codes(code)
-        assert_that("STOLID303" in codes, equal_to(False))
+        assert_that("SLD303" in codes, equal_to(False))
 
     def test_decorator_not_name_or_attribute_or_call(self) -> None:
         """Decorator that is not Name, Attribute, or Call."""
@@ -167,7 +167,7 @@ class TestSTOLID303Detection(unittest.TestCase):
                 return self.value
         """
         codes = get_error_codes(code)
-        assert_that("STOLID303" in codes, equal_to(True))
+        assert_that("SLD303" in codes, equal_to(True))
 
     def test_method_decorator_attribute_not_abstractmethod(self) -> None:
         """Decorator that is Attribute but not abstractmethod."""
@@ -178,24 +178,24 @@ class TestSTOLID303Detection(unittest.TestCase):
                 return self.value
         """
         codes = get_error_codes(code)
-        assert_that(codes, has_item("STOLID303"))
+        assert_that(codes, has_item("SLD303"))
 
 
-class TestSTOLID303Exemptions(unittest.TestCase):
-    """Tests for STOLID303: Exemptions from public access check."""
+class TestSLD303Exemptions(unittest.TestCase):
+    """Tests for SLD303: Exemptions from public access check."""
 
     def test_dunder_method_exempt(self) -> None:
-        """Dunder methods are exempt from STOLID303."""
+        """Dunder methods are exempt from SLD303."""
         code = """
         class MyClass:
             def __str__(self):
                 return self.name
         """
         codes = get_error_codes(code)
-        assert_that("STOLID303" in codes, equal_to(False))
+        assert_that("SLD303" in codes, equal_to(False))
 
     def test_property_exempt(self) -> None:
-        """Property methods are exempt from STOLID303."""
+        """Property methods are exempt from SLD303."""
         code = """
         class MyClass:
             @property
@@ -203,7 +203,7 @@ class TestSTOLID303Exemptions(unittest.TestCase):
                 return self.first_name + " " + self.last_name
         """
         codes = get_error_codes(code)
-        assert_that("STOLID303" in codes, equal_to(False))
+        assert_that("SLD303" in codes, equal_to(False))
 
     def test_setter_exempt(self) -> None:
         """Property setters are exempt."""
@@ -214,7 +214,7 @@ class TestSTOLID303Exemptions(unittest.TestCase):
                 self.first_name = value
         """
         codes = get_error_codes(code)
-        assert_that("STOLID303" in codes, equal_to(False))
+        assert_that("SLD303" in codes, equal_to(False))
 
     def test_classmethod_exempt(self) -> None:
         """Classmethods don't have self, so they're exempt."""
@@ -225,7 +225,7 @@ class TestSTOLID303Exemptions(unittest.TestCase):
                 return cls()
         """
         codes = get_error_codes(code)
-        assert_that("STOLID303" in codes, equal_to(False))
+        assert_that("SLD303" in codes, equal_to(False))
 
     def test_staticmethod_exempt(self) -> None:
         """Staticmethods don't have self."""
@@ -236,7 +236,7 @@ class TestSTOLID303Exemptions(unittest.TestCase):
                 return 42
         """
         codes = get_error_codes(code)
-        assert_that("STOLID303" in codes, equal_to(False))
+        assert_that("SLD303" in codes, equal_to(False))
 
     def test_classmethod_via_attribute(self) -> None:
         """Test @builtins.classmethod detection."""
@@ -249,7 +249,7 @@ class TestSTOLID303Exemptions(unittest.TestCase):
                 return cls()
         """
         codes = get_error_codes(code)
-        assert_that("STOLID303" in codes, equal_to(False))
+        assert_that("SLD303" in codes, equal_to(False))
 
     def test_staticmethod_via_attribute(self) -> None:
         """Test @module.staticmethod detection."""
@@ -262,7 +262,7 @@ class TestSTOLID303Exemptions(unittest.TestCase):
                 return 42
         """
         codes = get_error_codes(code)
-        assert_that("STOLID303" in codes, equal_to(False))
+        assert_that("SLD303" in codes, equal_to(False))
 
     def test_method_in_class_not_method(self) -> None:
         """Function in class without self parameter."""
@@ -272,9 +272,9 @@ class TestSTOLID303Exemptions(unittest.TestCase):
                 pass
         """
         codes = get_error_codes(code)
-        assert_that("STOLID301" in codes, equal_to(False))
-        assert_that("STOLID302" in codes, equal_to(False))
-        assert_that("STOLID303" in codes, equal_to(False))
+        assert_that("SLD301" in codes, equal_to(False))
+        assert_that("SLD302" in codes, equal_to(False))
+        assert_that("SLD303" in codes, equal_to(False))
 
     def test_staticmethod_via_attribute_with_self(self) -> None:
         """Test @module.staticmethod on a method with self param."""
@@ -285,8 +285,8 @@ class TestSTOLID303Exemptions(unittest.TestCase):
                 return self.value
         """
         codes = get_error_codes(code)
-        assert_that("STOLID302" in codes, equal_to(False))
-        assert_that("STOLID303" in codes, equal_to(False))
+        assert_that("SLD302" in codes, equal_to(False))
+        assert_that("SLD303" in codes, equal_to(False))
 
     def test_classmethod_via_attribute_with_self(self) -> None:
         """Test @module.classmethod on a method with self param."""
@@ -297,7 +297,7 @@ class TestSTOLID303Exemptions(unittest.TestCase):
                 return self
         """
         codes = get_error_codes(code)
-        assert_that("STOLID303" in codes, equal_to(False))
+        assert_that("SLD303" in codes, equal_to(False))
 
     def test_staticmethod_name_with_self_param(self) -> None:
         """Test @staticmethod (Name) on method with self parameter."""
@@ -308,7 +308,7 @@ class TestSTOLID303Exemptions(unittest.TestCase):
                 return self
         """
         codes = get_error_codes(code)
-        assert_that("STOLID303" in codes, equal_to(False))
+        assert_that("SLD303" in codes, equal_to(False))
 
     def test_classmethod_name_with_self_param(self) -> None:
         """Test @classmethod (Name) on method with self parameter."""
@@ -319,4 +319,4 @@ class TestSTOLID303Exemptions(unittest.TestCase):
                 return self
         """
         codes = get_error_codes(code)
-        assert_that("STOLID303" in codes, equal_to(False))
+        assert_that("SLD303" in codes, equal_to(False))
