@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 # Error codes and messages
-STOLID102 = "STOLID102 Use of patch/patch.object is prohibited (use dependency injection)"
+STOLID102 = (
+    "STOLID102 Use of patch/patch.object is prohibited (use dependency injection)"
+)
 STOLID201 = "STOLID201 Import of ABC is prohibited (use Protocol instead)"
 STOLID202 = "STOLID202 Use of @abstractmethod is prohibited (use Protocol instead)"
 STOLID301 = (

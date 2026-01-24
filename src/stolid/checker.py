@@ -123,18 +123,24 @@ def _check_call(node: ast.Call, patch_names: set[str]) -> Iterator[Error]:
     """Check function calls."""
     if isinstance(node.func, ast.Name):
         if node.func.id in patch_names:
-            yield Error(lineno=node.lineno, col_offset=node.col_offset, message=STOLID102)
+            yield Error(
+                lineno=node.lineno, col_offset=node.col_offset, message=STOLID102
+            )
     elif isinstance(node.func, ast.Attribute):  # pragma: no branch
         if node.func.attr == "object":
             if isinstance(node.func.value, ast.Name):
                 if node.func.value.id in patch_names:
                     yield Error(
-                        lineno=node.lineno, col_offset=node.col_offset, message=STOLID102
+                        lineno=node.lineno,
+                        col_offset=node.col_offset,
+                        message=STOLID102,
                     )
             elif isinstance(node.func.value, ast.Attribute):  # pragma: no branch
                 if node.func.value.attr == "patch":
                     yield Error(
-                        lineno=node.lineno, col_offset=node.col_offset, message=STOLID102
+                        lineno=node.lineno,
+                        col_offset=node.col_offset,
+                        message=STOLID102,
                     )
 
 
@@ -146,7 +152,9 @@ def _check_with(node: ast.With, patch_names: set[str]) -> Iterator[Error]:
             if isinstance(call.func, ast.Name):
                 if call.func.id in patch_names:
                     yield Error(
-                        lineno=node.lineno, col_offset=node.col_offset, message=STOLID102
+                        lineno=node.lineno,
+                        col_offset=node.col_offset,
+                        message=STOLID102,
                     )
 
 
@@ -158,7 +166,9 @@ def _check_class_decorators(
     for decorator in node.decorator_list:
         if isinstance(decorator, ast.Name) and decorator.id in abstractmethod_names:
             yield Error(
-                lineno=decorator.lineno, col_offset=decorator.col_offset, message=STOLID202
+                lineno=decorator.lineno,
+                col_offset=decorator.col_offset,
+                message=STOLID202,
             )
 
 
@@ -235,13 +245,17 @@ def _check_abstractmethod_decorator(
     for decorator in node.decorator_list:
         if isinstance(decorator, ast.Name) and decorator.id in abstractmethod_names:
             yield Error(
-                lineno=decorator.lineno, col_offset=decorator.col_offset, message=STOLID202
+                lineno=decorator.lineno,
+                col_offset=decorator.col_offset,
+                message=STOLID202,
             )
         elif (
             isinstance(decorator, ast.Attribute) and decorator.attr == "abstractmethod"
         ):
             yield Error(
-                lineno=decorator.lineno, col_offset=decorator.col_offset, message=STOLID202
+                lineno=decorator.lineno,
+                col_offset=decorator.col_offset,
+                message=STOLID202,
             )
 
 
@@ -314,7 +328,12 @@ class Checker:  # noqa: STOLID501 STOLID503
     def run(self) -> Iterator[tuple[int, int, str, type]]:  # noqa: STOLID303
         """Run all checks and yield errors."""
         if len(self.lines) > MAX_MODULE_LINES:
-            yield (1, 0, STOLID604.format(len(self.lines), MAX_MODULE_LINES), type(self))
+            yield (
+                1,
+                0,
+                STOLID604.format(len(self.lines), MAX_MODULE_LINES),
+                type(self),
+            )
 
         patch_names, abstractmethod_names = collect_imports(self.tree)
         for node in ast.walk(self.tree):
