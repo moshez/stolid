@@ -1,4 +1,4 @@
-"""Tests for LPS4xx error codes (inheritance related)."""
+"""Tests for STOLID4xx error codes (inheritance related)."""
 
 from __future__ import annotations
 
@@ -9,8 +9,8 @@ from hamcrest import assert_that, equal_to, has_item
 from .test_helpers import get_error_codes
 
 
-class TestLPS401InheritanceProhibited(unittest.TestCase):
-    """Tests for LPS401: Inheritance from concrete classes is prohibited."""
+class TestSTOLID401InheritanceProhibited(unittest.TestCase):
+    """Tests for STOLID401: Inheritance from concrete classes is prohibited."""
 
     def test_inherit_from_concrete_class(self) -> None:
         code = """
@@ -21,7 +21,7 @@ class TestLPS401InheritanceProhibited(unittest.TestCase):
             pass
         """
         codes = get_error_codes(code)
-        assert_that(codes, has_item("LPS401"))
+        assert_that(codes, has_item("STOLID401"))
 
     def test_inherit_from_protocol_allowed(self) -> None:
         code = """
@@ -31,7 +31,7 @@ class TestLPS401InheritanceProhibited(unittest.TestCase):
             def method(self): ...
         """
         codes = get_error_codes(code)
-        assert_that("LPS401" in codes, equal_to(False))
+        assert_that("STOLID401" in codes, equal_to(False))
 
     def test_inherit_from_generic_allowed(self) -> None:
         code = """
@@ -43,7 +43,7 @@ class TestLPS401InheritanceProhibited(unittest.TestCase):
             pass
         """
         codes = get_error_codes(code)
-        assert_that("LPS401" in codes, equal_to(False))
+        assert_that("STOLID401" in codes, equal_to(False))
 
     def test_inherit_from_exception_allowed(self) -> None:
         code = """
@@ -51,7 +51,7 @@ class TestLPS401InheritanceProhibited(unittest.TestCase):
             pass
         """
         codes = get_error_codes(code)
-        assert_that("LPS401" in codes, equal_to(False))
+        assert_that("STOLID401" in codes, equal_to(False))
 
     def test_inherit_from_base_exception_allowed(self) -> None:
         code = """
@@ -59,7 +59,7 @@ class TestLPS401InheritanceProhibited(unittest.TestCase):
             pass
         """
         codes = get_error_codes(code)
-        assert_that("LPS401" in codes, equal_to(False))
+        assert_that("STOLID401" in codes, equal_to(False))
 
     def test_inherit_from_testcase_allowed(self) -> None:
         code = """
@@ -69,7 +69,7 @@ class TestLPS401InheritanceProhibited(unittest.TestCase):
             pass
         """
         codes = get_error_codes(code)
-        assert_that("LPS401" in codes, equal_to(False))
+        assert_that("STOLID401" in codes, equal_to(False))
 
     def test_inherit_from_testcase_name_allowed(self) -> None:
         code = """
@@ -79,7 +79,7 @@ class TestLPS401InheritanceProhibited(unittest.TestCase):
             pass
         """
         codes = get_error_codes(code)
-        assert_that("LPS401" in codes, equal_to(False))
+        assert_that("STOLID401" in codes, equal_to(False))
 
     def test_inherit_from_enum_allowed(self) -> None:
         code = """
@@ -90,7 +90,7 @@ class TestLPS401InheritanceProhibited(unittest.TestCase):
             GREEN = 2
         """
         codes = get_error_codes(code)
-        assert_that("LPS401" in codes, equal_to(False))
+        assert_that("STOLID401" in codes, equal_to(False))
 
     def test_inherit_from_intenum_allowed(self) -> None:
         code = """
@@ -101,7 +101,7 @@ class TestLPS401InheritanceProhibited(unittest.TestCase):
             HIGH = 2
         """
         codes = get_error_codes(code)
-        assert_that("LPS401" in codes, equal_to(False))
+        assert_that("STOLID401" in codes, equal_to(False))
 
     def test_inherit_from_typeddict_allowed(self) -> None:
         code = """
@@ -112,7 +112,7 @@ class TestLPS401InheritanceProhibited(unittest.TestCase):
             year: int
         """
         codes = get_error_codes(code)
-        assert_that("LPS401" in codes, equal_to(False))
+        assert_that("STOLID401" in codes, equal_to(False))
 
     def test_inherit_from_namedtuple_allowed(self) -> None:
         code = """
@@ -123,7 +123,7 @@ class TestLPS401InheritanceProhibited(unittest.TestCase):
             y: int
         """
         codes = get_error_codes(code)
-        assert_that("LPS401" in codes, equal_to(False))
+        assert_that("STOLID401" in codes, equal_to(False))
 
     def test_multiple_inheritance_mixed(self) -> None:
         code = """
@@ -137,7 +137,7 @@ class TestLPS401InheritanceProhibited(unittest.TestCase):
         """
         codes = get_error_codes(code)
         # Concrete is not allowed
-        assert_that(codes, has_item("LPS401"))
+        assert_that(codes, has_item("STOLID401"))
 
     def test_no_base_class_allowed(self) -> None:
         code = """
@@ -145,7 +145,7 @@ class TestLPS401InheritanceProhibited(unittest.TestCase):
             pass
         """
         codes = get_error_codes(code)
-        assert_that("LPS401" in codes, equal_to(False))
+        assert_that("STOLID401" in codes, equal_to(False))
 
     def test_subscripted_generic_allowed(self) -> None:
         code = """
@@ -157,7 +157,7 @@ class TestLPS401InheritanceProhibited(unittest.TestCase):
             pass
         """
         codes = get_error_codes(code)
-        assert_that("LPS401" in codes, equal_to(False))
+        assert_that("STOLID401" in codes, equal_to(False))
 
     def test_base_class_unknown_type(self) -> None:
         """Base class that is not Name, Attribute, or Subscript."""
@@ -166,4 +166,4 @@ class TestLPS401InheritanceProhibited(unittest.TestCase):
             pass
         """
         codes = get_error_codes(code)
-        assert_that("LPS401" in codes, equal_to(False))
+        assert_that("STOLID401" in codes, equal_to(False))

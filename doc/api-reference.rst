@@ -1,5 +1,5 @@
 API Reference
 =============
 
-.. automodule:: lint-python-standard
+.. automodule:: stolid
    :members:

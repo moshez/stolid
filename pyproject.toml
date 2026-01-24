@@ -6,7 +6,7 @@ requires = [
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "lint-python-standard"
+name = "stolid"
 version = "2022.3.6.2"
 description = "Linter enforcing the conventions of the Python standard template"
 readme = "README.rst"
@@ -39,7 +39,7 @@ OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 
 [project.urls]
-Homepage = "https://github.com/moshez/lint-python-standard"
+Homepage = "https://github.com/moshez/stolid"
 
 [tool.autocalver]
 use = true
@@ -49,7 +49,7 @@ is_main_var = "GITHUB_REF"
 is_main_match = ".*/trunk$"
 
 [project.entry-points.gather]
-placeholder = "lint_python_standard:__version__"
+placeholder = "stolid:__version__"
 
 [project.entry-points."flake8.extension"]
-LPS = "lint_python_standard.checker:Checker"
+STOLID = "stolid.checker:Checker"

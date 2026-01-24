@@ -1,8 +1,8 @@
-lint-python-standard
-================
+stolid
+======
 
 
-Linter enforcing the conventions of the Python standard template
+Linter enforcing the conventions of the stolid template
 
 .. toctree::
    :maxdepth: 2

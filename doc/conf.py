@@ -3,7 +3,7 @@ extensions = [
     'sphinx.ext.viewcode',
 ]
 master_doc = 'index'
-project = 'lint-python-standard'
+project = 'stolid'
 copyright = 'Copyright (c) Moshe Zadka'
 author = 'Moshe Zadka'
 version = ''
