@@ -6,7 +6,7 @@ import unittest
 
 from hamcrest import assert_that, contains_string, equal_to, has_item
 
-from .test_helpers import check_code, get_error_codes
+from .code_parser import check_code, get_error_codes
 
 
 class TestSLD601FunctionLineLimit(unittest.TestCase):

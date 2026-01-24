@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import ast
+import re
+
+from ._constants import BAD_NAME_WORDS
 
 
 def get_base_name(node: ast.expr) -> str | None:
@@ -156,3 +159,33 @@ def collect_imports(tree: ast.AST) -> tuple[set[str], set[str]]:
                     # patch would be accessed as unittest.mock.patch
                     pass  # Handled via attribute access
     return patch_names, abstractmethod_names
+
+
+# Pattern to split identifiers into words:
+# - Split on underscores
+# - Split on CamelCase boundaries (lowercase followed by uppercase)
+_WORD_SPLIT_PATTERN = re.compile(r"_|(?<=[a-z])(?=[A-Z])")
+
+
+def split_identifier_into_words(name: str) -> list[str]:
+    """Split an identifier into words by underscores and CamelCase boundaries.
+
+    Examples:
+        "DiskUtil" -> ["Disk", "Util"]
+        "disk_util" -> ["disk", "util"]
+        "Futile" -> ["Futile"]
+        "MyHelperClass" -> ["My", "Helper", "Class"]
+    """
+    return [word for word in _WORD_SPLIT_PATTERN.split(name) if word]
+
+
+def find_bad_name_word(name: str) -> str | None:
+    """Check if an identifier contains a forbidden word at a word boundary.
+
+    Returns the forbidden word if found, None otherwise.
+    """
+    words = split_identifier_into_words(name)
+    for word in words:
+        if word.lower() in BAD_NAME_WORDS:
+            return word.lower()
+    return None

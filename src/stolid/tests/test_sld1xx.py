@@ -6,7 +6,7 @@ import unittest
 
 from hamcrest import assert_that, empty, equal_to, has_item
 
-from .test_helpers import get_error_codes
+from .code_parser import get_error_codes
 
 
 class TestSLD102Import(unittest.TestCase):
@@ -67,7 +67,7 @@ class TestSLD102Usage(unittest.TestCase):
         codes = get_error_codes(code)
         assert_that(codes, has_item("SLD102"))
 
-    def test_patch_context_manager(self) -> None:
+    def test_patch_context_manager(self) -> None:  # noqa: SLD701
         code = """
         from unittest.mock import patch
 

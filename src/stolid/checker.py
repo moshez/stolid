@@ -22,6 +22,7 @@ from ._constants import (
     SLD602,
     SLD603,
     SLD604,
+    SLD701,
     MAX_CLASS_METHODS,
     MAX_FUNCTION_ARGS,
     MAX_FUNCTION_LINES,
@@ -29,6 +30,7 @@ from ._constants import (
 )
 from ._ast_inspection import (
     collect_imports,
+    find_bad_name_word,
     get_base_name,
     get_class_method_count,
     get_dataclass_keywords,
@@ -156,6 +158,17 @@ def _check_with(node: ast.With, patch_names: set[str]) -> Iterator[Error]:
                     )
 
 
+def _check_bad_name(name: str, lineno: int, col_offset: int) -> Iterator[Error]:
+    """Check if a name contains a forbidden word."""
+    bad_word = find_bad_name_word(name)
+    if bad_word is not None:
+        yield Error(
+            lineno=lineno,
+            col_offset=col_offset,
+            message=SLD701.format(name, bad_word),
+        )
+
+
 def _check_class_decorators(
     node: ast.ClassDef,
     abstractmethod_names: set[str],
@@ -216,6 +229,7 @@ def _check_class(node: ast.ClassDef, abstractmethod_names: set[str]) -> Iterator
             is_dataclass = True
             dataclass_keywords = get_dataclass_keywords(decorator)
 
+    yield from _check_bad_name(node.name, node.lineno, node.col_offset)
     yield from _check_class_decorators(node, abstractmethod_names)
     yield from _check_class_bases(node)
 
@@ -296,6 +310,8 @@ def _check_method_in_class(
 
 def _check_function(node: ast.FunctionDef | ast.AsyncFunctionDef) -> Iterator[Error]:
     """Check function definitions for limit violations."""
+    yield from _check_bad_name(node.name, node.lineno, node.col_offset)
+
     line_count = get_function_line_count(node)
     if line_count > MAX_FUNCTION_LINES:
         yield Error(
@@ -313,6 +329,22 @@ def _check_function(node: ast.FunctionDef | ast.AsyncFunctionDef) -> Iterator[Er
         )
 
 
+def _get_module_name_from_filename(filename: str) -> str | None:
+    """Extract module name from filename for bad name checking."""
+    import os
+
+    if not filename:
+        return None
+    basename = os.path.basename(filename)
+    if basename.endswith(".py"):
+        module_name = basename[:-3]
+        # Skip __init__ and other special files
+        if module_name.startswith("__"):
+            return None
+        return module_name
+    return None
+
+
 @dataclass(slots=True)
 class Checker:  # noqa: SLD501 SLD503
     """Flake8 checker for stolid conventions."""
@@ -322,6 +354,7 @@ class Checker:  # noqa: SLD501 SLD503
 
     tree: ast.AST
     lines: list[str]
+    filename: str = ""
 
     def run(self) -> Iterator[tuple[int, int, str, type]]:  # noqa: SLD303
         """Run all checks and yield errors."""
@@ -332,6 +365,12 @@ class Checker:  # noqa: SLD501 SLD503
                 SLD604.format(len(self.lines), MAX_MODULE_LINES),
                 type(self),
             )
+
+        # Check module name
+        module_name = _get_module_name_from_filename(self.filename)
+        if module_name is not None:
+            for error in _check_bad_name(module_name, 1, 0):
+                yield (error.lineno, error.col_offset, error.message, type(self))
 
         patch_names, abstractmethod_names = collect_imports(self.tree)
         for node in ast.walk(self.tree):

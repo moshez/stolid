@@ -25,6 +25,12 @@ SLD601 = "SLD601 Function '{}' has {} lines (limit: {})"
 SLD602 = "SLD602 Function '{}' has {} arguments (limit: {})"
 SLD603 = "SLD603 Class '{}' has {} methods (limit: {})"
 SLD604 = "SLD604 Module has {} lines (limit: {})"
+SLD701 = "SLD701 Name '{}' contains forbidden word '{}' (use a more specific name)"
+
+# Bad name patterns (vague, non-descriptive names)
+BAD_NAME_WORDS: frozenset[str] = frozenset(
+    {"help", "helper", "helpers", "util", "utils", "manage", "manager", "managers"}
+)
 
 # Code limits
 MAX_FUNCTION_LINES = 30
