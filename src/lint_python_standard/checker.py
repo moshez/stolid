@@ -164,7 +164,7 @@ def _is_property_method(node: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
 def _collect_imports(tree: ast.AST) -> tuple[set[str], set[str]]:
     """Collect names that refer to patch or abstractmethod."""
     patch_names: set[str] = set()
-    abstractmethod_names: set[str] = set()
+    abstractmethod_names: set[str] = {"abstractmethod"}
     for node in ast.walk(tree):
         if isinstance(node, ast.ImportFrom):
             if node.module == "unittest.mock" or node.module == "mock":
@@ -378,7 +378,7 @@ def _check_method_in_class(
     # LPS202: Check for @abstractmethod decorator
     for decorator in node.decorator_list:
         if isinstance(decorator, ast.Name):
-            if decorator.id in abstractmethod_names or decorator.id == "abstractmethod":
+            if decorator.id in abstractmethod_names:
                 yield Error(
                     lineno=decorator.lineno,
                     col_offset=decorator.col_offset,
