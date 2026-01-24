@@ -1,4 +1,4 @@
-lint-python-standard
-========================
+stolid
+======
 
 Stuff

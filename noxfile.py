@@ -14,12 +14,12 @@ def tests(session):
     tmpdir = session.create_tmp()
     session.install("-r", "requirements-tests.txt")
     session.install("-e", ".")
-    tests = session.posargs or ["lint_python_standard.tests"]
+    tests = session.posargs or ["stolid.tests"]
     session.run(
         "coverage",
         "run",
         "--branch",
-        "--source=lint_python_standard",
+        "--source=stolid",
         "--omit=**/__main__.py",
         "-m",
         "virtue",

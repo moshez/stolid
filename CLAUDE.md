@@ -1,4 +1,4 @@
-# lint-python-standard Development Guidelines
+# stolid Development Guidelines
 
 ## Running Tests and Linting
 

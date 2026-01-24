@@ -22,7 +22,7 @@ class TestComplexScenarios(unittest.TestCase):
         """
         codes = get_error_codes(code)
         # Both Outer and Inner have __init__ issues
-        assert_that(codes, has_item("LPS301"))
+        assert_that(codes, has_item("SLD301"))
 
     def test_async_method(self) -> None:
         code = """
@@ -31,7 +31,7 @@ class TestComplexScenarios(unittest.TestCase):
                 pass
         """
         codes = get_error_codes(code)
-        assert_that(codes, has_item("LPS302"))
+        assert_that(codes, has_item("SLD302"))
 
     def test_method_with_public_self_async(self) -> None:
         code = """
@@ -40,7 +40,7 @@ class TestComplexScenarios(unittest.TestCase):
                 return self.url
         """
         codes = get_error_codes(code)
-        assert_that(codes, has_item("LPS303"))
+        assert_that(codes, has_item("SLD303"))
 
     def test_clean_code_no_errors(self) -> None:
         """A well-written class following all conventions."""
@@ -63,7 +63,7 @@ class TestComplexScenarios(unittest.TestCase):
         """
         codes = get_error_codes(code)
         # Protocol definition is fine, dataclass is properly configured
-        # __str__ and __repr__ are dunders so exempt from LPS303
+        # __str__ and __repr__ are dunders so exempt from SLD303
         assert_that(codes, empty())
 
     def test_clean_protocol_no_errors(self) -> None:
@@ -107,7 +107,7 @@ class TestComplexScenarios(unittest.TestCase):
 class TestErrorMessages(unittest.TestCase):
     """Tests for error message content."""
 
-    def test_lps302_includes_method_name(self) -> None:
+    def test_stolid302_includes_method_name(self) -> None:
         code = """
         class MyClass:
             def _my_private_method(self):
@@ -117,18 +117,18 @@ class TestErrorMessages(unittest.TestCase):
         messages = [msg for _, _, msg in errors]
         assert_that(messages[0], contains_string("_my_private_method"))
 
-    def test_lps303_includes_method_name(self) -> None:
+    def test_stolid303_includes_method_name(self) -> None:
         code = """
         class MyClass:
             def my_public_method(self):
                 return self.value
         """
         errors = check_code(code)
-        messages = [msg for _, _, msg in errors if "LPS303" in msg]
+        messages = [msg for _, _, msg in errors if "SLD303" in msg]
         assert_that(messages[0], contains_string("my_public_method"))
         assert_that(messages[0], contains_string("functools.singledispatch"))
 
-    def test_lps401_includes_class_names(self) -> None:
+    def test_stolid401_includes_class_names(self) -> None:
         code = """
         class Parent:
             pass
@@ -137,11 +137,11 @@ class TestErrorMessages(unittest.TestCase):
             pass
         """
         errors = check_code(code)
-        messages = [msg for _, _, msg in errors if "LPS401" in msg]
+        messages = [msg for _, _, msg in errors if "SLD401" in msg]
         assert_that(messages[0], contains_string("Child"))
         assert_that(messages[0], contains_string("Parent"))
 
-    def test_lps501_includes_class_name(self) -> None:
+    def test_stolid501_includes_class_name(self) -> None:
         code = """
         from dataclasses import dataclass
 
@@ -150,7 +150,7 @@ class TestErrorMessages(unittest.TestCase):
             x: int
         """
         errors = check_code(code)
-        messages = [msg for _, _, msg in errors if "LPS501" in msg]
+        messages = [msg for _, _, msg in errors if "SLD501" in msg]
         assert_that(messages[0], contains_string("MyDataClass"))
 
 
@@ -158,7 +158,7 @@ class TestCheckerMetadata(unittest.TestCase):
     """Tests for checker metadata."""
 
     def test_checker_name(self) -> None:
-        assert_that(Checker.name, equal_to("lint-python-standard"))
+        assert_that(Checker.name, equal_to("stolid"))
 
     def test_checker_version(self) -> None:
         assert_that(Checker.version, equal_to("0.1.0"))
@@ -202,7 +202,7 @@ class TestEdgeCases(unittest.TestCase):
         assert_that(codes, empty())
 
     def test_deleter_property_exempt(self) -> None:
-        """Property deleters are exempt from LPS303."""
+        """Property deleters are exempt from SLD303."""
         code = """
         class MyClass:
             @name.deleter
@@ -210,4 +210,4 @@ class TestEdgeCases(unittest.TestCase):
                 del self.first_name
         """
         codes = get_error_codes(code)
-        assert_that("LPS303" in codes, equal_to(False))
+        assert_that("SLD303" in codes, equal_to(False))

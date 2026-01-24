@@ -1,4 +1,4 @@
-"""Shared test helpers for lint-python-standard tests."""
+"""Shared test helpers for stolid tests."""
 
 from __future__ import annotations
 

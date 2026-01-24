@@ -1,4 +1,4 @@
-"""Tests for LPS1xx error codes (patch/mock related)."""
+"""Tests for SLD1xx error codes (patch/mock related)."""
 
 from __future__ import annotations
 
@@ -9,22 +9,22 @@ from hamcrest import assert_that, empty, equal_to, has_item
 from .test_helpers import get_error_codes
 
 
-class TestLPS102Import(unittest.TestCase):
-    """Tests for LPS102: patch import detection."""
+class TestSLD102Import(unittest.TestCase):
+    """Tests for SLD102: patch import detection."""
 
     def test_import_patch_from_unittest_mock(self) -> None:
         code = """
         from unittest.mock import patch
         """
         codes = get_error_codes(code)
-        assert_that(codes, has_item("LPS102"))
+        assert_that(codes, has_item("SLD102"))
 
     def test_import_patch_from_mock(self) -> None:
         code = """
         from mock import patch
         """
         codes = get_error_codes(code)
-        assert_that(codes, has_item("LPS102"))
+        assert_that(codes, has_item("SLD102"))
 
     def test_mock_import_allowed(self) -> None:
         """Importing Mock itself is allowed, only patch is prohibited."""
@@ -41,7 +41,7 @@ class TestLPS102Import(unittest.TestCase):
         p("module.thing")
         """
         codes = get_error_codes(code)
-        assert_that("LPS102" in codes, equal_to(True))
+        assert_that("SLD102" in codes, equal_to(True))
 
     def test_import_patch_among_multiple(self) -> None:
         """Import patch among other imports from unittest.mock."""
@@ -49,12 +49,12 @@ class TestLPS102Import(unittest.TestCase):
         from unittest.mock import Mock, patch, MagicMock
         """
         codes = get_error_codes(code)
-        lps102_count = codes.count("LPS102")
-        assert_that(lps102_count, equal_to(1))
+        stolid102_count = codes.count("SLD102")
+        assert_that(stolid102_count, equal_to(1))
 
 
-class TestLPS102Usage(unittest.TestCase):
-    """Tests for LPS102: patch usage detection."""
+class TestSLD102Usage(unittest.TestCase):
+    """Tests for SLD102: patch usage detection."""
 
     def test_patch_decorator(self) -> None:
         code = """
@@ -65,7 +65,7 @@ class TestLPS102Usage(unittest.TestCase):
             pass
         """
         codes = get_error_codes(code)
-        assert_that(codes, has_item("LPS102"))
+        assert_that(codes, has_item("SLD102"))
 
     def test_patch_context_manager(self) -> None:
         code = """
@@ -76,7 +76,7 @@ class TestLPS102Usage(unittest.TestCase):
                 pass
         """
         codes = get_error_codes(code)
-        assert_that("LPS102" in codes, equal_to(True))
+        assert_that("SLD102" in codes, equal_to(True))
 
     def test_patch_object_call(self) -> None:
         code = """
@@ -86,7 +86,7 @@ class TestLPS102Usage(unittest.TestCase):
             patch.object(obj, "attr")
         """
         codes = get_error_codes(code)
-        assert_that("LPS102" in codes, equal_to(True))
+        assert_that("SLD102" in codes, equal_to(True))
 
     def test_unittest_mock_patch_attribute_access(self) -> None:
         code = """
@@ -95,7 +95,7 @@ class TestLPS102Usage(unittest.TestCase):
         unittest.mock.patch("thing")
         """
         codes = get_error_codes(code)
-        assert_that(codes, has_item("LPS102"))
+        assert_that(codes, has_item("SLD102"))
 
     def test_mock_module_patch_attribute(self) -> None:
         code = """
@@ -104,7 +104,7 @@ class TestLPS102Usage(unittest.TestCase):
         mock.patch("thing")
         """
         codes = get_error_codes(code)
-        assert_that(codes, has_item("LPS102"))
+        assert_that(codes, has_item("SLD102"))
 
     def test_patch_object_via_mock_module_attribute(self) -> None:
         """Test mock.patch.object() detection via attribute chain."""
@@ -114,7 +114,7 @@ class TestLPS102Usage(unittest.TestCase):
         unittest.mock.patch.object(obj, "attr")
         """
         codes = get_error_codes(code)
-        assert_that(codes, has_item("LPS102"))
+        assert_that(codes, has_item("SLD102"))
 
     def test_attribute_patch_on_nested_attribute(self) -> None:
         """Test deeply nested attribute access for patch."""
@@ -124,7 +124,7 @@ class TestLPS102Usage(unittest.TestCase):
         unittest.mock.patch("thing")
         """
         codes = get_error_codes(code)
-        assert_that(codes, has_item("LPS102"))
+        assert_that(codes, has_item("SLD102"))
 
     def test_patch_object_via_deeply_nested_attribute(self) -> None:
         """Test a.b.patch.object() detection."""
@@ -134,11 +134,11 @@ class TestLPS102Usage(unittest.TestCase):
         unittest.mock.patch.object(obj, "attr")
         """
         codes = get_error_codes(code)
-        assert_that(codes, has_item("LPS102"))
+        assert_that(codes, has_item("SLD102"))
 
 
-class TestLPS102EdgeCases(unittest.TestCase):
-    """Tests for LPS102: edge cases and non-matches."""
+class TestSLD102EdgeCases(unittest.TestCase):
+    """Tests for SLD102: edge cases and non-matches."""
 
     def test_with_statement_non_call(self) -> None:
         """With statement with non-Call context expression."""
@@ -150,7 +150,7 @@ class TestLPS102EdgeCases(unittest.TestCase):
             pass
         """
         codes = get_error_codes(code)
-        assert_that("LPS102" in codes, equal_to(False))
+        assert_that("SLD102" in codes, equal_to(False))
 
     def test_with_statement_call_non_name(self) -> None:
         """With statement with Call but func is not Name."""
@@ -159,7 +159,7 @@ class TestLPS102EdgeCases(unittest.TestCase):
             pass
         """
         codes = get_error_codes(code)
-        assert_that("LPS102" in codes, equal_to(False))
+        assert_that("SLD102" in codes, equal_to(False))
 
     def test_patch_attribute_not_mock(self) -> None:
         """Attribute named 'patch' but not on mock module."""
@@ -171,7 +171,7 @@ class TestLPS102EdgeCases(unittest.TestCase):
         obj.patch
         """
         codes = get_error_codes(code)
-        assert_that("LPS102" in codes, equal_to(False))
+        assert_that("SLD102" in codes, equal_to(False))
 
     def test_attribute_patch_on_non_mock_name(self) -> None:
         """xxx.patch where xxx is not 'mock'."""
@@ -179,7 +179,7 @@ class TestLPS102EdgeCases(unittest.TestCase):
         something.patch("value")
         """
         codes = get_error_codes(code)
-        assert_that("LPS102" in codes, equal_to(False))
+        assert_that("SLD102" in codes, equal_to(False))
 
     def test_call_with_attribute_func_not_object(self) -> None:
         """Call with attribute func but not 'object' attr."""
@@ -189,8 +189,8 @@ class TestLPS102EdgeCases(unittest.TestCase):
         patch.dict({})
         """
         codes = get_error_codes(code)
-        lps102_count = codes.count("LPS102")
-        assert_that(lps102_count, equal_to(1))
+        stolid102_count = codes.count("SLD102")
+        assert_that(stolid102_count, equal_to(1))
 
     def test_patch_object_with_non_patch_name(self) -> None:
         """xxx.object() where xxx is not a patch name."""
@@ -198,7 +198,7 @@ class TestLPS102EdgeCases(unittest.TestCase):
         something.object(1, 2)
         """
         codes = get_error_codes(code)
-        assert_that("LPS102" in codes, equal_to(False))
+        assert_that("SLD102" in codes, equal_to(False))
 
     def test_with_non_patch_function_call(self) -> None:
         """Test with statement calling function that's not patch."""
@@ -209,8 +209,8 @@ class TestLPS102EdgeCases(unittest.TestCase):
             pass
         """
         codes = get_error_codes(code)
-        lps102_count = codes.count("LPS102")
-        assert_that(lps102_count, equal_to(1))
+        stolid102_count = codes.count("SLD102")
+        assert_that(stolid102_count, equal_to(1))
 
     def test_attribute_patch_nested_not_mock(self) -> None:
         """Test foo.bar.patch where bar is not 'mock'."""
@@ -218,7 +218,7 @@ class TestLPS102EdgeCases(unittest.TestCase):
         foo.bar.patch
         """
         codes = get_error_codes(code)
-        assert_that("LPS102" in codes, equal_to(False))
+        assert_that("SLD102" in codes, equal_to(False))
 
     def test_call_func_attribute_not_object(self) -> None:
         """Test func.something() where attr is not 'object'."""
@@ -228,8 +228,8 @@ class TestLPS102EdgeCases(unittest.TestCase):
         result = patch.dict({})
         """
         codes = get_error_codes(code)
-        lps102_count = codes.count("LPS102")
-        assert_that(lps102_count, equal_to(1))
+        stolid102_count = codes.count("SLD102")
+        assert_that(stolid102_count, equal_to(1))
 
     def test_call_object_func_value_attribute_not_patch(self) -> None:
         """Test xxx.yyy.object() where yyy is not 'patch'."""
@@ -237,7 +237,7 @@ class TestLPS102EdgeCases(unittest.TestCase):
         foo.bar.object(thing)
         """
         codes = get_error_codes(code)
-        assert_that("LPS102" in codes, equal_to(False))
+        assert_that("SLD102" in codes, equal_to(False))
 
     def test_call_object_func_value_name_not_patch(self) -> None:
         """Test notpatch.object() - func.value is Name but not in patch_names."""
@@ -245,7 +245,7 @@ class TestLPS102EdgeCases(unittest.TestCase):
         factory.object(MyClass)
         """
         codes = get_error_codes(code)
-        assert_that("LPS102" in codes, equal_to(False))
+        assert_that("SLD102" in codes, equal_to(False))
 
     def test_call_func_is_attribute_not_object(self) -> None:
         """Call where func is Attribute but attr is not 'object'."""
@@ -255,8 +255,8 @@ class TestLPS102EdgeCases(unittest.TestCase):
         x = patch.something("module")
         """
         codes = get_error_codes(code)
-        lps102_count = codes.count("LPS102")
-        assert_that(lps102_count, equal_to(1))
+        stolid102_count = codes.count("SLD102")
+        assert_that(stolid102_count, equal_to(1))
 
     def test_call_object_on_non_patch_attribute(self) -> None:
         """Test xxx.object() where xxx is not patch."""
@@ -264,7 +264,7 @@ class TestLPS102EdgeCases(unittest.TestCase):
         factory.object(MyClass)
         """
         codes = get_error_codes(code)
-        assert_that("LPS102" in codes, equal_to(False))
+        assert_that("SLD102" in codes, equal_to(False))
 
     def test_patch_object_via_attribute_value_name_not_patch(self) -> None:
         """Test xxx.object() where xxx is Name but not in patch_names."""
@@ -272,4 +272,4 @@ class TestLPS102EdgeCases(unittest.TestCase):
         something.object(obj, "attr")
         """
         codes = get_error_codes(code)
-        assert_that("LPS102" in codes, equal_to(False))
+        assert_that("SLD102" in codes, equal_to(False))

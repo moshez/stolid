@@ -1,2 +1,2 @@
-Getting Started with lint-python-standard
-=====================================
+Getting Started with stolid
+===========================

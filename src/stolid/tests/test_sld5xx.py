@@ -1,4 +1,4 @@
-"""Tests for LPS5xx error codes (dataclass related)."""
+"""Tests for SLD5xx error codes (dataclass related)."""
 
 from __future__ import annotations
 
@@ -9,8 +9,8 @@ from hamcrest import assert_that, empty, equal_to, has_item
 from .test_helpers import get_error_codes
 
 
-class TestLPS501FrozenDataclass(unittest.TestCase):
-    """Tests for LPS501: Dataclass missing frozen=True."""
+class TestSLD501FrozenDataclass(unittest.TestCase):
+    """Tests for SLD501: Dataclass missing frozen=True."""
 
     def test_dataclass_no_frozen(self) -> None:
         code = """
@@ -21,7 +21,7 @@ class TestLPS501FrozenDataclass(unittest.TestCase):
             x: int
         """
         codes = get_error_codes(code)
-        assert_that(codes, has_item("LPS501"))
+        assert_that(codes, has_item("SLD501"))
 
     def test_dataclass_frozen_false(self) -> None:
         code = """
@@ -32,7 +32,7 @@ class TestLPS501FrozenDataclass(unittest.TestCase):
             x: int
         """
         codes = get_error_codes(code)
-        assert_that(codes, has_item("LPS501"))
+        assert_that(codes, has_item("SLD501"))
 
     def test_dataclass_frozen_true(self) -> None:
         code = """
@@ -43,11 +43,11 @@ class TestLPS501FrozenDataclass(unittest.TestCase):
             x: int
         """
         codes = get_error_codes(code)
-        assert_that("LPS501" in codes, equal_to(False))
+        assert_that("SLD501" in codes, equal_to(False))
 
 
-class TestLPS502SlotsDataclass(unittest.TestCase):
-    """Tests for LPS502: Dataclass missing slots=True."""
+class TestSLD502SlotsDataclass(unittest.TestCase):
+    """Tests for SLD502: Dataclass missing slots=True."""
 
     def test_dataclass_no_slots(self) -> None:
         code = """
@@ -58,7 +58,7 @@ class TestLPS502SlotsDataclass(unittest.TestCase):
             x: int
         """
         codes = get_error_codes(code)
-        assert_that(codes, has_item("LPS502"))
+        assert_that(codes, has_item("SLD502"))
 
     def test_dataclass_slots_false(self) -> None:
         code = """
@@ -69,7 +69,7 @@ class TestLPS502SlotsDataclass(unittest.TestCase):
             x: int
         """
         codes = get_error_codes(code)
-        assert_that(codes, has_item("LPS502"))
+        assert_that(codes, has_item("SLD502"))
 
     def test_dataclass_slots_true(self) -> None:
         code = """
@@ -80,11 +80,11 @@ class TestLPS502SlotsDataclass(unittest.TestCase):
             x: int
         """
         codes = get_error_codes(code)
-        assert_that("LPS502" in codes, equal_to(False))
+        assert_that("SLD502" in codes, equal_to(False))
 
 
-class TestLPS503KwOnlyDataclass(unittest.TestCase):
-    """Tests for LPS503: Dataclass missing kw_only=True."""
+class TestSLD503KwOnlyDataclass(unittest.TestCase):
+    """Tests for SLD503: Dataclass missing kw_only=True."""
 
     def test_dataclass_no_kw_only(self) -> None:
         code = """
@@ -95,7 +95,7 @@ class TestLPS503KwOnlyDataclass(unittest.TestCase):
             x: int
         """
         codes = get_error_codes(code)
-        assert_that(codes, has_item("LPS503"))
+        assert_that(codes, has_item("SLD503"))
 
     def test_dataclass_kw_only_false(self) -> None:
         code = """
@@ -106,7 +106,7 @@ class TestLPS503KwOnlyDataclass(unittest.TestCase):
             x: int
         """
         codes = get_error_codes(code)
-        assert_that(codes, has_item("LPS503"))
+        assert_that(codes, has_item("SLD503"))
 
     def test_dataclass_kw_only_true(self) -> None:
         code = """
@@ -117,7 +117,7 @@ class TestLPS503KwOnlyDataclass(unittest.TestCase):
             x: int
         """
         codes = get_error_codes(code)
-        assert_that("LPS503" in codes, equal_to(False))
+        assert_that("SLD503" in codes, equal_to(False))
 
 
 class TestDataclassVariants(unittest.TestCase):
@@ -133,9 +133,9 @@ class TestDataclassVariants(unittest.TestCase):
         """
         codes = get_error_codes(code)
         # Should detect missing frozen, slots, kw_only
-        assert_that(codes, has_item("LPS501"))
-        assert_that(codes, has_item("LPS502"))
-        assert_that(codes, has_item("LPS503"))
+        assert_that(codes, has_item("SLD501"))
+        assert_that(codes, has_item("SLD502"))
+        assert_that(codes, has_item("SLD503"))
 
     def test_dataclass_with_all_flags(self) -> None:
         code = """
@@ -146,7 +146,7 @@ class TestDataclassVariants(unittest.TestCase):
             x: int
         """
         codes = get_error_codes(code)
-        lps50x = [c for c in codes if c.startswith("LPS50")]
+        lps50x = [c for c in codes if c.startswith("SLD50")]
         assert_that(lps50x, empty())
 
     def test_dataclass_with_non_constant_kwarg(self) -> None:
@@ -161,7 +161,7 @@ class TestDataclassVariants(unittest.TestCase):
             x: int
         """
         codes = get_error_codes(code)
-        assert_that(codes, has_item("LPS501"))
+        assert_that(codes, has_item("SLD501"))
 
     def test_dataclass_with_extra_kwargs(self) -> None:
         """Dataclass with extra keyword arguments."""
@@ -173,7 +173,7 @@ class TestDataclassVariants(unittest.TestCase):
             x: int
         """
         codes = get_error_codes(code)
-        lps50x = [c for c in codes if c.startswith("LPS50")]
+        lps50x = [c for c in codes if c.startswith("SLD50")]
         assert_that(lps50x, empty())
 
     def test_non_dataclass_decorator_call(self) -> None:
@@ -187,7 +187,7 @@ class TestDataclassVariants(unittest.TestCase):
             pass
         """
         codes = get_error_codes(code)
-        assert_that("LPS501" in codes, equal_to(False))
+        assert_that("SLD501" in codes, equal_to(False))
 
     def test_class_with_multiple_decorators(self) -> None:
         """Class with multiple decorators including dataclass."""
@@ -203,7 +203,7 @@ class TestDataclassVariants(unittest.TestCase):
             x: int
         """
         codes = get_error_codes(code)
-        lps50x = [c for c in codes if c.startswith("LPS50")]
+        lps50x = [c for c in codes if c.startswith("SLD50")]
         assert_that(lps50x, empty())
 
     def test_decorator_that_is_not_dataclass_but_is_call(self) -> None:
@@ -214,9 +214,9 @@ class TestDataclassVariants(unittest.TestCase):
             x: int
         """
         codes = get_error_codes(code)
-        assert_that("LPS501" in codes, equal_to(False))
-        assert_that("LPS502" in codes, equal_to(False))
-        assert_that("LPS503" in codes, equal_to(False))
+        assert_that("SLD501" in codes, equal_to(False))
+        assert_that("SLD502" in codes, equal_to(False))
+        assert_that("SLD503" in codes, equal_to(False))
 
     def test_class_decorator_is_subscript(self) -> None:
         """Class decorator that is a Subscript (not Name/Attribute/Call)."""
@@ -228,6 +228,6 @@ class TestDataclassVariants(unittest.TestCase):
             x: int
         """
         codes = get_error_codes(code)
-        assert_that("LPS501" in codes, equal_to(False))
-        assert_that("LPS502" in codes, equal_to(False))
-        assert_that("LPS503" in codes, equal_to(False))
+        assert_that("SLD501" in codes, equal_to(False))
+        assert_that("SLD502" in codes, equal_to(False))
+        assert_that("SLD503" in codes, equal_to(False))

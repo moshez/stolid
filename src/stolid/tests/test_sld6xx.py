@@ -1,4 +1,4 @@
-"""Tests for LPS6xx error codes (code limits)."""
+"""Tests for SLD6xx error codes (code limits)."""
 
 from __future__ import annotations
 
@@ -9,8 +9,8 @@ from hamcrest import assert_that, contains_string, equal_to, has_item
 from .test_helpers import check_code, get_error_codes
 
 
-class TestLPS601FunctionLineLimit(unittest.TestCase):
-    """Tests for LPS601: Function exceeds line limit."""
+class TestSLD601FunctionLineLimit(unittest.TestCase):
+    """Tests for SLD601: Function exceeds line limit."""
 
     def test_function_within_limit(self) -> None:
         code = """
@@ -19,7 +19,7 @@ class TestLPS601FunctionLineLimit(unittest.TestCase):
             return x
         """
         codes = get_error_codes(code)
-        assert_that("LPS601" in codes, equal_to(False))
+        assert_that("SLD601" in codes, equal_to(False))
 
     def test_function_exceeds_limit(self) -> None:
         lines = ["def long_function():"]
@@ -28,7 +28,7 @@ class TestLPS601FunctionLineLimit(unittest.TestCase):
         lines.append("    return x0")
         code = "\n".join(lines)
         codes = get_error_codes(code)
-        assert_that(codes, has_item("LPS601"))
+        assert_that(codes, has_item("SLD601"))
 
     def test_method_exceeds_limit(self) -> None:
         lines = ["class MyClass:"]
@@ -38,7 +38,7 @@ class TestLPS601FunctionLineLimit(unittest.TestCase):
         lines.append("        return self")
         code = "\n".join(lines)
         codes = get_error_codes(code)
-        assert_that(codes, has_item("LPS601"))
+        assert_that(codes, has_item("SLD601"))
 
     def test_async_function_exceeds_limit(self) -> None:
         lines = ["async def long_async():"]
@@ -47,11 +47,11 @@ class TestLPS601FunctionLineLimit(unittest.TestCase):
         lines.append("    return x0")
         code = "\n".join(lines)
         codes = get_error_codes(code)
-        assert_that(codes, has_item("LPS601"))
+        assert_that(codes, has_item("SLD601"))
 
 
-class TestLPS602ArgumentLimit(unittest.TestCase):
-    """Tests for LPS602: Function exceeds argument limit."""
+class TestSLD602ArgumentLimit(unittest.TestCase):
+    """Tests for SLD602: Function exceeds argument limit."""
 
     def test_function_within_limit(self) -> None:
         code = """
@@ -59,7 +59,7 @@ class TestLPS602ArgumentLimit(unittest.TestCase):
             pass
         """
         codes = get_error_codes(code)
-        assert_that("LPS602" in codes, equal_to(False))
+        assert_that("SLD602" in codes, equal_to(False))
 
     def test_function_exceeds_limit(self) -> None:
         code = """
@@ -67,7 +67,7 @@ class TestLPS602ArgumentLimit(unittest.TestCase):
             pass
         """
         codes = get_error_codes(code)
-        assert_that(codes, has_item("LPS602"))
+        assert_that(codes, has_item("SLD602"))
 
     def test_method_self_not_counted(self) -> None:
         code = """
@@ -76,7 +76,7 @@ class TestLPS602ArgumentLimit(unittest.TestCase):
                 pass
         """
         codes = get_error_codes(code)
-        assert_that("LPS602" in codes, equal_to(False))
+        assert_that("SLD602" in codes, equal_to(False))
 
     def test_classmethod_cls_not_counted(self) -> None:
         code = """
@@ -86,7 +86,7 @@ class TestLPS602ArgumentLimit(unittest.TestCase):
                 pass
         """
         codes = get_error_codes(code)
-        assert_that("LPS602" in codes, equal_to(False))
+        assert_that("SLD602" in codes, equal_to(False))
 
     def test_kwonly_args_counted(self) -> None:
         code = """
@@ -94,7 +94,7 @@ class TestLPS602ArgumentLimit(unittest.TestCase):
             pass
         """
         codes = get_error_codes(code)
-        assert_that(codes, has_item("LPS602"))
+        assert_that(codes, has_item("SLD602"))
 
     def test_posonly_args_counted(self) -> None:
         code = """
@@ -102,11 +102,11 @@ class TestLPS602ArgumentLimit(unittest.TestCase):
             pass
         """
         codes = get_error_codes(code)
-        assert_that(codes, has_item("LPS602"))
+        assert_that(codes, has_item("SLD602"))
 
 
-class TestLPS603ClassMethodLimit(unittest.TestCase):
-    """Tests for LPS603: Class exceeds method limit."""
+class TestSLD603ClassMethodLimit(unittest.TestCase):
+    """Tests for SLD603: Class exceeds method limit."""
 
     def test_class_within_limit(self) -> None:
         code = """
@@ -116,7 +116,7 @@ class TestLPS603ClassMethodLimit(unittest.TestCase):
             def method3(self): pass
         """
         codes = get_error_codes(code)
-        assert_that("LPS603" in codes, equal_to(False))
+        assert_that("SLD603" in codes, equal_to(False))
 
     def test_class_exceeds_limit(self) -> None:
         lines = ["class BigClass:"]
@@ -124,7 +124,7 @@ class TestLPS603ClassMethodLimit(unittest.TestCase):
             lines.append(f"    def method{i}(self): pass")
         code = "\n".join(lines)
         codes = get_error_codes(code)
-        assert_that(codes, has_item("LPS603"))
+        assert_that(codes, has_item("SLD603"))
 
     def test_dunders_not_counted(self) -> None:
         lines = ["class MyClass:"]
@@ -155,11 +155,11 @@ class TestLPS603ClassMethodLimit(unittest.TestCase):
             lines.append(f"    def method{i}(self): pass")
         code = "\n".join(lines)
         codes = get_error_codes(code)
-        assert_that("LPS603" in codes, equal_to(False))
+        assert_that("SLD603" in codes, equal_to(False))
 
 
-class TestLPS604ModuleLineLimit(unittest.TestCase):
-    """Tests for LPS604: Module exceeds line limit."""
+class TestSLD604ModuleLineLimit(unittest.TestCase):
+    """Tests for SLD604: Module exceeds line limit."""
 
     def test_module_within_limit(self) -> None:
         code = """
@@ -167,7 +167,7 @@ class TestLPS604ModuleLineLimit(unittest.TestCase):
         y = 2
         """
         codes = get_error_codes(code)
-        assert_that("LPS604" in codes, equal_to(False))
+        assert_that("SLD604" in codes, equal_to(False))
 
     def test_module_exceeds_limit(self) -> None:
         lines = []
@@ -175,7 +175,7 @@ class TestLPS604ModuleLineLimit(unittest.TestCase):
             lines.append(f"x{i} = {i}")
         code = "\n".join(lines)
         codes = get_error_codes(code)
-        assert_that(codes, has_item("LPS604"))
+        assert_that(codes, has_item("SLD604"))
 
     def test_error_message_includes_line_count(self) -> None:
         lines = []
@@ -183,6 +183,6 @@ class TestLPS604ModuleLineLimit(unittest.TestCase):
             lines.append(f"x{i} = {i}")
         code = "\n".join(lines)
         errors = check_code(code)
-        messages = [msg for _, _, msg in errors if "LPS604" in msg]
+        messages = [msg for _, _, msg in errors if "SLD604" in msg]
         assert_that(messages[0], contains_string("450"))
         assert_that(messages[0], contains_string("400"))
