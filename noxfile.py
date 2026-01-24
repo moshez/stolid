@@ -14,12 +14,12 @@ def tests(session):
     tmpdir = session.create_tmp()
     session.install("-r", "requirements-tests.txt")
     session.install("-e", ".")
-    tests = session.posargs or ["lint-python-standard.tests"]
+    tests = session.posargs or ["lint_python_standard.tests"]
     session.run(
         "coverage",
         "run",
         "--branch",
-        "--source=lint-python-standard",
+        "--source=lint_python_standard",
         "--omit=**/__main__.py",
         "-m",
         "virtue",
@@ -49,7 +49,7 @@ def lint(session):
     session.install("-r", "requirements-lint.txt")
     session.install("-e", ".")
     session.run("black", "--check", "--diff", *files)
-    black_compat = ["--max-line-length=88", "--ignore=E203,E503"]
+    black_compat = ["--max-line-length=88", "--ignore=E203,E503,W503"]
     session.run("flake8", *black_compat, "src/")
 
 
