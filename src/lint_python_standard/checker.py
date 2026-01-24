@@ -27,7 +27,7 @@ from ._constants import (
     MAX_FUNCTION_LINES,
     MAX_MODULE_LINES,
 )
-from ._helpers import (
+from ._ast_inspection import (
     collect_imports,
     get_base_name,
     get_class_method_count,
