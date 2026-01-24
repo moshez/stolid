@@ -163,11 +163,7 @@ def _is_property_method(node: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
 
 @dataclass(slots=True)
 class Checker:  # noqa: LPS501 LPS503
-    """Flake8 checker for lint-python-standard conventions.
-
-    Note: This class intentionally uses private methods
-    because flake8's plugin API requires this structure.
-    """
+    """Flake8 checker for lint-python-standard conventions."""
 
     name = "lint-python-standard"
     version = "0.1.0"
@@ -176,22 +172,22 @@ class Checker:  # noqa: LPS501 LPS503
     _patch_names: set[str] = field(default_factory=set)
     _abstractmethod_names: set[str] = field(default_factory=set)
 
-    def run(self) -> Iterator[tuple[int, int, str, type]]:
+    def run(self) -> Iterator[tuple[int, int, str, type]]:  # noqa: LPS303
         """Run all checks and yield errors."""
-        errors = list(self._collect_errors())
+        errors = list(self.collect_errors())
         for error in errors:
             yield (error.lineno, error.col_offset, error.message, type(self))
 
-    def _collect_errors(self) -> Iterator[Error]:  # noqa: LPS302
+    def collect_errors(self) -> Iterator[Error]:  # noqa: LPS303
         """Collect all errors from the AST."""
         # First pass: collect imported names for patch and abstractmethod
-        self._collect_imports()
+        self.collect_imports()
 
         # Second pass: check all nodes
         for node in ast.walk(self.tree):
-            yield from self._check_node(node)
+            yield from self.check_node(node)
 
-    def _collect_imports(self) -> None:  # noqa: LPS302
+    def collect_imports(self) -> None:
         """Collect names that refer to patch or abstractmethod."""
         for node in ast.walk(self.tree):
             if isinstance(node, ast.ImportFrom):
@@ -212,26 +208,24 @@ class Checker:  # noqa: LPS501 LPS503
                         # patch would be accessed as unittest.mock.patch
                         pass  # Handled via attribute access
 
-    def _check_node(self, node: ast.AST) -> Iterator[Error]:  # noqa: LPS302
+    def check_node(self, node: ast.AST) -> Iterator[Error]:  # noqa: LPS303
         """Check a single AST node for violations."""
         if isinstance(node, ast.ImportFrom):
-            yield from self._check_import_from(node)
+            yield from self.check_import_from(node)
         elif isinstance(node, ast.Attribute):
-            yield from self._check_attribute(node)
+            yield from self.check_attribute(node)
         elif isinstance(node, ast.Name):
-            yield from self._check_name(node)
+            yield from self.check_name(node)
         elif isinstance(node, ast.ClassDef):
-            yield from self._check_class(node)
+            yield from self.check_class(node)
         elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-            yield from self._check_function(node)
+            yield from self.check_function(node)
         elif isinstance(node, ast.Call):
-            yield from self._check_call(node)
+            yield from self.check_call(node)
         elif isinstance(node, ast.With):
-            yield from self._check_with(node)
+            yield from self.check_with(node)
 
-    def _check_import_from(  # noqa: LPS302
-        self, node: ast.ImportFrom
-    ) -> Iterator[Error]:
+    def check_import_from(self, node: ast.ImportFrom) -> Iterator[Error]:
         """Check ImportFrom statements."""
         # LPS102: Check for patch imports
         if node.module in ("unittest.mock", "mock"):
@@ -260,7 +254,7 @@ class Checker:  # noqa: LPS501 LPS503
                         message=LPS202,
                     )
 
-    def _check_attribute(self, node: ast.Attribute) -> Iterator[Error]:  # noqa: LPS302
+    def check_attribute(self, node: ast.Attribute) -> Iterator[Error]:
         """Check attribute access for patch usage."""
         # Check for mock.patch, unittest.mock.patch
         if node.attr == "patch":
@@ -279,14 +273,14 @@ class Checker:  # noqa: LPS501 LPS503
                         message=LPS102,
                     )
 
-    def _check_name(self, node: ast.Name) -> Iterator[Error]:  # noqa: LPS302
+    def check_name(self, node: ast.Name) -> Iterator[Error]:
         """Check name references."""
         # LPS102: Check for patch usage as decorator or call
         # This is handled by decorator/call checks, so nothing to yield here
         return
         yield  # Make this a generator
 
-    def _check_call(self, node: ast.Call) -> Iterator[Error]:  # noqa: LPS302
+    def check_call(self, node: ast.Call) -> Iterator[Error]:
         """Check function calls."""
         # LPS102: Check for patch() calls
         if isinstance(node.func, ast.Name):
@@ -314,7 +308,7 @@ class Checker:  # noqa: LPS501 LPS503
                             message=LPS102,
                         )
 
-    def _check_with(self, node: ast.With) -> Iterator[Error]:  # noqa: LPS302
+    def check_with(self, node: ast.With) -> Iterator[Error]:
         """Check with statements for patch context managers."""
         for item in node.items:
             if isinstance(item.context_expr, ast.Call):
@@ -327,7 +321,7 @@ class Checker:  # noqa: LPS501 LPS503
                             message=LPS102,
                         )
 
-    def _check_class(self, node: ast.ClassDef) -> Iterator[Error]:  # noqa: LPS302
+    def check_class(self, node: ast.ClassDef) -> Iterator[Error]:
         """Check class definitions."""
         is_dataclass = False
         dataclass_keywords: dict[str, bool] = {}
@@ -381,9 +375,9 @@ class Checker:  # noqa: LPS501 LPS503
         # Check methods within the class
         for child in node.body:
             if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef)):
-                yield from self._check_method_in_class(child, is_dataclass)
+                yield from self.check_method_in_class(child, is_dataclass)
 
-    def _check_method_in_class(  # noqa: LPS302
+    def check_method_in_class(
         self,
         node: ast.FunctionDef | ast.AsyncFunctionDef,
         is_dataclass: bool,
@@ -447,10 +441,10 @@ class Checker:  # noqa: LPS501 LPS503
                 message=LPS303.format(node.name),
             )
 
-    def _check_function(  # noqa: LPS302
+    def check_function(
         self, node: ast.FunctionDef | ast.AsyncFunctionDef
     ) -> Iterator[Error]:
         """Check function definitions at module level."""
-        # Module-level functions are fine, we only check methods in _check_class
+        # Module-level functions are fine, we only check methods in check_class
         return
         yield  # Make this a generator
