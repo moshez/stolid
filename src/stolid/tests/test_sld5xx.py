@@ -6,7 +6,7 @@ import unittest
 
 from hamcrest import assert_that, empty, equal_to, has_item
 
-from .test_helpers import get_error_codes
+from .code_parser import get_error_codes
 
 
 class TestSLD501FrozenDataclass(unittest.TestCase):

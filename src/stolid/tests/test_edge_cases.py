@@ -7,7 +7,7 @@ import unittest
 from hamcrest import assert_that, contains_string, empty, equal_to, has_item
 
 from ..checker import Checker
-from .test_helpers import check_code, get_error_codes
+from .code_parser import check_code, get_error_codes
 
 
 class TestComplexScenarios(unittest.TestCase):

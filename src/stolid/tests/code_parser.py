@@ -8,12 +8,12 @@ import textwrap
 from ..checker import Checker
 
 
-def check_code(code: str) -> list[tuple[int, int, str]]:
+def check_code(code: str, filename: str = "") -> list[tuple[int, int, str]]:
     """Parse code and return list of (line, col, message) errors."""
     dedented = textwrap.dedent(code)
     tree = ast.parse(dedented)
     lines = dedented.splitlines()
-    checker = Checker(tree=tree, lines=lines)
+    checker = Checker(tree=tree, lines=lines, filename=filename)
     return [(line, col, msg) for line, col, msg, _ in checker.run()]
 
 
