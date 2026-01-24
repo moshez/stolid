@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import ast
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Iterator
 
 __all__ = ["Checker"]
@@ -161,20 +161,20 @@ def _is_property_method(node: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
     return False
 
 
-class Checker:
+@dataclass(slots=True)
+class Checker:  # noqa: LPS501 LPS503
     """Flake8 checker for lint-python-standard conventions.
 
-    Note: This class intentionally uses __init__ and private methods
+    Note: This class intentionally uses private methods
     because flake8's plugin API requires this structure.
     """
 
     name = "lint-python-standard"
     version = "0.1.0"
 
-    def __init__(self, tree: ast.AST) -> None:  # noqa: LPS301
-        self._tree = tree
-        self._patch_names: set[str] = set()
-        self._abstractmethod_names: set[str] = set()
+    tree: ast.AST
+    _patch_names: set[str] = field(default_factory=set)
+    _abstractmethod_names: set[str] = field(default_factory=set)
 
     def run(self) -> Iterator[tuple[int, int, str, type]]:
         """Run all checks and yield errors."""
@@ -188,12 +188,12 @@ class Checker:
         self._collect_imports()
 
         # Second pass: check all nodes
-        for node in ast.walk(self._tree):
+        for node in ast.walk(self.tree):
             yield from self._check_node(node)
 
     def _collect_imports(self) -> None:  # noqa: LPS302
         """Collect names that refer to patch or abstractmethod."""
-        for node in ast.walk(self._tree):
+        for node in ast.walk(self.tree):
             if isinstance(node, ast.ImportFrom):
                 if node.module == "unittest.mock" or node.module == "mock":
                     for alias in node.names:
