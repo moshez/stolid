@@ -60,6 +60,54 @@ class TestSLD301InitProhibited(unittest.TestCase):
         codes = get_error_codes(code)
         assert_that("SLD301" in codes, equal_to(True))
 
+    def test_post_init_in_dataclass_flagged(self) -> None:
+        """__post_init__ in a dataclass should be flagged."""
+        code = """
+        from dataclasses import dataclass
+
+        @dataclass(frozen=True, slots=True, kw_only=True)
+        class MyClass:
+            x: int
+
+            def __post_init__(self):
+                pass
+        """
+        codes = get_error_codes(code)
+        assert_that(codes, has_item("SLD301"))
+
+    def test_post_init_in_regular_class_flagged(self) -> None:
+        """__post_init__ in a regular class should also be flagged."""
+        code = """
+        class MyClass:
+            def __post_init__(self):
+                pass
+        """
+        codes = get_error_codes(code)
+        assert_that(codes, has_item("SLD301"))
+
+    def test_other_dunders_allowed(self) -> None:
+        """Dunder methods other than __init__/__post_init__ are allowed."""
+        code = """
+        class MyClass:
+            def __str__(self):
+                return "MyClass"
+
+            def __repr__(self):
+                return "MyClass()"
+
+            def __eq__(self, other):
+                return True
+
+            def __hash__(self):
+                return 0
+
+            def __call__(self):
+                return None
+        """
+        codes = get_error_codes(code)
+        assert_that("SLD301" in codes, equal_to(False))
+        assert_that("SLD302" in codes, equal_to(False))
+
 
 class TestSLD302PrivateMethodsProhibited(unittest.TestCase):
     """Tests for SLD302: Private methods are prohibited."""
@@ -138,15 +186,15 @@ class TestSLD303Detection(unittest.TestCase):
         codes = get_error_codes(code)
         assert_that("SLD303" in codes, equal_to(False))
 
-    def test_method_no_self_access_allowed(self) -> None:
-        """Method that doesn't access self at all doesn't trigger SLD303."""
+    def test_method_no_self_access_flagged(self) -> None:
+        """Method that doesn't access self at all triggers SLD303."""
         code = """
         class MyClass:
             def compute(self):
                 return 42
         """
         codes = get_error_codes(code)
-        assert_that("SLD303" in codes, equal_to(False))
+        assert_that(codes, has_item("SLD303"))
 
     def test_async_method_with_private_access(self) -> None:
         """Async method accessing private state."""

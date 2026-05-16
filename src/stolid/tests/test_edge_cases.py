@@ -164,6 +164,83 @@ class TestCheckerMetadata(unittest.TestCase):
         assert_that(Checker.version, equal_to("0.1.0"))
 
 
+class TestSLD303TestCaseExemption(unittest.TestCase):
+    """Tests for SLD303: test_* methods on TestCase subclasses are exempt."""
+
+    def test_test_method_on_testcase_exempt(self) -> None:
+        """test_* method on TestCase subclass is exempt from SLD303."""
+        code = """
+        import unittest
+
+        class MyTest(unittest.TestCase):
+            def test_something(self):
+                return 42
+        """
+        codes = get_error_codes(code)
+        assert_that("SLD303" in codes, equal_to(False))
+
+    def test_test_method_bare_testcase_exempt(self) -> None:
+        """test_* method on bare-name TestCase subclass is exempt."""
+        code = """
+        from unittest import TestCase
+
+        class MyTest(TestCase):
+            def test_something(self):
+                return 42
+        """
+        codes = get_error_codes(code)
+        assert_that("SLD303" in codes, equal_to(False))
+
+    def test_non_test_method_on_testcase_not_exempt(self) -> None:
+        """Non-test_* method on TestCase subclass still triggers SLD303."""
+        code = """
+        import unittest
+
+        class MyTest(unittest.TestCase):
+            def helper(self):
+                return 42
+        """
+        codes = get_error_codes(code)
+        assert_that(codes, has_item("SLD303"))
+
+    def test_test_method_on_non_testcase_not_exempt(self) -> None:
+        """test_* method on non-TestCase class still triggers SLD303."""
+        code = """
+        class MyClass:
+            def test_something(self):
+                return 42
+        """
+        codes = get_error_codes(code)
+        assert_that(codes, has_item("SLD303"))
+
+
+class TestSLD303ProtocolExemption(unittest.TestCase):
+    """Tests for SLD303: methods on Protocol subclasses are exempt."""
+
+    def test_protocol_method_stub_exempt(self) -> None:
+        """Method stub on Protocol subclass is exempt from SLD303."""
+        code = """
+        from typing import Protocol
+
+        class HTTPClient(Protocol):
+            def get(self, url: str) -> str: ...
+        """
+        codes = get_error_codes(code)
+        assert_that("SLD303" in codes, equal_to(False))
+
+    def test_protocol_method_accessing_public_exempt(self) -> None:
+        """Method on Protocol subclass accessing public self is exempt."""
+        code = """
+        from typing import Protocol
+
+        class HTTPClient(Protocol):
+            def get(self, url: str) -> str:
+                return self.base + url
+        """
+        codes = get_error_codes(code)
+        assert_that("SLD303" in codes, equal_to(False))
+
+
 class TestEdgeCases(unittest.TestCase):
     """Tests for edge cases and boundary conditions."""
 
