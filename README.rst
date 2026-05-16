@@ -84,7 +84,10 @@ Use ``typing.Protocol`` for interfaces instead:
 SLD3xx - Object-Oriented Design
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-**SLD301**: Prohibits ``__init__`` methods.
+**SLD301**: Prohibits ``__init__`` and ``__post_init__`` methods.
+
+Other dunder methods (``__str__``, ``__repr__``, ``__eq__``, ``__hash__``,
+``__call__``, etc.) are allowed.
 
 Use ``@dataclass`` with ``default_factory`` for attributes, or ``@classmethod``
 for parameter computation:

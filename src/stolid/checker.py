@@ -275,8 +275,12 @@ def _check_method_naming(
     node: ast.FunctionDef | ast.AsyncFunctionDef,
 ) -> Iterator[Error]:
     """Check method naming conventions."""
-    if node.name == "__init__":
-        yield Error(lineno=node.lineno, col_offset=node.col_offset, message=SLD301)
+    if node.name in ("__init__", "__post_init__"):
+        yield Error(
+            lineno=node.lineno,
+            col_offset=node.col_offset,
+            message=SLD301.format(node.name),
+        )
     if node.name.startswith("_") and not is_dunder_method(node.name):
         yield Error(
             lineno=node.lineno,

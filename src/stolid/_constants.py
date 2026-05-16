@@ -7,7 +7,7 @@ SLD102 = "SLD102 Use of patch/patch.object is prohibited (use dependency injecti
 SLD201 = "SLD201 Import of ABC is prohibited (use Protocol instead)"
 SLD202 = "SLD202 Use of @abstractmethod is prohibited (use Protocol instead)"
 SLD301 = (
-    "SLD301 __init__ method is prohibited (use @dataclass with default_factory "
+    "SLD301 {} method is prohibited (use @dataclass with default_factory "
     "for attribute initialization; use @classmethod for ergonomic parameter "
     "computation)"
 )
