@@ -109,3 +109,59 @@ class TestSLD202AbstractMethodProhibited(unittest.TestCase):
         """
         codes = get_error_codes(code)
         assert_that(codes, has_item("SLD202"))
+
+
+class TestSLD203CastProhibited(unittest.TestCase):
+    """Tests for SLD203: typing.cast is prohibited."""
+
+    def test_cast_from_typing(self) -> None:
+        code = """
+        from typing import cast
+        x = cast(int, value)
+        """
+        codes = get_error_codes(code)
+        assert_that(codes, has_item("SLD203"))
+
+    def test_cast_aliased(self) -> None:
+        """cast imported with alias is still flagged."""
+        code = """
+        from typing import cast as as_type
+        x = as_type(int, value)
+        """
+        codes = get_error_codes(code)
+        assert_that(codes, has_item("SLD203"))
+
+    def test_cast_via_typing_module(self) -> None:
+        """typing.cast attribute access is flagged."""
+        code = """
+        import typing
+        x = typing.cast(int, value)
+        """
+        codes = get_error_codes(code)
+        assert_that(codes, has_item("SLD203"))
+
+    def test_non_typing_cast_allowed(self) -> None:
+        """A function called cast from somewhere else is not flagged."""
+        code = """
+        from mylib import cast
+        x = cast(value)
+        """
+        codes = get_error_codes(code)
+        assert_that("SLD203" in codes, equal_to(False))
+
+    def test_other_module_cast_attribute_allowed(self) -> None:
+        """somemodule.cast (not typing.cast) is not flagged."""
+        code = """
+        import other
+        x = other.cast(int, value)
+        """
+        codes = get_error_codes(code)
+        assert_that("SLD203" in codes, equal_to(False))
+
+    def test_no_cast_usage(self) -> None:
+        code = """
+        from typing import List
+        x: List[int] = []
+        """
+        codes = get_error_codes(code)
+        assert_that("SLD203" in codes, equal_to(False))

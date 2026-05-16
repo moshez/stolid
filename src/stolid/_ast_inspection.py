@@ -20,6 +20,14 @@ def get_base_name(node: ast.expr) -> str | None:
     return None
 
 
+def class_inherits_from(node: ast.ClassDef, base_name: str) -> bool:
+    """Check if a class inherits directly from a base with the given name."""
+    for base in node.bases:
+        if get_base_name(base) == base_name:
+            return True
+    return False
+
+
 def is_dataclass_decorator(node: ast.expr) -> bool:
     """Check if a decorator is @dataclass or @dataclasses.dataclass."""
     if isinstance(node, ast.Name):
@@ -54,15 +62,6 @@ def method_accesses_private_state(
                 and child.value.id == "self"
                 and child.attr.startswith("_")
             ):
-                return True
-    return False
-
-
-def method_accesses_self(node: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
-    """Check if a method accesses self at all."""
-    for child in ast.walk(node):
-        if isinstance(child, ast.Attribute):
-            if isinstance(child.value, ast.Name) and child.value.id == "self":
                 return True
     return False
 
@@ -136,29 +135,27 @@ def get_class_method_count(node: ast.ClassDef) -> int:
     return count
 
 
-def collect_imports(tree: ast.AST) -> tuple[set[str], set[str]]:
-    """Collect names that refer to patch or abstractmethod."""
+def collect_imports(tree: ast.AST) -> tuple[set[str], set[str], set[str]]:
+    """Collect names that refer to patch, abstractmethod, or cast."""
     patch_names: set[str] = set()
     abstractmethod_names: set[str] = {"abstractmethod"}
+    cast_names: set[str] = set()
     for node in ast.walk(tree):
-        if isinstance(node, ast.ImportFrom):
-            if node.module == "unittest.mock" or node.module == "mock":
-                for alias in node.names:
-                    if alias.name in ("patch", "patch.object"):
-                        name = alias.asname if alias.asname else alias.name
-                        patch_names.add(name)
-            if node.module == "abc":
-                for alias in node.names:
-                    if alias.name == "abstractmethod":
-                        name = alias.asname if alias.asname else alias.name
-                        abstractmethod_names.add(name)
-        elif isinstance(node, ast.Import):
+        if not isinstance(node, ast.ImportFrom):
+            continue
+        if node.module in ("unittest.mock", "mock"):
             for alias in node.names:
-                if alias.name in ("unittest.mock", "mock"):
-                    # import unittest.mock or import mock
-                    # patch would be accessed as unittest.mock.patch
-                    pass  # Handled via attribute access
-    return patch_names, abstractmethod_names
+                if alias.name in ("patch", "patch.object"):
+                    patch_names.add(alias.asname or alias.name)
+        if node.module == "abc":
+            for alias in node.names:
+                if alias.name == "abstractmethod":
+                    abstractmethod_names.add(alias.asname or alias.name)
+        if node.module == "typing":
+            for alias in node.names:
+                if alias.name == "cast":
+                    cast_names.add(alias.asname or alias.name)
+    return patch_names, abstractmethod_names, cast_names
 
 
 # Pattern to split identifiers into words:

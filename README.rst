@@ -62,6 +62,10 @@ SLD2xx - Abstract Base Classes
 
 **SLD202**: Prohibits using ``@abstractmethod`` decorator.
 
+**SLD203**: Prohibits ``typing.cast``. Casts bypass runtime safety; if you
+genuinely need one, silence with ``# noqa: SLD203`` to make the choice
+visible at the call site.
+
 Use ``typing.Protocol`` for interfaces instead:
 
 .. code-block:: python
@@ -199,6 +203,30 @@ SLD6xx - Code Complexity
 **SLD603**: Classes limited to 15 methods (excludes dunder methods)
 
 **SLD604**: Modules limited to 400 lines
+
+SLD7xx - Naming
+~~~~~~~~~~~~~~~
+
+**SLD701**: Names must not contain vague words (``helper``, ``util``,
+``manager``, etc.).
+
+**SLD702**: Module-level names (functions, classes, top-level assignments)
+must not shadow names from ``builtins``, the ``typing`` module, or any
+stdlib module:
+
+.. code-block:: python
+
+    # Bad
+    def list():  # shadows builtin 'list'
+        ...
+
+    def sys():  # shadows stdlib module 'sys'
+        ...
+
+    def Optional():  # shadows typing.Optional
+        ...
+
+Imports of these names are fine — only definitions are flagged.
 
 Configuration
 -------------

@@ -186,15 +186,15 @@ class TestSLD303Detection(unittest.TestCase):
         codes = get_error_codes(code)
         assert_that("SLD303" in codes, equal_to(False))
 
-    def test_method_no_self_access_allowed(self) -> None:
-        """Method that doesn't access self at all doesn't trigger SLD303."""
+    def test_method_no_self_access_flagged(self) -> None:
+        """Method that doesn't access self at all triggers SLD303."""
         code = """
         class MyClass:
             def compute(self):
                 return 42
         """
         codes = get_error_codes(code)
-        assert_that("SLD303" in codes, equal_to(False))
+        assert_that(codes, has_item("SLD303"))
 
     def test_async_method_with_private_access(self) -> None:
         """Async method accessing private state."""

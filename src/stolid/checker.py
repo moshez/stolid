@@ -11,6 +11,7 @@ from ._constants import (
     SLD102,
     SLD201,
     SLD202,
+    SLD203,
     SLD301,
     SLD302,
     SLD303,
@@ -28,7 +29,9 @@ from ._constants import (
     MAX_FUNCTION_LINES,
     MAX_MODULE_LINES,
 )
+from ._global_names_check import check_global_names
 from ._ast_inspection import (
+    class_inherits_from,
     collect_imports,
     find_bad_name_word,
     get_base_name,
@@ -42,7 +45,6 @@ from ._ast_inspection import (
     is_method,
     is_property_method,
     method_accesses_private_state,
-    method_accesses_self,
 )
 
 __all__ = ["Checker"]
@@ -61,20 +63,19 @@ def _check_node(
     node: ast.AST,
     patch_names: set[str],
     abstractmethod_names: set[str],
+    cast_names: set[str],
 ) -> Iterator[Error]:
     """Check a single AST node for violations."""
     if isinstance(node, ast.ImportFrom):
         yield from _check_import_from(node)
     elif isinstance(node, ast.Attribute):
         yield from _check_attribute(node)
-    elif isinstance(node, ast.Name):
-        yield from _check_name(node)
     elif isinstance(node, ast.ClassDef):
         yield from _check_class(node, abstractmethod_names)
     elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
         yield from _check_function(node)
     elif isinstance(node, ast.Call):
-        yield from _check_call(node, patch_names)
+        yield from _check_call(node, patch_names, cast_names)
     elif isinstance(node, ast.With):
         yield from _check_with(node, patch_names)
 
@@ -102,60 +103,54 @@ def _check_import_from(node: ast.ImportFrom) -> Iterator[Error]:
 
 def _check_attribute(node: ast.Attribute) -> Iterator[Error]:
     """Check attribute access for patch usage."""
-    if node.attr == "patch":
-        if isinstance(node.value, ast.Attribute):
-            if node.value.attr == "mock":
-                yield Error(
-                    lineno=node.lineno, col_offset=node.col_offset, message=SLD102
-                )
-        elif isinstance(node.value, ast.Name):  # pragma: no branch
-            if node.value.id == "mock":
-                yield Error(
-                    lineno=node.lineno, col_offset=node.col_offset, message=SLD102
-                )
+    if node.attr != "patch":
+        return
+    value = node.value
+    if isinstance(value, ast.Attribute) and value.attr == "mock":
+        yield Error(lineno=node.lineno, col_offset=node.col_offset, message=SLD102)
+    elif isinstance(value, ast.Name) and value.id == "mock":  # pragma: no branch
+        yield Error(lineno=node.lineno, col_offset=node.col_offset, message=SLD102)
 
 
-def _check_name(node: ast.Name) -> Iterator[Error]:
-    """Check name references."""
-    return
-    yield  # Make this a generator
-
-
-def _check_call(node: ast.Call, patch_names: set[str]) -> Iterator[Error]:
+def _check_call(
+    node: ast.Call, patch_names: set[str], cast_names: set[str]
+) -> Iterator[Error]:
     """Check function calls."""
     if isinstance(node.func, ast.Name):
         if node.func.id in patch_names:
             yield Error(lineno=node.lineno, col_offset=node.col_offset, message=SLD102)
+        elif node.func.id in cast_names:
+            yield Error(lineno=node.lineno, col_offset=node.col_offset, message=SLD203)
     elif isinstance(node.func, ast.Attribute):  # pragma: no branch
-        if node.func.attr == "object":
-            if isinstance(node.func.value, ast.Name):
-                if node.func.value.id in patch_names:
-                    yield Error(
-                        lineno=node.lineno,
-                        col_offset=node.col_offset,
-                        message=SLD102,
-                    )
-            elif isinstance(node.func.value, ast.Attribute):  # pragma: no branch
-                if node.func.value.attr == "patch":
-                    yield Error(
-                        lineno=node.lineno,
-                        col_offset=node.col_offset,
-                        message=SLD102,
-                    )
+        yield from _check_call_attribute(node, patch_names)
+
+
+def _check_call_attribute(node: ast.Call, patch_names: set[str]) -> Iterator[Error]:
+    """Check Call nodes whose func is an Attribute (patch.object, typing.cast)."""
+    func = node.func
+    assert isinstance(func, ast.Attribute)
+    if func.attr == "cast":
+        if isinstance(func.value, ast.Name) and func.value.id == "typing":
+            yield Error(lineno=node.lineno, col_offset=node.col_offset, message=SLD203)
+        return
+    if func.attr != "object":
+        return
+    if isinstance(func.value, ast.Name):
+        if func.value.id in patch_names:
+            yield Error(lineno=node.lineno, col_offset=node.col_offset, message=SLD102)
+    elif isinstance(func.value, ast.Attribute):  # pragma: no branch
+        if func.value.attr == "patch":
+            yield Error(lineno=node.lineno, col_offset=node.col_offset, message=SLD102)
 
 
 def _check_with(node: ast.With, patch_names: set[str]) -> Iterator[Error]:
     """Check with statements for patch context managers."""
     for item in node.items:
-        if isinstance(item.context_expr, ast.Call):
-            call = item.context_expr
-            if isinstance(call.func, ast.Name):
-                if call.func.id in patch_names:
-                    yield Error(
-                        lineno=node.lineno,
-                        col_offset=node.col_offset,
-                        message=SLD102,
-                    )
+        call = item.context_expr
+        if not isinstance(call, ast.Call) or not isinstance(call.func, ast.Name):
+            continue
+        if call.func.id in patch_names:
+            yield Error(lineno=node.lineno, col_offset=node.col_offset, message=SLD102)
 
 
 def _check_bad_name(name: str, lineno: int, col_offset: int) -> Iterator[Error]:
@@ -195,28 +190,20 @@ def _check_class_bases(node: ast.ClassDef) -> Iterator[Error]:
             )
 
 
+_DATACLASS_FLAGS = (("frozen", SLD501), ("slots", SLD502), ("kw_only", SLD503))
+
+
 def _check_dataclass_flags(
     node: ast.ClassDef, keywords: dict[str, bool]
 ) -> Iterator[Error]:
     """Check dataclass decorator flags."""
-    if not keywords.get("frozen", False):
-        yield Error(
-            lineno=node.lineno,
-            col_offset=node.col_offset,
-            message=SLD501.format(node.name),
-        )
-    if not keywords.get("slots", False):
-        yield Error(
-            lineno=node.lineno,
-            col_offset=node.col_offset,
-            message=SLD502.format(node.name),
-        )
-    if not keywords.get("kw_only", False):
-        yield Error(
-            lineno=node.lineno,
-            col_offset=node.col_offset,
-            message=SLD503.format(node.name),
-        )
+    for flag, code in _DATACLASS_FLAGS:
+        if not keywords.get(flag, False):
+            yield Error(
+                lineno=node.lineno,
+                col_offset=node.col_offset,
+                message=code.format(node.name),
+            )
 
 
 def _check_class(node: ast.ClassDef, abstractmethod_names: set[str]) -> Iterator[Error]:
@@ -244,9 +231,23 @@ def _check_class(node: ast.ClassDef, abstractmethod_names: set[str]) -> Iterator
             message=SLD603.format(node.name, method_count, MAX_CLASS_METHODS),
         )
 
+    yield from _check_class_method_bodies(node, abstractmethod_names)
+
+
+def _check_class_method_bodies(
+    node: ast.ClassDef, abstractmethod_names: set[str]
+) -> Iterator[Error]:
+    """Check method bodies of a class."""
+    is_testcase = class_inherits_from(node, "TestCase")
+    is_protocol = class_inherits_from(node, "Protocol")
     for child in node.body:
         if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef)):
-            yield from _check_method_in_class(child, abstractmethod_names)
+            yield from _check_method_in_class(
+                child,
+                abstractmethod_names,
+                is_testcase=is_testcase,
+                is_protocol=is_protocol,
+            )
 
 
 def _check_abstractmethod_decorator(
@@ -292,6 +293,8 @@ def _check_method_naming(
 def _check_method_in_class(
     node: ast.FunctionDef | ast.AsyncFunctionDef,
     abstractmethod_names: set[str],
+    is_testcase: bool = False,
+    is_protocol: bool = False,
 ) -> Iterator[Error]:
     """Check a method within a class context."""
     yield from _check_abstractmethod_decorator(node, abstractmethod_names)
@@ -304,7 +307,13 @@ def _check_method_in_class(
     if is_dunder_method(node.name) or is_property_method(node):
         return
 
-    if method_accesses_self(node) and not method_accesses_private_state(node):
+    if is_protocol:
+        return
+
+    if is_testcase and node.name.startswith("test_"):
+        return
+
+    if not method_accesses_private_state(node):
         yield Error(
             lineno=node.lineno,
             col_offset=node.col_offset,
@@ -356,7 +365,7 @@ class Checker:  # noqa: SLD501 SLD503
     name = "stolid"
     version = "0.1.0"
 
-    tree: ast.AST
+    tree: ast.Module
     lines: list[str]
     filename: str = ""
 
@@ -376,7 +385,10 @@ class Checker:  # noqa: SLD501 SLD503
             for error in _check_bad_name(module_name, 1, 0):
                 yield (error.lineno, error.col_offset, error.message, type(self))
 
-        patch_names, abstractmethod_names = collect_imports(self.tree)
+        for gerr in check_global_names(self.tree):
+            yield (gerr.lineno, gerr.col_offset, gerr.message, type(self))
+
+        patch_names, abstractmethod_names, cast_names = collect_imports(self.tree)
         for node in ast.walk(self.tree):
-            for error in _check_node(node, patch_names, abstractmethod_names):
-                yield (error.lineno, error.col_offset, error.message, type(self))
+            for err in _check_node(node, patch_names, abstractmethod_names, cast_names):
+                yield (err.lineno, err.col_offset, err.message, type(self))
