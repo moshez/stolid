@@ -24,12 +24,25 @@ from ._constants import (
     SLD603,
     SLD604,
     SLD701,
+    SLD901,
+    SLD902,
+    SLD903,
+    SLD904,
+    SLD905,
     MAX_CLASS_METHODS,
     MAX_FUNCTION_ARGS,
     MAX_FUNCTION_LINES,
     MAX_MODULE_LINES,
 )
 from ._global_names_check import check_global_names
+from ._private_access_check import (
+    ABSOLUTE_PRIVATE_IMPORT,
+    EXTERNAL_PRIVATE_READ,
+    EXTERNAL_PRIVATE_WRITE,
+    MODULE_PRIVATE_ATTR,
+    PRIVATE_SUBMODULE_IMPORT,
+    check_private_access,
+)
 from ._ast_inspection import (
     FUNCTION_DEF_NODES,
     FunctionType,
@@ -53,6 +66,15 @@ from ._ast_inspection import (
 )
 
 __all__ = ["Checker"]
+
+
+_PRIVACY_CODES: dict[str, str] = {
+    EXTERNAL_PRIVATE_READ: SLD901,
+    EXTERNAL_PRIVATE_WRITE: SLD902,
+    ABSOLUTE_PRIVATE_IMPORT: SLD903,
+    PRIVATE_SUBMODULE_IMPORT: SLD904,
+    MODULE_PRIVATE_ATTR: SLD905,
+}
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -347,6 +369,14 @@ class Checker:  # noqa: SLD501 SLD503
 
         for gerr in check_global_names(self.tree):
             yield (gerr.lineno, gerr.col_offset, gerr.message, type(self))
+
+        for perr in check_private_access(self.tree):
+            yield (
+                perr.lineno,
+                perr.col_offset,
+                _PRIVACY_CODES[perr.kind].format(perr.attr),
+                type(self),
+            )
 
         patch_names, abstractmethod_names, cast_names = collect_imports(self.tree)
         for node in ast.walk(self.tree):
