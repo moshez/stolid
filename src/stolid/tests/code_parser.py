@@ -4,6 +4,9 @@ from __future__ import annotations
 
 import ast
 import textwrap
+import unittest
+
+from hamcrest import assert_that, equal_to, has_item
 
 from .._duplicate_report import report_lines
 from .._duplicate_scan import scan_paths
@@ -46,3 +49,32 @@ def check_multifile(
 def multifile_codes(files: dict[str, str]) -> list[str]:
     """Run the duplicate scanner and return just the error codes."""
     return [msg.split()[0] for _, _, _, msg in check_multifile(files)]
+
+
+def assert_present(
+    test_case: unittest.TestCase, cases: list[tuple[str, str]], sld_code: str
+) -> None:
+    """Assert ``sld_code`` is present for each (name, code) case."""
+    for name, code in cases:
+        with test_case.subTest(name=name):
+            assert_that(get_error_codes(code), has_item(sld_code))
+
+
+def assert_absent(
+    test_case: unittest.TestCase, cases: list[tuple[str, str]], sld_code: str
+) -> None:
+    """Assert ``sld_code`` is absent for each (name, code) case."""
+    for name, code in cases:
+        with test_case.subTest(name=name):
+            assert_that(sld_code in get_error_codes(code), equal_to(False))
+
+
+def assert_count(
+    test_case: unittest.TestCase,
+    cases: list[tuple[str, str, int]],
+    sld_code: str,
+) -> None:
+    """Assert ``sld_code`` appears with the given count for each case."""
+    for name, code, count in cases:
+        with test_case.subTest(name=name):
+            assert_that(get_error_codes(code).count(sld_code), equal_to(count))

@@ -9,282 +9,197 @@ from hamcrest import assert_that, contains_string, empty, equal_to, has_item
 from ..checker import Checker
 from .code_parser import check_code, get_error_codes
 
+_NESTED_AND_ASYNC_PRESENT: list[tuple[str, str, str]] = [
+    (
+        "nested_class_init",
+        "class Outer:\n    class Inner:\n        def __init__(self):\n"
+        "            pass\n",
+        "SLD301",
+    ),
+    (
+        "async_private_method",
+        "class MyClass:\n    async def _private_async(self):\n        pass\n",
+        "SLD302",
+    ),
+    (
+        "async_public_method_no_private_access",
+        "class MyClass:\n    async def fetch(self):\n        return self.url\n",
+        "SLD303",
+    ),
+]
 
-class TestComplexScenarios(unittest.TestCase):
-    """Tests for complex/edge case scenarios."""
 
-    def test_nested_class(self) -> None:
-        code = """
-        class Outer:
-            class Inner:
-                def __init__(self):
-                    pass
-        """
-        codes = get_error_codes(code)
-        # Both Outer and Inner have __init__ issues
-        assert_that(codes, has_item("SLD301"))
+_CLEAN_NO_ERRORS: list[tuple[str, str]] = [
+    (
+        "well_written_class",
+        "from dataclasses import dataclass\nfrom typing import Protocol\n\n"
+        "class DataProvider(Protocol):\n    def get_data(self) -> str: ...\n\n"
+        "@dataclass(frozen=True, slots=True, kw_only=True)\n"
+        "class MyService:\n    provider: DataProvider\n\n"
+        "    def __str__(self) -> str:\n"
+        "        return f'MyService({self.provider})'\n\n"
+        "    def __repr__(self) -> str:\n        return self.__str__()\n",
+    ),
+    (
+        "protocol_definition",
+        "from typing import Protocol\n\n"
+        "class DataProvider(Protocol):\n    def get_data(self) -> str: ...\n",
+    ),
+    (
+        "proper_dataclass",
+        "from dataclasses import dataclass\n\n"
+        "@dataclass(frozen=True, slots=True, kw_only=True)\n"
+        "class Point:\n    x: int\n    y: int\n",
+    ),
+    (
+        "proper_enum",
+        "from enum import Enum\n\n"
+        "class Color(Enum):\n    RED = 1\n    GREEN = 2\n    BLUE = 3\n",
+    ),
+    ("empty_file", ""),
+    (
+        "module_level_function",
+        "def my_function():\n    pass\n\ndef _private_function():\n    pass\n",
+    ),
+    (
+        "class_with_only_class_variables",
+        "class Constants:\n    VALUE = 42\n    NAME = 'test'\n",
+    ),
+    ("import_star", "from typing import *\n"),
+]
 
-    def test_async_method(self) -> None:
-        code = """
-        class MyClass:
-            async def _private_async(self):
-                pass
-        """
-        codes = get_error_codes(code)
-        assert_that(codes, has_item("SLD302"))
 
-    def test_method_with_public_self_async(self) -> None:
-        code = """
-        class MyClass:
-            async def fetch(self):
-                return self.url
-        """
-        codes = get_error_codes(code)
-        assert_that(codes, has_item("SLD303"))
+_ERROR_MESSAGE_CASES: list[tuple[str, str, str, str]] = [
+    (
+        "sld302_method_name",
+        "class MyClass:\n    def _my_private_method(self):\n        pass\n",
+        "SLD302",
+        "_my_private_method",
+    ),
+    (
+        "sld303_method_name",
+        "class MyClass:\n    def my_public_method(self):\n        return self.value\n",
+        "SLD303",
+        "my_public_method",
+    ),
+    (
+        "sld303_includes_singledispatch_hint",
+        "class MyClass:\n    def my_public_method(self):\n        return self.value\n",
+        "SLD303",
+        "functools.singledispatch",
+    ),
+    (
+        "sld401_class_name_child",
+        "class Parent:\n    pass\n\nclass Child(Parent):\n    pass\n",
+        "SLD401",
+        "Child",
+    ),
+    (
+        "sld401_class_name_parent",
+        "class Parent:\n    pass\n\nclass Child(Parent):\n    pass\n",
+        "SLD401",
+        "Parent",
+    ),
+    (
+        "sld501_class_name",
+        "from dataclasses import dataclass\n\n@dataclass\n"
+        "class MyDataClass:\n    x: int\n",
+        "SLD501",
+        "MyDataClass",
+    ),
+]
 
-    def test_clean_code_no_errors(self) -> None:
-        """A well-written class following all conventions."""
-        code = """
-        from dataclasses import dataclass
-        from typing import Protocol
 
-        class DataProvider(Protocol):
-            def get_data(self) -> str: ...
+_SLD303_EXEMPT: list[tuple[str, str]] = [
+    (
+        "test_method_on_testcase",
+        "import unittest\n\nclass MyTest(unittest.TestCase):\n"
+        "    def test_something(self):\n        return 42\n",
+    ),
+    (
+        "test_method_bare_testcase",
+        "from unittest import TestCase\n\nclass MyTest(TestCase):\n"
+        "    def test_something(self):\n        return 42\n",
+    ),
+    (
+        "protocol_method_stub",
+        "from typing import Protocol\n\n"
+        "class HTTPClient(Protocol):\n    def get(self, url: str) -> str: ...\n",
+    ),
+    (
+        "protocol_method_public_self",
+        "from typing import Protocol\n\n"
+        "class HTTPClient(Protocol):\n"
+        "    def get(self, url: str) -> str:\n        return self.base + url\n",
+    ),
+    (
+        "deleter_property",
+        "class MyClass:\n    @name.deleter\n"
+        "    def name(self):\n        del self.first_name\n",
+    ),
+]
 
-        @dataclass(frozen=True, slots=True, kw_only=True)
-        class MyService:
-            provider: DataProvider
 
-            def __str__(self) -> str:
-                return f"MyService({self.provider})"
+_SLD303_NOT_EXEMPT: list[tuple[str, str]] = [
+    (
+        "non_test_method_on_testcase",
+        "import unittest\n\nclass MyTest(unittest.TestCase):\n"
+        "    def helper(self):\n        return 42\n",
+    ),
+    (
+        "test_method_on_non_testcase",
+        "class MyClass:\n    def test_something(self):\n        return 42\n",
+    ),
+]
 
-            def __repr__(self) -> str:
-                return self.__str__()
-        """
-        codes = get_error_codes(code)
-        # Protocol definition is fine, dataclass is properly configured
-        # __str__ and __repr__ are dunders so exempt from SLD303
-        assert_that(codes, empty())
 
-    def test_clean_protocol_no_errors(self) -> None:
-        """A Protocol definition should not trigger errors."""
-        code = """
-        from typing import Protocol
+class TestPresentByCode(unittest.TestCase):
+    """Tests that specific code is present for nested/async scenarios."""
 
-        class DataProvider(Protocol):
-            def get_data(self) -> str: ...
-        """
-        codes = get_error_codes(code)
-        assert_that(codes, empty())
+    def test_present(self) -> None:
+        for name, code, expected in _NESTED_AND_ASYNC_PRESENT:
+            with self.subTest(name=name):
+                assert_that(get_error_codes(code), has_item(expected))
 
-    def test_clean_dataclass_no_errors(self) -> None:
-        """A properly configured dataclass should not trigger errors."""
-        code = """
-        from dataclasses import dataclass
 
-        @dataclass(frozen=True, slots=True, kw_only=True)
-        class Point:
-            x: int
-            y: int
-        """
-        codes = get_error_codes(code)
-        assert_that(codes, empty())
+class TestCleanCode(unittest.TestCase):
+    """Tests that well-written code produces no errors."""
 
-    def test_proper_enum_no_errors(self) -> None:
-        """An Enum should not trigger errors."""
-        code = """
-        from enum import Enum
-
-        class Color(Enum):
-            RED = 1
-            GREEN = 2
-            BLUE = 3
-        """
-        codes = get_error_codes(code)
-        assert_that(codes, empty())
+    def test_no_errors(self) -> None:
+        for name, code in _CLEAN_NO_ERRORS:
+            with self.subTest(name=name):
+                assert_that(get_error_codes(code), empty())
 
 
 class TestErrorMessages(unittest.TestCase):
     """Tests for error message content."""
 
-    def test_stolid302_includes_method_name(self) -> None:
-        code = """
-        class MyClass:
-            def _my_private_method(self):
-                pass
-        """
-        errors = check_code(code)
-        messages = [msg for _, _, msg in errors]
-        assert_that(messages[0], contains_string("_my_private_method"))
-
-    def test_stolid303_includes_method_name(self) -> None:
-        code = """
-        class MyClass:
-            def my_public_method(self):
-                return self.value
-        """
-        errors = check_code(code)
-        messages = [msg for _, _, msg in errors if "SLD303" in msg]
-        assert_that(messages[0], contains_string("my_public_method"))
-        assert_that(messages[0], contains_string("functools.singledispatch"))
-
-    def test_stolid401_includes_class_names(self) -> None:
-        code = """
-        class Parent:
-            pass
-
-        class Child(Parent):
-            pass
-        """
-        errors = check_code(code)
-        messages = [msg for _, _, msg in errors if "SLD401" in msg]
-        assert_that(messages[0], contains_string("Child"))
-        assert_that(messages[0], contains_string("Parent"))
-
-    def test_stolid501_includes_class_name(self) -> None:
-        code = """
-        from dataclasses import dataclass
-
-        @dataclass
-        class MyDataClass:
-            x: int
-        """
-        errors = check_code(code)
-        messages = [msg for _, _, msg in errors if "SLD501" in msg]
-        assert_that(messages[0], contains_string("MyDataClass"))
+    def test_contains_expected(self) -> None:
+        for name, code, sld, expected in _ERROR_MESSAGE_CASES:
+            with self.subTest(name=name):
+                errors = check_code(code)
+                messages = [msg for _, _, msg in errors if sld in msg]
+                assert_that(messages[0], contains_string(expected))
 
 
 class TestCheckerMetadata(unittest.TestCase):
     """Tests for checker metadata."""
 
-    def test_checker_name(self) -> None:
-        assert_that(Checker.name, equal_to("stolid"))
-
-    def test_checker_version(self) -> None:
-        assert_that(Checker.version, equal_to("0.1.0"))
-
-
-class TestSLD303TestCaseExemption(unittest.TestCase):
-    """Tests for SLD303: test_* methods on TestCase subclasses are exempt."""
-
-    def test_test_method_on_testcase_exempt(self) -> None:
-        """test_* method on TestCase subclass is exempt from SLD303."""
-        code = """
-        import unittest
-
-        class MyTest(unittest.TestCase):
-            def test_something(self):
-                return 42
-        """
-        codes = get_error_codes(code)
-        assert_that("SLD303" in codes, equal_to(False))
-
-    def test_test_method_bare_testcase_exempt(self) -> None:
-        """test_* method on bare-name TestCase subclass is exempt."""
-        code = """
-        from unittest import TestCase
-
-        class MyTest(TestCase):
-            def test_something(self):
-                return 42
-        """
-        codes = get_error_codes(code)
-        assert_that("SLD303" in codes, equal_to(False))
-
-    def test_non_test_method_on_testcase_not_exempt(self) -> None:
-        """Non-test_* method on TestCase subclass still triggers SLD303."""
-        code = """
-        import unittest
-
-        class MyTest(unittest.TestCase):
-            def helper(self):
-                return 42
-        """
-        codes = get_error_codes(code)
-        assert_that(codes, has_item("SLD303"))
-
-    def test_test_method_on_non_testcase_not_exempt(self) -> None:
-        """test_* method on non-TestCase class still triggers SLD303."""
-        code = """
-        class MyClass:
-            def test_something(self):
-                return 42
-        """
-        codes = get_error_codes(code)
-        assert_that(codes, has_item("SLD303"))
+    def test_attributes(self) -> None:
+        for attr, expected in [("name", "stolid"), ("version", "0.1.0")]:
+            with self.subTest(attr=attr):
+                assert_that(getattr(Checker, attr), equal_to(expected))
 
 
-class TestSLD303ProtocolExemption(unittest.TestCase):
-    """Tests for SLD303: methods on Protocol subclasses are exempt."""
+class TestSLD303Exemptions(unittest.TestCase):
+    """Tests for SLD303 exemptions (testcase, protocol, deleter)."""
 
-    def test_protocol_method_stub_exempt(self) -> None:
-        """Method stub on Protocol subclass is exempt from SLD303."""
-        code = """
-        from typing import Protocol
+    def test_exempt(self) -> None:
+        for name, code in _SLD303_EXEMPT:
+            with self.subTest(name=name):
+                assert_that("SLD303" in get_error_codes(code), equal_to(False))
 
-        class HTTPClient(Protocol):
-            def get(self, url: str) -> str: ...
-        """
-        codes = get_error_codes(code)
-        assert_that("SLD303" in codes, equal_to(False))
-
-    def test_protocol_method_accessing_public_exempt(self) -> None:
-        """Method on Protocol subclass accessing public self is exempt."""
-        code = """
-        from typing import Protocol
-
-        class HTTPClient(Protocol):
-            def get(self, url: str) -> str:
-                return self.base + url
-        """
-        codes = get_error_codes(code)
-        assert_that("SLD303" in codes, equal_to(False))
-
-
-class TestEdgeCases(unittest.TestCase):
-    """Tests for edge cases and boundary conditions."""
-
-    def test_empty_file(self) -> None:
-        code = ""
-        codes = get_error_codes(code)
-        assert_that(codes, empty())
-
-    def test_module_level_function(self) -> None:
-        """Module-level functions should not trigger any errors."""
-        code = """
-        def my_function():
-            pass
-
-        def _private_function():
-            pass
-        """
-        codes = get_error_codes(code)
-        assert_that(codes, empty())
-
-    def test_class_with_only_class_variables(self) -> None:
-        code = """
-        class Constants:
-            VALUE = 42
-            NAME = "test"
-        """
-        codes = get_error_codes(code)
-        assert_that(codes, empty())
-
-    def test_import_star_not_flagged(self) -> None:
-        """import * shouldn't cause issues."""
-        code = """
-        from typing import *
-        """
-        codes = get_error_codes(code)
-        assert_that(codes, empty())
-
-    def test_deleter_property_exempt(self) -> None:
-        """Property deleters are exempt from SLD303."""
-        code = """
-        class MyClass:
-            @name.deleter
-            def name(self):
-                del self.first_name
-        """
-        codes = get_error_codes(code)
-        assert_that("SLD303" in codes, equal_to(False))
+    def test_not_exempt(self) -> None:
+        for name, code in _SLD303_NOT_EXEMPT:
+            with self.subTest(name=name):
+                assert_that(get_error_codes(code), has_item("SLD303"))

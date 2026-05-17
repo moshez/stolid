@@ -11,35 +11,57 @@ from .._duplicate_cli import resolve_paths, run_stolid
 from .fakes import CapturedSink, FixedRunner, InMemoryFileSystem
 
 
+def _run_with(
+    files: dict[str, str], exit_code: int
+) -> tuple[int, CapturedSink, FixedRunner]:
+    fs = InMemoryFileSystem(_files=files)
+    runner = FixedRunner(_exit_code=exit_code)
+    sink = CapturedSink()
+    result = run_stolid(runner=runner, fs=fs, sink=sink, paths=["."])
+    return result, sink, runner
+
+
+_EXIT_CASES: list[tuple[str, dict[str, str], int, int]] = [
+    (
+        "exit_code_merge_flake8_wins",
+        {f"f{i}.py": TAKE_BODY for i in range(2)},
+        2,
+        2,
+    ),
+    (
+        "duplicate_exit_when_no_flake8_failure",
+        {f"f{i}.py": TAKE_BODY for i in range(2)},
+        0,
+        1,
+    ),
+    (
+        "clean_exit_zero",
+        {"f.py": "x = 1\n"},
+        0,
+        0,
+    ),
+]
+
+
+_RESOLVE_CASES: list[tuple[str, list[str], list[str]]] = [
+    ("default_paths_empty", [], ["."]),
+    ("explicit_paths", ["src", "tests"], ["src", "tests"]),
+]
+
+
 class TestCLIIntegration(unittest.TestCase):
     """CLI integration: exit code merging, path defaults, paths."""
 
-    def test_exit_code_merge(self) -> None:
-        fs = InMemoryFileSystem(_files={f"f{i}.py": TAKE_BODY for i in range(2)})
-        runner = FixedRunner(_exit_code=2)
-        sink = CapturedSink()
-        result = run_stolid(runner=runner, fs=fs, sink=sink, paths=["."])
-        assert_that(result, equal_to(2))
+    def test_exit_codes(self) -> None:
+        for name, files, flake8_exit, expected in _EXIT_CASES:
+            with self.subTest(name=name):
+                result, _, _ = _run_with(files, flake8_exit)
+                assert_that(result, equal_to(expected))
 
-    def test_duplicate_exit_when_no_flake8_failure(self) -> None:
-        fs = InMemoryFileSystem(_files={f"f{i}.py": TAKE_BODY for i in range(2)})
-        runner = FixedRunner(_exit_code=0)
-        sink = CapturedSink()
-        result = run_stolid(runner=runner, fs=fs, sink=sink, paths=["."])
-        assert_that(result, equal_to(1))
-
-    def test_clean_exit_zero(self) -> None:
-        fs = InMemoryFileSystem(_files={"f.py": "x = 1\n"})
-        runner = FixedRunner(_exit_code=0)
-        sink = CapturedSink()
-        result = run_stolid(runner=runner, fs=fs, sink=sink, paths=["."])
-        assert_that(result, equal_to(0))
-
-    def test_default_paths(self) -> None:
-        assert_that(resolve_paths([]), equal_to(["."]))
-
-    def test_explicit_paths(self) -> None:
-        assert_that(resolve_paths(["src", "tests"]), equal_to(["src", "tests"]))
+    def test_resolve_paths(self) -> None:
+        for name, argv, expected in _RESOLVE_CASES:
+            with self.subTest(name=name):
+                assert_that(resolve_paths(argv), equal_to(expected))
 
     def test_multiple_paths_routed_to_flake8(self) -> None:
         fs = InMemoryFileSystem(_files={"src/f.py": TAKE_BODY})
@@ -50,9 +72,6 @@ class TestCLIIntegration(unittest.TestCase):
         assert_that(runner._calls[0][1:], equal_to(["src", "tests"]))
 
     def test_syntax_error_produces_stderr(self) -> None:
-        fs = InMemoryFileSystem(_files={"a.py": "def f(\n"})
-        runner = FixedRunner(_exit_code=0)
-        sink = CapturedSink()
-        result = run_stolid(runner=runner, fs=fs, sink=sink, paths=["."])
+        result, sink, _ = _run_with({"a.py": "def f(\n"}, 0)
         assert_that(sink._err, is_not(empty()))
         assert_that(result, equal_to(1))

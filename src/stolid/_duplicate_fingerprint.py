@@ -8,7 +8,9 @@ import hashlib
 from dataclasses import dataclass
 from typing import Iterable
 
+from ._ast_inspection import FUNCTION_DEF_NODES
 from ._duplicate_binders import (
+    COMPREHENSION_NODES,
     comprehension_binders,
     function_binders,
     lambda_binders,
@@ -83,9 +85,6 @@ class Occurrence:
     node_count: int
 
 
-_COMP_NODES = (ast.ListComp, ast.SetComp, ast.DictComp, ast.GeneratorExp)
-
-
 def _frame_from_names(names: Iterable[str]) -> Frame:
     frame = Frame()
     for name in names:
@@ -94,11 +93,11 @@ def _frame_from_names(names: Iterable[str]) -> Frame:
 
 
 def _frame_for(node: ast.AST) -> Frame | None:
-    if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+    if isinstance(node, FUNCTION_DEF_NODES):
         return _frame_from_names(function_binders(node))
     if isinstance(node, ast.Lambda):
         return _frame_from_names(lambda_binders(node))
-    if isinstance(node, _COMP_NODES):
+    if isinstance(node, COMPREHENSION_NODES):
         return _frame_from_names(comprehension_binders(node))
     return None
 

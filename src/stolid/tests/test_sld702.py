@@ -4,167 +4,58 @@ from __future__ import annotations
 
 import unittest
 
-from hamcrest import assert_that, contains_string, equal_to, has_item
+from hamcrest import assert_that, contains_string
 
-from .code_parser import check_code, get_error_codes
+from .code_parser import assert_absent, assert_present, check_code
 
-
-class TestSLD702BuiltinShadow(unittest.TestCase):
-    """Tests for SLD702: shadowing builtin names."""
-
-    def test_function_named_after_builtin(self) -> None:
-        code = """
-        def list():
-            pass
-        """
-        codes = get_error_codes(code)
-        assert_that(codes, has_item("SLD702"))
-
-    def test_class_named_after_builtin(self) -> None:
-        code = """
-        class list:
-            pass
-        """
-        codes = get_error_codes(code)
-        assert_that(codes, has_item("SLD702"))
-
-    def test_assign_to_builtin_name(self) -> None:
-        code = """
-        list = 5
-        """
-        codes = get_error_codes(code)
-        assert_that(codes, has_item("SLD702"))
-
-    def test_annotated_assign_to_builtin_name(self) -> None:
-        code = """
-        list: int = 0
-        """
-        codes = get_error_codes(code)
-        assert_that(codes, has_item("SLD702"))
-
-    def test_tuple_unpacking_with_builtin_name(self) -> None:
-        code = """
-        list, other = 1, 2
-        """
-        codes = get_error_codes(code)
-        assert_that(codes, has_item("SLD702"))
+_SLD702_PRESENT: list[tuple[str, str]] = [
+    ("function_named_after_builtin", "def list():\n    pass\n"),
+    ("class_named_after_builtin", "class list:\n    pass\n"),
+    ("assign_to_builtin_name", "list = 5\n"),
+    ("annotated_assign_to_builtin_name", "list: int = 0\n"),
+    ("tuple_unpacking_with_builtin_name", "list, other = 1, 2\n"),
+    ("function_named_after_typing", "def List():\n    pass\n"),
+    ("function_named_after_stdlib_module", "def sys():\n    pass\n"),
+    ("class_named_after_stdlib_module", "class json:\n    pass\n"),
+]
 
 
-class TestSLD702TypingShadow(unittest.TestCase):
-    """Tests for SLD702: shadowing typing names."""
-
-    def test_function_named_after_typing(self) -> None:
-        code = """
-        def List():
-            pass
-        """
-        codes = get_error_codes(code)
-        assert_that(codes, has_item("SLD702"))
-
-
-class TestSLD702StdlibShadow(unittest.TestCase):
-    """Tests for SLD702: shadowing stdlib module names."""
-
-    def test_function_named_after_stdlib_module(self) -> None:
-        code = """
-        def sys():
-            pass
-        """
-        codes = get_error_codes(code)
-        assert_that(codes, has_item("SLD702"))
-
-    def test_class_named_after_stdlib_module(self) -> None:
-        code = """
-        class json:
-            pass
-        """
-        codes = get_error_codes(code)
-        assert_that(codes, has_item("SLD702"))
+_SLD702_ABSENT: list[tuple[str, str]] = [
+    ("normal_function_name", "def my_function():\n    pass\n"),
+    ("import_of_stdlib_not_flagged", "import sys\n"),
+    ("from_import_not_flagged", "from typing import List\n"),
+    (
+        "nested_function_not_flagged",
+        "def outer():\n    def list():\n        pass\n",
+    ),
+    (
+        "method_not_flagged",
+        "class MyClass:\n    def list(self):\n        return self._items\n",
+    ),
+    ("attribute_assign_not_flagged", "config.list = 5\n"),
+]
 
 
-class TestSLD702Allowed(unittest.TestCase):
-    """Tests for SLD702: cases that should not trigger."""
-
-    def test_normal_function_name(self) -> None:
-        code = """
-        def my_function():
-            pass
-        """
-        codes = get_error_codes(code)
-        assert_that("SLD702" in codes, equal_to(False))
-
-    def test_import_of_stdlib_not_flagged(self) -> None:
-        """`import sys` brings in `sys` but isn't a definition."""
-        code = """
-        import sys
-        """
-        codes = get_error_codes(code)
-        assert_that("SLD702" in codes, equal_to(False))
-
-    def test_from_import_not_flagged(self) -> None:
-        """`from typing import List` isn't a definition of List."""
-        code = """
-        from typing import List
-        """
-        codes = get_error_codes(code)
-        assert_that("SLD702" in codes, equal_to(False))
-
-    def test_nested_function_not_flagged(self) -> None:
-        """Functions inside other functions are not module-level."""
-        code = """
-        def outer():
-            def list():
-                pass
-        """
-        codes = get_error_codes(code)
-        assert_that("SLD702" in codes, equal_to(False))
-
-    def test_method_not_flagged(self) -> None:
-        """Methods inside classes are not module-level definitions."""
-        code = """
-        class MyClass:
-            def list(self):
-                return self._items
-        """
-        codes = get_error_codes(code)
-        assert_that("SLD702" in codes, equal_to(False))
-
-    def test_attribute_assign_not_flagged(self) -> None:
-        """Assignment to obj.list isn't a module-level Name target."""
-        code = """
-        config.list = 5
-        """
-        codes = get_error_codes(code)
-        assert_that("SLD702" in codes, equal_to(False))
+_SLD702_MESSAGE: list[tuple[str, str, str]] = [
+    ("builtin_name", "def list():\n    pass\n", "'list'"),
+    ("builtin_marker", "def list():\n    pass\n", "builtin"),
+    ("typing_name", "def Optional():\n    pass\n", "typing.Optional"),
+    ("stdlib_name", "def os():\n    pass\n", "stdlib module 'os'"),
+]
 
 
-class TestSLD702ErrorMessage(unittest.TestCase):
-    """Tests for SLD702 error message content."""
+class TestSLD702(unittest.TestCase):
+    """Tests for SLD702: shadowing reserved names."""
 
-    def test_message_includes_name_and_builtin(self) -> None:
-        code = """
-        def list():
-            pass
-        """
-        errors = check_code(code)
-        messages = [msg for _, _, msg in errors if "SLD702" in msg]
-        assert_that(messages[0], contains_string("'list'"))
-        assert_that(messages[0], contains_string("builtin"))
+    def test_present(self) -> None:
+        assert_present(self, _SLD702_PRESENT, "SLD702")
 
-    def test_message_for_typing_name(self) -> None:
-        code = """
-        def Optional():
-            pass
-        """
-        errors = check_code(code)
-        messages = [msg for _, _, msg in errors if "SLD702" in msg]
-        assert_that(messages[0], contains_string("typing.Optional"))
+    def test_absent(self) -> None:
+        assert_absent(self, _SLD702_ABSENT, "SLD702")
 
-    def test_message_for_stdlib_name(self) -> None:
-        code = """
-        def os():
-            pass
-        """
-        errors = check_code(code)
-        messages = [msg for _, _, msg in errors if "SLD702" in msg]
-        assert_that(messages[0], contains_string("stdlib module 'os'"))
+    def test_message_content(self) -> None:
+        for name, code, expected in _SLD702_MESSAGE:
+            with self.subTest(name=name):
+                errors = check_code(code)
+                messages = [msg for _, _, msg in errors if "SLD702" in msg]
+                assert_that(messages[0], contains_string(expected))

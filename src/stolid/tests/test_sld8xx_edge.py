@@ -4,12 +4,45 @@ from __future__ import annotations
 
 import unittest
 
-from hamcrest import assert_that, equal_to, has_item, has_length
+from hamcrest import assert_that, equal_to, has_length
 
-from ._sld8xx_shared import TAKE_BODY, files, just_801
+from ._sld8xx_shared import (
+    TAKE_BODY,
+    assert_pair_negative,
+    assert_pair_positive,
+    files,
+    just_801,
+)
 from .._duplicate_scan import scan_paths
 from .code_parser import check_multifile, multifile_codes
 from .fakes import InMemoryFileSystem
+
+_NEGATIVE_PAIRS: list[tuple[str, str, str]] = [
+    (
+        "decorator_participates_in_hash",
+        "class A:\n    @property\n" "    def name(self):\n        return self._name\n",
+        "class B:\n    def name(self):\n        return self._name\n",
+    ),
+]
+
+
+_POSITIVE_PAIRS: list[tuple[str, str, str]] = [
+    (
+        "method_self_normalized",
+        "import itertools\n"
+        "class A:\n"
+        "    def foo(self, seq, n):\n"
+        "        return list(itertools.islice(seq, n))\n",
+        "import itertools\n"
+        "class B:\n"
+        "    def bar(self, items, count):\n"
+        "        return list(itertools.islice(items, count))\n",
+    ),
+]
+
+
+def _node_counts(result: list[tuple[str, int, int, str]]) -> set[int]:
+    return {int(msg.split("(")[1].split(" ")[0]) for _, _, _, msg in result}
 
 
 class TestSubtreeReporting(unittest.TestCase):
@@ -22,8 +55,7 @@ class TestSubtreeReporting(unittest.TestCase):
         )
         result = just_801(check_multifile({"a.py": a, "b.py": a}))
         assert_that(result, has_length(2))
-        node_counts = {int(msg.split("(")[1].split(" ")[0]) for _, _, _, msg in result}
-        assert_that(node_counts, equal_to({17}))
+        assert_that(_node_counts(result), equal_to({17}))
 
 
 class TestEdgeCases(unittest.TestCase):
@@ -58,32 +90,11 @@ class TestEdgeCases(unittest.TestCase):
         )
         assert_that("SLD801" in codes, equal_to(False))
 
-    def test_decorator_participates_in_hash(self) -> None:
-        a = (
-            "class A:\n"
-            "    @property\n"
-            "    def name(self):\n"
-            "        return self._name\n"
-        )
-        b = "class B:\n    def name(self):\n        return self._name\n"
-        codes = multifile_codes(files(**{"a.py": a, "b.py": b}))
-        assert_that("SLD801" in codes, equal_to(False))
+    def test_pair_negative(self) -> None:
+        assert_pair_negative(self, _NEGATIVE_PAIRS)
 
-    def test_method_self_normalized(self) -> None:
-        a = (
-            "import itertools\n"
-            "class A:\n"
-            "    def foo(self, seq, n):\n"
-            "        return list(itertools.islice(seq, n))\n"
-        )
-        b = (
-            "import itertools\n"
-            "class B:\n"
-            "    def bar(self, items, count):\n"
-            "        return list(itertools.islice(items, count))\n"
-        )
-        codes = multifile_codes(files(**{"a.py": a, "b.py": b}))
-        assert_that(codes, has_item("SLD801"))
+    def test_pair_positive(self) -> None:
+        assert_pair_positive(self, _POSITIVE_PAIRS)
 
 
 class TestSubtreeDomination(unittest.TestCase):
@@ -110,8 +121,7 @@ class TestSubtreeDomination(unittest.TestCase):
             "            print(i.value)\n"
         )
         result = just_801(check_multifile(files(**{"a.py": a, "b.py": b, "c.py": c})))
-        node_counts = {int(msg.split("(")[1].split(" ")[0]) for _, _, _, msg in result}
-        assert_that(len(node_counts) >= 1, equal_to(True))
+        assert_that(len(_node_counts(result)) >= 1, equal_to(True))
 
 
 class TestSameFileTwoClones(unittest.TestCase):
@@ -129,8 +139,7 @@ class TestSameFileTwoClones(unittest.TestCase):
             "        return count\n"
         )
         result = just_801(check_multifile({"a.py": body, "b.py": body}))
-        node_counts = {int(msg.split("(")[1].split(" ")[0]) for _, _, _, msg in result}
-        assert_that(len(node_counts) >= 2, equal_to(True))
+        assert_that(len(_node_counts(result)) >= 2, equal_to(True))
 
 
 class TestPathRoots(unittest.TestCase):

@@ -34,7 +34,7 @@ SLD702 = "SLD702 Global name '{}' shadows {} (rename to disambiguate)"
 SLD801 = "SLD801 duplicated structure ({} nodes); also at {}"
 
 # Duplicate detector thresholds
-MIN_CLONE_NODES = 10
+MIN_CLONE_NODES = 12
 MIN_CLONE_SCORE = 2.5
 
 # Bad name patterns (vague, non-descriptive names)

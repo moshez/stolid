@@ -75,6 +75,8 @@ def _parse_file(path: str, source: str) -> ast.Module | None:
 def _is_eligible(occurrence: Occurrence) -> bool:
     if isinstance(occurrence.node, ast.Module):
         return False
+    if getattr(occurrence.node, "lineno", None) is None:
+        return False
     if occurrence.node_count < MIN_CLONE_NODES:
         return False
     return subtree_score(occurrence.node) >= MIN_CLONE_SCORE
