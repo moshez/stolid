@@ -31,6 +31,11 @@ SLD603 = "SLD603 Class '{}' has {} methods (limit: {})"
 SLD604 = "SLD604 Module has {} lines (limit: {})"
 SLD701 = "SLD701 Name '{}' contains forbidden word '{}' (use a more specific name)"
 SLD702 = "SLD702 Global name '{}' shadows {} (rename to disambiguate)"
+SLD801 = "SLD801 duplicated structure ({} nodes); also at {}"
+
+# Duplicate detector thresholds
+MIN_CLONE_NODES = 12
+MIN_CLONE_SCORE = 2.5
 
 # Bad name patterns (vague, non-descriptive names)
 BAD_NAME_WORDS: frozenset[str] = frozenset(

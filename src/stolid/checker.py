@@ -31,6 +31,8 @@ from ._constants import (
 )
 from ._global_names_check import check_global_names
 from ._ast_inspection import (
+    FUNCTION_DEF_NODES,
+    FunctionType,
     class_inherits_from,
     collect_imports,
     find_bad_name_word,
@@ -39,10 +41,13 @@ from ._ast_inspection import (
     get_dataclass_keywords,
     get_function_arg_count,
     get_function_line_count,
+    is_attribute_attr,
     is_classmethod_or_staticmethod,
     is_dataclass_decorator,
     is_dunder_method,
     is_method,
+    is_name_id,
+    is_name_in,
     is_property_method,
     method_accesses_private_state,
 )
@@ -59,6 +64,25 @@ class Error:
     message: str
 
 
+def _error(node: ast.stmt | ast.expr, message: str) -> Error:
+    return Error(lineno=node.lineno, col_offset=node.col_offset, message=message)
+
+
+def _name_decorator_errors(
+    decorators: list[ast.expr], names: set[str], code: str
+) -> Iterator[Error]:
+    """Yield SLD202-style errors for decorators that are Names in ``names``."""
+    for decorator in decorators:
+        if is_name_in(decorator, names):
+            yield _error(decorator, code)
+
+
+def _check_node_name(
+    node: ast.ClassDef | FunctionType,
+) -> Iterator[Error]:
+    return _check_bad_name(node.name, node.lineno, node.col_offset)
+
+
 def _check_node(
     node: ast.AST,
     patch_names: set[str],
@@ -72,7 +96,7 @@ def _check_node(
         yield from _check_attribute(node)
     elif isinstance(node, ast.ClassDef):
         yield from _check_class(node, abstractmethod_names)
-    elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+    elif isinstance(node, FUNCTION_DEF_NODES):
         yield from _check_function(node)
     elif isinstance(node, ast.Call):
         yield from _check_call(node, patch_names, cast_names)
@@ -85,20 +109,14 @@ def _check_import_from(node: ast.ImportFrom) -> Iterator[Error]:
     if node.module in ("unittest.mock", "mock"):
         for alias in node.names:
             if alias.name == "patch":
-                yield Error(
-                    lineno=node.lineno, col_offset=node.col_offset, message=SLD102
-                )
+                yield _error(node, SLD102)
 
     if node.module == "abc":
         for alias in node.names:
             if alias.name == "ABC":
-                yield Error(
-                    lineno=node.lineno, col_offset=node.col_offset, message=SLD201
-                )
+                yield _error(node, SLD201)
             if alias.name == "abstractmethod":
-                yield Error(
-                    lineno=node.lineno, col_offset=node.col_offset, message=SLD202
-                )
+                yield _error(node, SLD202)
 
 
 def _check_attribute(node: ast.Attribute) -> Iterator[Error]:
@@ -106,10 +124,10 @@ def _check_attribute(node: ast.Attribute) -> Iterator[Error]:
     if node.attr != "patch":
         return
     value = node.value
-    if isinstance(value, ast.Attribute) and value.attr == "mock":
-        yield Error(lineno=node.lineno, col_offset=node.col_offset, message=SLD102)
-    elif isinstance(value, ast.Name) and value.id == "mock":  # pragma: no branch
-        yield Error(lineno=node.lineno, col_offset=node.col_offset, message=SLD102)
+    if is_attribute_attr(value, "mock"):
+        yield _error(node, SLD102)
+    elif is_name_id(value, "mock"):  # pragma: no branch
+        yield _error(node, SLD102)
 
 
 def _check_call(
@@ -118,9 +136,9 @@ def _check_call(
     """Check function calls."""
     if isinstance(node.func, ast.Name):
         if node.func.id in patch_names:
-            yield Error(lineno=node.lineno, col_offset=node.col_offset, message=SLD102)
+            yield _error(node, SLD102)
         elif node.func.id in cast_names:
-            yield Error(lineno=node.lineno, col_offset=node.col_offset, message=SLD203)
+            yield _error(node, SLD203)
     elif isinstance(node.func, ast.Attribute):  # pragma: no branch
         yield from _check_call_attribute(node, patch_names)
 
@@ -130,17 +148,17 @@ def _check_call_attribute(node: ast.Call, patch_names: set[str]) -> Iterator[Err
     func = node.func
     assert isinstance(func, ast.Attribute)
     if func.attr == "cast":
-        if isinstance(func.value, ast.Name) and func.value.id == "typing":
-            yield Error(lineno=node.lineno, col_offset=node.col_offset, message=SLD203)
+        if is_name_id(func.value, "typing"):
+            yield _error(node, SLD203)
         return
     if func.attr != "object":
         return
     if isinstance(func.value, ast.Name):
         if func.value.id in patch_names:
-            yield Error(lineno=node.lineno, col_offset=node.col_offset, message=SLD102)
+            yield _error(node, SLD102)
     elif isinstance(func.value, ast.Attribute):  # pragma: no branch
         if func.value.attr == "patch":
-            yield Error(lineno=node.lineno, col_offset=node.col_offset, message=SLD102)
+            yield _error(node, SLD102)
 
 
 def _check_with(node: ast.With, patch_names: set[str]) -> Iterator[Error]:
@@ -150,7 +168,7 @@ def _check_with(node: ast.With, patch_names: set[str]) -> Iterator[Error]:
         if not isinstance(call, ast.Call) or not isinstance(call.func, ast.Name):
             continue
         if call.func.id in patch_names:
-            yield Error(lineno=node.lineno, col_offset=node.col_offset, message=SLD102)
+            yield _error(node, SLD102)
 
 
 def _check_bad_name(name: str, lineno: int, col_offset: int) -> Iterator[Error]:
@@ -164,30 +182,12 @@ def _check_bad_name(name: str, lineno: int, col_offset: int) -> Iterator[Error]:
         )
 
 
-def _check_class_decorators(
-    node: ast.ClassDef,
-    abstractmethod_names: set[str],
-) -> Iterator[Error]:
-    """Check class decorators for violations."""
-    for decorator in node.decorator_list:
-        if isinstance(decorator, ast.Name) and decorator.id in abstractmethod_names:
-            yield Error(
-                lineno=decorator.lineno,
-                col_offset=decorator.col_offset,
-                message=SLD202,
-            )
-
-
 def _check_class_bases(node: ast.ClassDef) -> Iterator[Error]:
     """Check class base classes for inheritance violations."""
     for base in node.bases:
         base_name = get_base_name(base)
         if base_name is not None and base_name not in ALLOWED_BASES:
-            yield Error(
-                lineno=base.lineno,
-                col_offset=base.col_offset,
-                message=SLD401.format(node.name, base_name),
-            )
+            yield _error(base, SLD401.format(node.name, base_name))
 
 
 _DATACLASS_FLAGS = (("frozen", SLD501), ("slots", SLD502), ("kw_only", SLD503))
@@ -199,11 +199,7 @@ def _check_dataclass_flags(
     """Check dataclass decorator flags."""
     for flag, code in _DATACLASS_FLAGS:
         if not keywords.get(flag, False):
-            yield Error(
-                lineno=node.lineno,
-                col_offset=node.col_offset,
-                message=code.format(node.name),
-            )
+            yield _error(node, code.format(node.name))
 
 
 def _check_class(node: ast.ClassDef, abstractmethod_names: set[str]) -> Iterator[Error]:
@@ -216,8 +212,8 @@ def _check_class(node: ast.ClassDef, abstractmethod_names: set[str]) -> Iterator
             is_dataclass = True
             dataclass_keywords = get_dataclass_keywords(decorator)
 
-    yield from _check_bad_name(node.name, node.lineno, node.col_offset)
-    yield from _check_class_decorators(node, abstractmethod_names)
+    yield from _check_node_name(node)
+    yield from _check_abstract_decorators(node.decorator_list, abstractmethod_names)
     yield from _check_class_bases(node)
 
     if is_dataclass:
@@ -225,11 +221,7 @@ def _check_class(node: ast.ClassDef, abstractmethod_names: set[str]) -> Iterator
 
     method_count = get_class_method_count(node)
     if method_count > MAX_CLASS_METHODS:
-        yield Error(
-            lineno=node.lineno,
-            col_offset=node.col_offset,
-            message=SLD603.format(node.name, method_count, MAX_CLASS_METHODS),
-        )
+        yield _error(node, SLD603.format(node.name, method_count, MAX_CLASS_METHODS))
 
     yield from _check_class_method_bodies(node, abstractmethod_names)
 
@@ -241,7 +233,7 @@ def _check_class_method_bodies(
     is_testcase = class_inherits_from(node, "TestCase")
     is_protocol = class_inherits_from(node, "Protocol")
     for child in node.body:
-        if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef)):
+        if isinstance(child, FUNCTION_DEF_NODES):
             yield from _check_method_in_class(
                 child,
                 abstractmethod_names,
@@ -250,54 +242,34 @@ def _check_class_method_bodies(
             )
 
 
-def _check_abstractmethod_decorator(
-    node: ast.FunctionDef | ast.AsyncFunctionDef,
-    abstractmethod_names: set[str],
+def _check_abstract_decorators(
+    decorators: list[ast.expr], names: set[str]
 ) -> Iterator[Error]:
-    """Check method decorators for @abstractmethod."""
-    for decorator in node.decorator_list:
-        if isinstance(decorator, ast.Name) and decorator.id in abstractmethod_names:
-            yield Error(
-                lineno=decorator.lineno,
-                col_offset=decorator.col_offset,
-                message=SLD202,
-            )
-        elif (
-            isinstance(decorator, ast.Attribute) and decorator.attr == "abstractmethod"
-        ):
-            yield Error(
-                lineno=decorator.lineno,
-                col_offset=decorator.col_offset,
-                message=SLD202,
-            )
+    """Yield SLD202 for both Name and Attribute-form @abstractmethod decorators."""
+    yield from _name_decorator_errors(decorators, names, SLD202)
+    for decorator in decorators:
+        if is_attribute_attr(decorator, "abstractmethod"):
+            yield _error(decorator, SLD202)
 
 
 def _check_method_naming(
-    node: ast.FunctionDef | ast.AsyncFunctionDef,
+    node: FunctionType,
 ) -> Iterator[Error]:
     """Check method naming conventions."""
     if node.name in ("__init__", "__post_init__"):
-        yield Error(
-            lineno=node.lineno,
-            col_offset=node.col_offset,
-            message=SLD301.format(node.name),
-        )
+        yield _error(node, SLD301.format(node.name))
     if node.name.startswith("_") and not is_dunder_method(node.name):
-        yield Error(
-            lineno=node.lineno,
-            col_offset=node.col_offset,
-            message=SLD302.format(node.name),
-        )
+        yield _error(node, SLD302.format(node.name))
 
 
 def _check_method_in_class(
-    node: ast.FunctionDef | ast.AsyncFunctionDef,
+    node: FunctionType,
     abstractmethod_names: set[str],
     is_testcase: bool = False,
     is_protocol: bool = False,
 ) -> Iterator[Error]:
     """Check a method within a class context."""
-    yield from _check_abstractmethod_decorator(node, abstractmethod_names)
+    yield from _check_abstract_decorators(node.decorator_list, abstractmethod_names)
 
     if not is_method(node) or is_classmethod_or_staticmethod(node):
         return
@@ -314,32 +286,20 @@ def _check_method_in_class(
         return
 
     if not method_accesses_private_state(node):
-        yield Error(
-            lineno=node.lineno,
-            col_offset=node.col_offset,
-            message=SLD303.format(node.name),
-        )
+        yield _error(node, SLD303.format(node.name))
 
 
-def _check_function(node: ast.FunctionDef | ast.AsyncFunctionDef) -> Iterator[Error]:
+def _check_function(node: FunctionType) -> Iterator[Error]:
     """Check function definitions for limit violations."""
-    yield from _check_bad_name(node.name, node.lineno, node.col_offset)
+    yield from _check_node_name(node)
 
     line_count = get_function_line_count(node)
     if line_count > MAX_FUNCTION_LINES:
-        yield Error(
-            lineno=node.lineno,
-            col_offset=node.col_offset,
-            message=SLD601.format(node.name, line_count, MAX_FUNCTION_LINES),
-        )
+        yield _error(node, SLD601.format(node.name, line_count, MAX_FUNCTION_LINES))
 
     arg_count = get_function_arg_count(node)
     if arg_count > MAX_FUNCTION_ARGS:
-        yield Error(
-            lineno=node.lineno,
-            col_offset=node.col_offset,
-            message=SLD602.format(node.name, arg_count, MAX_FUNCTION_ARGS),
-        )
+        yield _error(node, SLD602.format(node.name, arg_count, MAX_FUNCTION_ARGS))
 
 
 def _get_module_name_from_filename(filename: str) -> str | None:

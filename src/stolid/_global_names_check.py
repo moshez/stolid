@@ -6,6 +6,7 @@ import ast
 from dataclasses import dataclass
 from typing import Iterator
 
+from ._ast_inspection import NAMED_DEF_NODES, TUPLE_LIST_NODES
 from ._constants import SLD702
 from ._reserved_names import reserved_name_source
 
@@ -20,7 +21,7 @@ class GlobalNameError:
 def _names_from_target(target: ast.expr) -> Iterator[tuple[str, int, int]]:
     if isinstance(target, ast.Name):
         yield target.id, target.lineno, target.col_offset
-    elif isinstance(target, (ast.Tuple, ast.List)):
+    elif isinstance(target, TUPLE_LIST_NODES):
         for elt in target.elts:
             yield from _names_from_target(elt)
 
@@ -38,7 +39,7 @@ def _check_name(name: str, lineno: int, col_offset: int) -> Iterator[GlobalNameE
 def check_global_names(tree: ast.Module) -> Iterator[GlobalNameError]:
     """Yield errors for module-level definitions that shadow reserved names."""
     for node in tree.body:
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+        if isinstance(node, NAMED_DEF_NODES):
             yield from _check_name(node.name, node.lineno, node.col_offset)
         elif isinstance(node, ast.Assign):
             for target in node.targets:

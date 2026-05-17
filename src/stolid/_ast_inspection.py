@@ -4,8 +4,34 @@ from __future__ import annotations
 
 import ast
 import re
+from typing import Iterable
 
 from ._constants import BAD_NAME_WORDS
+
+FUNCTION_DEF_NODES = (ast.FunctionDef, ast.AsyncFunctionDef)
+FunctionType = ast.FunctionDef | ast.AsyncFunctionDef
+NAMED_DEF_NODES = FUNCTION_DEF_NODES + (ast.ClassDef,)
+TUPLE_LIST_NODES = (ast.Tuple, ast.List)
+
+
+def is_name_id(node: ast.AST, name: str) -> bool:
+    """Return True iff ``node`` is ``ast.Name`` with id ``name``."""
+    return isinstance(node, ast.Name) and node.id == name
+
+
+def is_name_in(node: ast.AST, names: Iterable[str]) -> bool:
+    """Return True iff ``node`` is ``ast.Name`` whose id is in ``names``."""
+    return isinstance(node, ast.Name) and node.id in names
+
+
+def is_attribute_attr(node: ast.AST, attr: str) -> bool:
+    """Return True iff ``node`` is ``ast.Attribute`` with ``.attr`` == ``attr``."""
+    return isinstance(node, ast.Attribute) and node.attr == attr
+
+
+def is_attribute_in(node: ast.AST, attrs: Iterable[str]) -> bool:
+    """Return True iff ``node`` is ``ast.Attribute`` whose attr is in ``attrs``."""
+    return isinstance(node, ast.Attribute) and node.attr in attrs
 
 
 def get_base_name(node: ast.expr) -> str | None:
@@ -15,7 +41,6 @@ def get_base_name(node: ast.expr) -> str | None:
     if isinstance(node, ast.Attribute):
         return node.attr
     if isinstance(node, ast.Subscript):
-        # Handle Generic[T], Protocol[T], etc.
         return get_base_name(node.value)
     return None
 
@@ -30,10 +55,10 @@ def class_inherits_from(node: ast.ClassDef, base_name: str) -> bool:
 
 def is_dataclass_decorator(node: ast.expr) -> bool:
     """Check if a decorator is @dataclass or @dataclasses.dataclass."""
-    if isinstance(node, ast.Name):
-        return node.id == "dataclass"
-    if isinstance(node, ast.Attribute):
-        return node.attr == "dataclass"
+    if is_name_id(node, "dataclass"):
+        return True
+    if is_attribute_attr(node, "dataclass"):
+        return True
     if isinstance(node, ast.Call):
         return is_dataclass_decorator(node.func)
     return False
@@ -52,21 +77,17 @@ def get_dataclass_keywords(node: ast.expr) -> dict[str, bool]:
 
 
 def method_accesses_private_state(
-    node: ast.FunctionDef | ast.AsyncFunctionDef,
+    node: FunctionType,
 ) -> bool:
     """Check if a method accesses self._private attributes."""
     for child in ast.walk(node):
         if isinstance(child, ast.Attribute):
-            if (
-                isinstance(child.value, ast.Name)
-                and child.value.id == "self"
-                and child.attr.startswith("_")
-            ):
+            if is_name_id(child.value, "self") and child.attr.startswith("_"):
                 return True
     return False
 
 
-def is_method(node: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
+def is_method(node: FunctionType) -> bool:
     """Check if a function definition is a method (has self as first arg)."""
     if not node.args.args:
         return False
@@ -74,17 +95,16 @@ def is_method(node: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
     return first_arg.arg == "self"
 
 
+_CM_SM = ("classmethod", "staticmethod")
+
+
 def is_classmethod_or_staticmethod(
-    node: ast.FunctionDef | ast.AsyncFunctionDef,
+    node: FunctionType,
 ) -> bool:
     """Check if a method has @classmethod or @staticmethod decorator."""
     for decorator in node.decorator_list:
-        if isinstance(decorator, ast.Name):
-            if decorator.id in ("classmethod", "staticmethod"):
-                return True
-        if isinstance(decorator, ast.Attribute):
-            if decorator.attr in ("classmethod", "staticmethod"):
-                return True
+        if is_name_in(decorator, _CM_SM) or is_attribute_in(decorator, _CM_SM):
+            return True
     return False
 
 
@@ -93,21 +113,20 @@ def is_dunder_method(name: str) -> bool:
     return name.startswith("__") and name.endswith("__")
 
 
-def is_property_method(node: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
+_PROPERTY_SUFFIXES = ("setter", "getter", "deleter")
+
+
+def is_property_method(node: FunctionType) -> bool:
     """Check if a method is a property (has @property or @xxx.setter decorator)."""
     for decorator in node.decorator_list:
-        if isinstance(decorator, ast.Name) and decorator.id == "property":
+        if is_name_id(decorator, "property"):
             return True
-        if isinstance(decorator, ast.Attribute) and decorator.attr in (
-            "setter",
-            "getter",
-            "deleter",
-        ):
+        if is_attribute_in(decorator, _PROPERTY_SUFFIXES):
             return True
     return False
 
 
-def get_function_line_count(node: ast.FunctionDef | ast.AsyncFunctionDef) -> int:
+def get_function_line_count(node: FunctionType) -> int:
     """Count the number of lines in a function body."""
     assert node.body, "Function body cannot be empty in valid Python"
     first_line = node.body[0].lineno
@@ -115,11 +134,10 @@ def get_function_line_count(node: ast.FunctionDef | ast.AsyncFunctionDef) -> int
     return last_line - first_line + 1
 
 
-def get_function_arg_count(node: ast.FunctionDef | ast.AsyncFunctionDef) -> int:
+def get_function_arg_count(node: FunctionType) -> int:
     """Count the number of arguments in a function (excluding self/cls)."""
     args = node.args
     total = len(args.args) + len(args.posonlyargs) + len(args.kwonlyargs)
-    # Exclude self or cls from the count
     if args.args and args.args[0].arg in ("self", "cls"):
         total -= 1
     return total
@@ -129,10 +147,23 @@ def get_class_method_count(node: ast.ClassDef) -> int:
     """Count the number of methods in a class (excluding dunders)."""
     count = 0
     for child in node.body:
-        if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef)):
+        if isinstance(child, FUNCTION_DEF_NODES):
             if not is_dunder_method(child.name):
                 count += 1
     return count
+
+
+def _add_matching_aliases(
+    aliases: list[ast.alias], wanted: tuple[str, ...], target: set[str]
+) -> None:
+    for alias in aliases:
+        if alias.name in wanted:
+            target.add(alias.asname or alias.name)
+
+
+_PATCH_NAMES_WANTED = ("patch", "patch.object")
+_ABSTRACT_WANTED = ("abstractmethod",)
+_CAST_WANTED = ("cast",)
 
 
 def collect_imports(tree: ast.AST) -> tuple[set[str], set[str], set[str]]:
@@ -144,17 +175,11 @@ def collect_imports(tree: ast.AST) -> tuple[set[str], set[str], set[str]]:
         if not isinstance(node, ast.ImportFrom):
             continue
         if node.module in ("unittest.mock", "mock"):
-            for alias in node.names:
-                if alias.name in ("patch", "patch.object"):
-                    patch_names.add(alias.asname or alias.name)
+            _add_matching_aliases(node.names, _PATCH_NAMES_WANTED, patch_names)
         if node.module == "abc":
-            for alias in node.names:
-                if alias.name == "abstractmethod":
-                    abstractmethod_names.add(alias.asname or alias.name)
+            _add_matching_aliases(node.names, _ABSTRACT_WANTED, abstractmethod_names)
         if node.module == "typing":
-            for alias in node.names:
-                if alias.name == "cast":
-                    cast_names.add(alias.asname or alias.name)
+            _add_matching_aliases(node.names, _CAST_WANTED, cast_names)
     return patch_names, abstractmethod_names, cast_names
 
 

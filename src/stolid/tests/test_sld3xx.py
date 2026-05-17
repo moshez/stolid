@@ -4,367 +4,217 @@ from __future__ import annotations
 
 import unittest
 
-from hamcrest import assert_that, equal_to, has_item
+from hamcrest import assert_that, equal_to
 
-from .code_parser import get_error_codes
+from .code_parser import assert_absent, assert_present, get_error_codes
+
+_SLD301_PRESENT: list[tuple[str, str]] = [
+    (
+        "init_in_regular_class",
+        "class MyClass:\n    def __init__(self):\n        pass\n",
+    ),
+    (
+        "init_explicitly_in_dataclass_flagged",
+        "from dataclasses import dataclass\n\n"
+        "@dataclass(frozen=True, slots=True, kw_only=True)\n"
+        "class MyClass:\n    x: int\n\n"
+        "    def __init__(self):\n        pass\n",
+    ),
+    (
+        "init_in_testcase_flagged",
+        "import unittest\n\nclass MyTest(unittest.TestCase):\n"
+        "    def __init__(self, *args, **kwargs):\n"
+        "        super().__init__(*args, **kwargs)\n",
+    ),
+    (
+        "post_init_in_dataclass_flagged",
+        "from dataclasses import dataclass\n\n"
+        "@dataclass(frozen=True, slots=True, kw_only=True)\n"
+        "class MyClass:\n    x: int\n\n"
+        "    def __post_init__(self):\n        pass\n",
+    ),
+    (
+        "post_init_in_regular_class_flagged",
+        "class MyClass:\n" "    def __post_init__(self):\n        pass\n",
+    ),
+]
+
+
+_SLD301_ABSENT: list[tuple[str, str]] = [
+    (
+        "dataclass_no_explicit_init",
+        "from dataclasses import dataclass\n\n"
+        "@dataclass(frozen=True, slots=True, kw_only=True)\n"
+        "class MyClass:\n    x: int\n",
+    ),
+    (
+        "other_dunders_allowed",
+        "class MyClass:\n"
+        "    def __str__(self):\n        return 'MyClass'\n\n"
+        "    def __repr__(self):\n        return 'MyClass()'\n\n"
+        "    def __eq__(self, other):\n        return True\n\n"
+        "    def __hash__(self):\n        return 0\n\n"
+        "    def __call__(self):\n        return None\n",
+    ),
+]
+
+
+_SLD302_PRESENT: list[tuple[str, str]] = [
+    (
+        "private_method",
+        "class MyClass:\n" "    def _private_method(self):\n        pass\n",
+    ),
+    (
+        "double_underscore_private",
+        "class MyClass:\n" "    def __very_private(self):\n        pass\n",
+    ),
+]
+
+
+_SLD302_ABSENT: list[tuple[str, str]] = [
+    (
+        "dunder_methods_allowed",
+        "class MyClass:\n"
+        "    def __str__(self):\n        return 'MyClass'\n\n"
+        "    def __repr__(self):\n        return 'MyClass()'\n\n"
+        "    def __eq__(self, other):\n        return True\n",
+    ),
+    (
+        "public_method_allowed",
+        "class MyClass:\n    def public_method(self):\n        pass\n",
+    ),
+]
+
+
+_SLD303_PRESENT: list[tuple[str, str]] = [
+    (
+        "method_accesses_only_public",
+        "class MyClass:\n"
+        "    def format(self):\n"
+        "        return f'{self.name}: {self.value}'\n",
+    ),
+    (
+        "method_no_self_access",
+        "class MyClass:\n    def compute(self):\n        return 42\n",
+    ),
+    (
+        "decorator_not_name_or_attribute_or_call",
+        "class MyClass:\n    @(some_list[0])\n"
+        "    def method(self):\n        return self.value\n",
+    ),
+    (
+        "method_decorator_attribute_not_abstractmethod",
+        "class MyClass:\n    @some_module.some_decorator\n"
+        "    def method(self):\n        return self.value\n",
+    ),
+]
+
+
+_SLD303_ABSENT: list[tuple[str, str]] = [
+    (
+        "method_accesses_private_allowed",
+        "class MyClass:\n    def process(self):\n        return self._data + 1\n",
+    ),
+    (
+        "method_accesses_mixed",
+        "class MyClass:\n    def process(self):\n"
+        "        return f'{self.name}: {self._internal}'\n",
+    ),
+    (
+        "async_method_with_private_access",
+        "class MyClass:\n    async def fetch(self):\n        return self._data\n",
+    ),
+    (
+        "dunder_method_exempt",
+        "class MyClass:\n    def __str__(self):\n        return self.name\n",
+    ),
+    (
+        "property_exempt",
+        "class MyClass:\n    @property\n    def name(self):\n"
+        "        return self.first_name + ' ' + self.last_name\n",
+    ),
+    (
+        "setter_exempt",
+        "class MyClass:\n    @name.setter\n"
+        "    def name(self, value):\n        self.first_name = value\n",
+    ),
+    (
+        "classmethod_exempt",
+        "class MyClass:\n    @classmethod\n"
+        "    def create(cls):\n        return cls()\n",
+    ),
+    (
+        "staticmethod_exempt",
+        "class MyClass:\n    @staticmethod\n" "    def helper():\n        return 42\n",
+    ),
+    (
+        "classmethod_via_attribute",
+        "import builtins\n\nclass MyClass:\n"
+        "    @builtins.classmethod\n"
+        "    def create(cls):\n        return cls()\n",
+    ),
+    (
+        "staticmethod_via_attribute",
+        "import builtins\n\nclass MyClass:\n"
+        "    @builtins.staticmethod\n"
+        "    def helper():\n        return 42\n",
+    ),
+    (
+        "staticmethod_via_attribute_with_self",
+        "class MyClass:\n    @types.staticmethod\n"
+        "    def helper(self):\n        return self.value\n",
+    ),
+    (
+        "classmethod_via_attribute_with_self",
+        "class MyClass:\n    @functools.classmethod\n"
+        "    def create(self):\n        return self\n",
+    ),
+    (
+        "staticmethod_name_with_self_param",
+        "class MyClass:\n    @staticmethod\n"
+        "    def method(self):\n        return self\n",
+    ),
+    (
+        "classmethod_name_with_self_param",
+        "class MyClass:\n    @classmethod\n"
+        "    def method(self):\n        return self\n",
+    ),
+]
 
 
 class TestSLD301InitProhibited(unittest.TestCase):
     """Tests for SLD301: __init__ method is prohibited."""
 
-    def test_init_in_regular_class(self) -> None:
-        code = """
-        class MyClass:
-            def __init__(self):
-                pass
-        """
-        codes = get_error_codes(code)
-        assert_that(codes, has_item("SLD301"))
+    def test_present(self) -> None:
+        assert_present(self, _SLD301_PRESENT, "SLD301")
 
-    def test_dataclass_no_explicit_init(self) -> None:
-        """Dataclass without explicit __init__ should not trigger SLD301."""
-        code = """
-        from dataclasses import dataclass
-
-        @dataclass(frozen=True, slots=True, kw_only=True)
-        class MyClass:
-            x: int
-        """
-        codes = get_error_codes(code)
-        assert_that("SLD301" in codes, equal_to(False))
-
-    def test_init_explicitly_in_dataclass_flagged(self) -> None:
-        """Explicit __init__ in dataclass should be flagged."""
-        code = """
-        from dataclasses import dataclass
-
-        @dataclass(frozen=True, slots=True, kw_only=True)
-        class MyClass:
-            x: int
-
-            def __init__(self):
-                pass
-        """
-        codes = get_error_codes(code)
-        assert_that(codes, has_item("SLD301"))
-
-    def test_init_in_testcase_flagged(self) -> None:
-        """TestCase __init__ is still flagged (no special handling)."""
-        code = """
-        import unittest
-
-        class MyTest(unittest.TestCase):
-            def __init__(self, *args, **kwargs):
-                super().__init__(*args, **kwargs)
-        """
-        codes = get_error_codes(code)
-        assert_that("SLD301" in codes, equal_to(True))
-
-    def test_post_init_in_dataclass_flagged(self) -> None:
-        """__post_init__ in a dataclass should be flagged."""
-        code = """
-        from dataclasses import dataclass
-
-        @dataclass(frozen=True, slots=True, kw_only=True)
-        class MyClass:
-            x: int
-
-            def __post_init__(self):
-                pass
-        """
-        codes = get_error_codes(code)
-        assert_that(codes, has_item("SLD301"))
-
-    def test_post_init_in_regular_class_flagged(self) -> None:
-        """__post_init__ in a regular class should also be flagged."""
-        code = """
-        class MyClass:
-            def __post_init__(self):
-                pass
-        """
-        codes = get_error_codes(code)
-        assert_that(codes, has_item("SLD301"))
-
-    def test_other_dunders_allowed(self) -> None:
-        """Dunder methods other than __init__/__post_init__ are allowed."""
-        code = """
-        class MyClass:
-            def __str__(self):
-                return "MyClass"
-
-            def __repr__(self):
-                return "MyClass()"
-
-            def __eq__(self, other):
-                return True
-
-            def __hash__(self):
-                return 0
-
-            def __call__(self):
-                return None
-        """
-        codes = get_error_codes(code)
-        assert_that("SLD301" in codes, equal_to(False))
-        assert_that("SLD302" in codes, equal_to(False))
+    def test_absent(self) -> None:
+        assert_absent(self, _SLD301_ABSENT, "SLD301")
 
 
 class TestSLD302PrivateMethodsProhibited(unittest.TestCase):
     """Tests for SLD302: Private methods are prohibited."""
 
-    def test_private_method(self) -> None:
-        code = """
-        class MyClass:
-            def _private_method(self):
-                pass
-        """
-        codes = get_error_codes(code)
-        assert_that(codes, has_item("SLD302"))
+    def test_present(self) -> None:
+        assert_present(self, _SLD302_PRESENT, "SLD302")
 
-    def test_double_underscore_private(self) -> None:
-        code = """
-        class MyClass:
-            def __very_private(self):
-                pass
-        """
-        codes = get_error_codes(code)
-        assert_that(codes, has_item("SLD302"))
-
-    def test_dunder_methods_allowed(self) -> None:
-        code = """
-        class MyClass:
-            def __str__(self):
-                return "MyClass"
-
-            def __repr__(self):
-                return "MyClass()"
-
-            def __eq__(self, other):
-                return True
-        """
-        codes = get_error_codes(code)
-        assert_that("SLD302" in codes, equal_to(False))
-
-    def test_public_method_allowed(self) -> None:
-        code = """
-        class MyClass:
-            def public_method(self):
-                pass
-        """
-        codes = get_error_codes(code)
-        assert_that("SLD302" in codes, equal_to(False))
+    def test_absent(self) -> None:
+        assert_absent(self, _SLD302_ABSENT, "SLD302")
 
 
-class TestSLD303Detection(unittest.TestCase):
-    """Tests for SLD303: Detection of methods that only access public members."""
+class TestSLD303PublicAccess(unittest.TestCase):
+    """Tests for SLD303: methods that don't access private state."""
 
-    def test_method_accesses_only_public(self) -> None:
-        code = """
-        class MyClass:
-            def format(self):
-                return f"{self.name}: {self.value}"
-        """
-        codes = get_error_codes(code)
-        assert_that(codes, has_item("SLD303"))
+    def test_present(self) -> None:
+        assert_present(self, _SLD303_PRESENT, "SLD303")
 
-    def test_method_accesses_private_allowed(self) -> None:
-        code = """
-        class MyClass:
-            def process(self):
-                return self._data + 1
-        """
-        codes = get_error_codes(code)
-        assert_that("SLD303" in codes, equal_to(False))
+    def test_absent(self) -> None:
+        assert_absent(self, _SLD303_ABSENT, "SLD303")
 
-    def test_method_accesses_mixed(self) -> None:
-        """If method accesses both public and private, it's allowed."""
-        code = """
-        class MyClass:
-            def process(self):
-                return f"{self.name}: {self._internal}"
-        """
-        codes = get_error_codes(code)
-        assert_that("SLD303" in codes, equal_to(False))
-
-    def test_method_no_self_access_flagged(self) -> None:
-        """Method that doesn't access self at all triggers SLD303."""
-        code = """
-        class MyClass:
-            def compute(self):
-                return 42
-        """
-        codes = get_error_codes(code)
-        assert_that(codes, has_item("SLD303"))
-
-    def test_async_method_with_private_access(self) -> None:
-        """Async method accessing private state."""
-        code = """
-        class MyClass:
-            async def fetch(self):
-                return self._data
-        """
-        codes = get_error_codes(code)
-        assert_that("SLD303" in codes, equal_to(False))
-
-    def test_decorator_not_name_or_attribute_or_call(self) -> None:
-        """Decorator that is not Name, Attribute, or Call."""
-        code = """
-        class MyClass:
-            @(some_list[0])
-            def method(self):
-                return self.value
-        """
-        codes = get_error_codes(code)
-        assert_that("SLD303" in codes, equal_to(True))
-
-    def test_method_decorator_attribute_not_abstractmethod(self) -> None:
-        """Decorator that is Attribute but not abstractmethod."""
-        code = """
-        class MyClass:
-            @some_module.some_decorator
-            def method(self):
-                return self.value
-        """
-        codes = get_error_codes(code)
-        assert_that(codes, has_item("SLD303"))
-
-
-class TestSLD303Exemptions(unittest.TestCase):
-    """Tests for SLD303: Exemptions from public access check."""
-
-    def test_dunder_method_exempt(self) -> None:
-        """Dunder methods are exempt from SLD303."""
-        code = """
-        class MyClass:
-            def __str__(self):
-                return self.name
-        """
-        codes = get_error_codes(code)
-        assert_that("SLD303" in codes, equal_to(False))
-
-    def test_property_exempt(self) -> None:
-        """Property methods are exempt from SLD303."""
-        code = """
-        class MyClass:
-            @property
-            def name(self):
-                return self.first_name + " " + self.last_name
-        """
-        codes = get_error_codes(code)
-        assert_that("SLD303" in codes, equal_to(False))
-
-    def test_setter_exempt(self) -> None:
-        """Property setters are exempt."""
-        code = """
-        class MyClass:
-            @name.setter
-            def name(self, value):
-                self.first_name = value
-        """
-        codes = get_error_codes(code)
-        assert_that("SLD303" in codes, equal_to(False))
-
-    def test_classmethod_exempt(self) -> None:
-        """Classmethods don't have self, so they're exempt."""
-        code = """
-        class MyClass:
-            @classmethod
-            def create(cls):
-                return cls()
-        """
-        codes = get_error_codes(code)
-        assert_that("SLD303" in codes, equal_to(False))
-
-    def test_staticmethod_exempt(self) -> None:
-        """Staticmethods don't have self."""
-        code = """
-        class MyClass:
-            @staticmethod
-            def helper():
-                return 42
-        """
-        codes = get_error_codes(code)
-        assert_that("SLD303" in codes, equal_to(False))
-
-    def test_classmethod_via_attribute(self) -> None:
-        """Test @builtins.classmethod detection."""
-        code = """
-        import builtins
-
-        class MyClass:
-            @builtins.classmethod
-            def create(cls):
-                return cls()
-        """
-        codes = get_error_codes(code)
-        assert_that("SLD303" in codes, equal_to(False))
-
-    def test_staticmethod_via_attribute(self) -> None:
-        """Test @module.staticmethod detection."""
-        code = """
-        import builtins
-
-        class MyClass:
-            @builtins.staticmethod
-            def helper():
-                return 42
-        """
-        codes = get_error_codes(code)
-        assert_that("SLD303" in codes, equal_to(False))
-
-    def test_method_in_class_not_method(self) -> None:
-        """Function in class without self parameter."""
-        code = """
-        class MyClass:
-            def not_a_method():
-                pass
-        """
-        codes = get_error_codes(code)
-        assert_that("SLD301" in codes, equal_to(False))
-        assert_that("SLD302" in codes, equal_to(False))
-        assert_that("SLD303" in codes, equal_to(False))
-
-    def test_staticmethod_via_attribute_with_self(self) -> None:
-        """Test @module.staticmethod on a method with self param."""
-        code = """
-        class MyClass:
-            @types.staticmethod
-            def helper(self):
-                return self.value
-        """
-        codes = get_error_codes(code)
-        assert_that("SLD302" in codes, equal_to(False))
-        assert_that("SLD303" in codes, equal_to(False))
-
-    def test_classmethod_via_attribute_with_self(self) -> None:
-        """Test @module.classmethod on a method with self param."""
-        code = """
-        class MyClass:
-            @functools.classmethod
-            def create(self):
-                return self
-        """
-        codes = get_error_codes(code)
-        assert_that("SLD303" in codes, equal_to(False))
-
-    def test_staticmethod_name_with_self_param(self) -> None:
-        """Test @staticmethod (Name) on method with self parameter."""
-        code = """
-        class MyClass:
-            @staticmethod
-            def method(self):
-                return self
-        """
-        codes = get_error_codes(code)
-        assert_that("SLD303" in codes, equal_to(False))
-
-    def test_classmethod_name_with_self_param(self) -> None:
-        """Test @classmethod (Name) on method with self parameter."""
-        code = """
-        class MyClass:
-            @classmethod
-            def method(self):
-                return self
-        """
-        codes = get_error_codes(code)
-        assert_that("SLD303" in codes, equal_to(False))
+    def test_function_without_self_no_lint(self) -> None:
+        codes = get_error_codes(
+            "class MyClass:\n    def not_a_method():\n        pass\n"
+        )
+        for sld in ("SLD301", "SLD302", "SLD303"):
+            with self.subTest(code=sld):
+                assert_that(sld in codes, equal_to(False))
