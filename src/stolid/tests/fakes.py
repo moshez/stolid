@@ -29,10 +29,10 @@ class FixedRunner:
     """A CommandRunner that returns a preset exit code and records its argv."""
 
     _exit_code: int
-    _calls: list[list[str]] = field(default_factory=list)
+    calls: list[list[str]] = field(default_factory=list)
 
     def run(self, argv: list[str]) -> int:
-        self._calls.append(list(argv))
+        self.calls.append(list(argv))
         return self._exit_code
 
 
@@ -40,11 +40,11 @@ class FixedRunner:
 class CapturedSink:
     """An OutputSink that records stdout and stderr lines."""
 
-    _out: list[str] = field(default_factory=list)
-    _err: list[str] = field(default_factory=list)
+    out: list[str] = field(default_factory=list)
+    err: list[str] = field(default_factory=list)
 
-    def stdout(self, line: str) -> None:
-        self._out.append(line)
+    def stdout(self, line: str) -> None:  # noqa: SLD303
+        self.out.append(line)
 
-    def stderr(self, line: str) -> None:
-        self._err.append(line)
+    def stderr(self, line: str) -> None:  # noqa: SLD303
+        self.err.append(line)

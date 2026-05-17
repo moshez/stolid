@@ -68,10 +68,10 @@ class TestCLIIntegration(unittest.TestCase):
         runner = FixedRunner(_exit_code=0)
         sink = CapturedSink()
         run_stolid(runner=runner, fs=fs, sink=sink, paths=["src", "tests"])
-        assert_that(runner._calls, has_length(1))
-        assert_that(runner._calls[0][1:], equal_to(["src", "tests"]))
+        assert_that(runner.calls, has_length(1))
+        assert_that(runner.calls[0][1:], equal_to(["src", "tests"]))
 
     def test_syntax_error_produces_stderr(self) -> None:
         result, sink, _ = _run_with({"a.py": "def f(\n"}, 0)
-        assert_that(sink._err, is_not(empty()))
+        assert_that(sink.err, is_not(empty()))
         assert_that(result, equal_to(1))

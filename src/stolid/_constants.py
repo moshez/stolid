@@ -32,6 +32,26 @@ SLD604 = "SLD604 Module has {} lines (limit: {})"
 SLD701 = "SLD701 Name '{}' contains forbidden word '{}' (use a more specific name)"
 SLD702 = "SLD702 Global name '{}' shadows {} (rename to disambiguate)"
 SLD801 = "SLD801 duplicated structure ({} nodes); also at {}"
+SLD901 = (
+    "SLD901 External read of private attribute '{}' "
+    "(access only from the defining class)"
+)
+SLD902 = (
+    "SLD902 External write of private attribute '{}' "
+    "(assign only from the defining class)"
+)
+SLD903 = (
+    "SLD903 Absolute import of private name '{}' "
+    "(use a relative import to stay intra-package)"
+)
+SLD904 = (
+    "SLD904 Import reaches into private submodule '{}' "
+    "(use a relative import or the package's public surface)"
+)
+SLD905 = (
+    "SLD905 Access to private attribute '{}' on an imported name "
+    "(use the module's public surface)"
+)
 
 # Duplicate detector thresholds
 MIN_CLONE_NODES = 12
