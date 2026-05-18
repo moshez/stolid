@@ -214,9 +214,11 @@ class TestSLD901ExternalRead(unittest.TestCase):
     """Tests for SLD901: external read of a private attribute."""
 
     def test_present(self) -> None:
+        """Verify present."""
         assert_present(self, _SLD901_PRESENT, "SLD901")
 
     def test_absent(self) -> None:
+        """Verify absent."""
         assert_absent(self, _SLD901_ABSENT, "SLD901")
 
 
@@ -224,9 +226,11 @@ class TestSLD902ExternalWrite(unittest.TestCase):
     """Tests for SLD902: external write of a private attribute."""
 
     def test_present(self) -> None:
+        """Verify present."""
         assert_present(self, _SLD902_PRESENT, "SLD902")
 
     def test_absent(self) -> None:
+        """Verify absent."""
         assert_absent(self, _SLD902_ABSENT, "SLD902")
 
 
@@ -234,9 +238,11 @@ class TestSLD903AbsolutePrivateImport(unittest.TestCase):
     """Tests for SLD903: absolute import of a private name."""
 
     def test_present(self) -> None:
+        """Verify present."""
         assert_present(self, _SLD903_PRESENT, "SLD903")
 
     def test_absent(self) -> None:
+        """Verify absent."""
         assert_absent(self, _SLD903_ABSENT, "SLD903")
 
 
@@ -244,12 +250,15 @@ class TestSLD904PrivateSubmoduleImport(unittest.TestCase):
     """Tests for SLD904: import touching a private submodule."""
 
     def test_present(self) -> None:
+        """Verify present."""
         assert_present(self, _SLD904_PRESENT, "SLD904")
 
     def test_absent(self) -> None:
+        """Verify absent."""
         assert_absent(self, _SLD904_ABSENT, "SLD904")
 
     def test_deep_path_one_violation(self) -> None:
+        """Verify deep path one violation."""
         codes = [
             msg.split()[0] for _, _, msg in check_code("from pkg._a._b import x\n")
         ]
@@ -260,9 +269,11 @@ class TestSLD905ModulePrivateAttr(unittest.TestCase):
     """Tests for SLD905: private access on an imported name."""
 
     def test_present(self) -> None:
+        """Verify present."""
         assert_present(self, _SLD905_PRESENT, "SLD905")
 
     def test_absent(self) -> None:
+        """Verify absent."""
         assert_absent(self, _SLD905_ABSENT, "SLD905")
 
 
@@ -270,6 +281,7 @@ class TestErrorMessages(unittest.TestCase):
     """Tests that emitted messages mention the offending name."""
 
     def test_message_includes_attribute(self) -> None:
+        """Verify message includes attribute."""
         cases = [
             ("SLD901", "obj._secret\n", "_secret"),
             ("SLD902", "obj._token = 'x'\n", "_token"),
@@ -293,6 +305,7 @@ class TestKindAndAttrEmission(unittest.TestCase):
     """Tests against the visitor's semantic surface (kind, attr)."""
 
     def test_emits_expected_kinds(self) -> None:
+        """Verify emits expected kinds."""
         cases = [
             ("def f(x): return x._private\n", EXTERNAL_PRIVATE_READ),
             ("obj._token = 'x'\n", EXTERNAL_PRIVATE_WRITE),
@@ -306,12 +319,15 @@ class TestKindAndAttrEmission(unittest.TestCase):
                 assert_that(kinds_for(source), has_item(expected))
 
     def test_relative_import_emits_nothing(self) -> None:
+        """Verify relative import emits nothing."""
         assert_that(kinds_for("from . import _helper\n"), equal_to(set()))
 
     def test_self_access_in_method_emits_nothing(self) -> None:
+        """Verify self access in method emits nothing."""
         source = "class A:\n    def m(self):\n        return self._x\n"
         assert_that(kinds_for(source), equal_to(set()))
 
     def test_attr_field_records_offending_name(self) -> None:
+        """Verify attr field records offending name."""
         errors = list(check_private_access(ast.parse("obj._secret\n")))
         assert_that([err.attr for err in errors], equal_to(["_secret"]))

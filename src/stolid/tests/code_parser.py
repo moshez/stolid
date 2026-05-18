@@ -15,7 +15,7 @@ from .fakes import InMemoryFileSystem
 
 
 def check_code(code: str, filename: str = "") -> list[tuple[int, int, str]]:
-    """Parse code and return list of (line, col, message) errors."""
+    """Parse ``code`` (under ``filename``) and return ``(line, col, msg)`` errors."""
     dedented = textwrap.dedent(code)
     tree = ast.parse(dedented)
     lines = dedented.splitlines()
@@ -24,7 +24,7 @@ def check_code(code: str, filename: str = "") -> list[tuple[int, int, str]]:
 
 
 def get_error_codes(code: str) -> list[str]:
-    """Parse code and return list of error codes only."""
+    """Parse ``code`` and return the list of error codes only."""
     errors = check_code(code)
     return [msg.split()[0] for _, _, msg in errors]
 
@@ -38,7 +38,10 @@ def _dedent_files(files: dict[str, str]) -> dict[str, str]:
 def check_multifile(
     files: dict[str, str], roots: list[str] | None = None
 ) -> list[tuple[str, int, int, str]]:
-    """Run the duplicate scanner on a virtual multi-file project."""
+    """Run the duplicate scanner over virtual ``files`` under ``roots``.
+
+    Returns a list of report entries.
+    """
     sources = _dedent_files(files)
     fs = InMemoryFileSystem(_files=sources)
     result = scan_paths(fs, roots if roots is not None else ["."])
@@ -47,14 +50,17 @@ def check_multifile(
 
 
 def multifile_codes(files: dict[str, str]) -> list[str]:
-    """Run the duplicate scanner and return just the error codes."""
+    """Run the duplicate scanner over ``files`` and return just the error codes."""
     return [msg.split()[0] for _, _, _, msg in check_multifile(files)]
 
 
 def assert_present(
     test_case: unittest.TestCase, cases: list[tuple[str, str]], sld_code: str
 ) -> None:
-    """Assert ``sld_code`` is present for each (name, code) case."""
+    """Assert ``sld_code`` is present for each ``(name, code)`` in ``cases``.
+
+    Subtests run on ``test_case``.
+    """
     for name, code in cases:
         with test_case.subTest(name=name):
             assert_that(get_error_codes(code), has_item(sld_code))
@@ -63,7 +69,10 @@ def assert_present(
 def assert_absent(
     test_case: unittest.TestCase, cases: list[tuple[str, str]], sld_code: str
 ) -> None:
-    """Assert ``sld_code`` is absent for each (name, code) case."""
+    """Assert ``sld_code`` is absent for each ``(name, code)`` in ``cases``.
+
+    Subtests run on ``test_case``.
+    """
     for name, code in cases:
         with test_case.subTest(name=name):
             assert_that(sld_code in get_error_codes(code), equal_to(False))
@@ -74,7 +83,10 @@ def assert_count(
     cases: list[tuple[str, str, int]],
     sld_code: str,
 ) -> None:
-    """Assert ``sld_code`` appears with the given count for each case."""
+    """Assert ``sld_code`` appears with the given count for each entry in ``cases``.
+
+    Subtests run on ``test_case``.
+    """
     for name, code, count in cases:
         with test_case.subTest(name=name):
             assert_that(get_error_codes(code).count(sld_code), equal_to(count))

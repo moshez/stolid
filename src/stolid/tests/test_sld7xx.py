@@ -85,9 +85,11 @@ class TestSLD701ClassNames(unittest.TestCase):
     """Tests for SLD701: forbidden words in class names."""
 
     def test_present(self) -> None:
+        """Verify present."""
         assert_present(self, _CLASS_PRESENT, "SLD701")
 
     def test_absent(self) -> None:
+        """Verify absent."""
         assert_absent(self, _CLASS_ABSENT, "SLD701")
 
 
@@ -95,9 +97,11 @@ class TestSLD701FunctionNames(unittest.TestCase):
     """Tests for SLD701: forbidden words in function names."""
 
     def test_present(self) -> None:
+        """Verify present."""
         assert_present(self, _FUNCTION_PRESENT, "SLD701")
 
     def test_absent(self) -> None:
+        """Verify absent."""
         assert_absent(self, _FUNCTION_ABSENT, "SLD701")
 
 
@@ -105,11 +109,13 @@ class TestSLD701ModuleNames(unittest.TestCase):
     """Tests for SLD701: forbidden words in module names."""
 
     def test_present(self) -> None:
+        """Verify present."""
         for name, filename in _MODULE_NAME_PRESENT:
             with self.subTest(name=name):
                 assert_that(_module_codes(filename), has_item("SLD701"))
 
     def test_absent(self) -> None:
+        """Verify absent."""
         for name, filename in _MODULE_NAME_ABSENT:
             with self.subTest(name=name):
                 assert_that("SLD701" in _module_codes(filename), equal_to(False))
@@ -119,6 +125,7 @@ class TestSLD701ErrorMessage(unittest.TestCase):
     """Tests for SLD701 error message content."""
 
     def test_message_includes_name_and_word(self) -> None:
+        """Verify message includes name and word."""
         code = "class ConnectionManager:\n    pass\n"
         errors = check_code(code)
         messages = [msg for _, _, msg in errors if "SLD701" in msg]

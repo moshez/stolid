@@ -296,6 +296,120 @@ stdlib module:
 
 Imports of these names are fine — only definitions are flagged.
 
+SLD81x - Documentation
+~~~~~~~~~~~~~~~~~~~~~~
+
+Every public surface needs a docstring. A module is public when its
+filename does not start with a single underscore (``__init__.py`` is
+treated as public because the package itself usually is). A class,
+function, or method is public when its name does not start with an
+underscore. Dunder methods (``__str__``, ``__eq__``, ...) are exempt:
+they implement protocols, not API. Inner functions — functions defined
+inside another function — are also exempt, regardless of name. The
+content checks (SLD814/SLD815/SLD816) apply only once a docstring is
+present.
+
+**SLD811**: Public module missing a module docstring. Add a top-level
+string literal as the first statement.
+
+.. code-block:: python
+
+    # Bad
+    import os
+
+    x = 1
+
+    # Good
+    """Brief description of this module."""
+
+    import os
+
+    x = 1
+
+**SLD812**: Public class missing a docstring (applies even when the
+class lives in a private module).
+
+.. code-block:: python
+
+    # Bad
+    class Reporter:
+        ...
+
+    # Good
+    class Reporter:
+        """Render diagnostic lines for the duplicate scanner."""
+
+**SLD813**: Public function or method missing a docstring (applies even
+inside a private module or private class). Inner functions never need
+one.
+
+.. code-block:: python
+
+    # Bad
+    def parse(source):
+        ...
+
+    # Good
+    def parse(source):
+        """Parse ``source`` and return an AST."""
+        ...
+
+**SLD814**: Function docstring does not mention an argument by name.
+Types are documented via mypy; the docstring describes the semantics of
+each parameter. ``self`` and ``cls`` are exempt.
+
+.. code-block:: python
+
+    # Bad
+    def add(a: int, b: int) -> int:
+        """Add things and return the result."""
+        return a + b
+
+    # Good
+    def add(a: int, b: int) -> int:
+        """Return the sum of ``a`` and ``b``."""
+        return a + b
+
+**SLD815**: Function docstring does not mention the return value. The
+docstring must contain one of ``return``, ``returns``, ``yield``, or
+``yields`` (case-insensitive) unless the function is annotated to return
+``None`` (or has no return annotation).
+
+.. code-block:: python
+
+    # Bad
+    def first(seq: list[int]) -> int:
+        """The first element of ``seq``."""
+        return seq[0]
+
+    # Good
+    def first(seq: list[int]) -> int:
+        """Return the first element of ``seq``."""
+        return seq[0]
+
+**SLD816**: Dataclass docstring does not mention a non-private field.
+Document every public field by name in the class docstring, or annotate
+it with ``field(doc=...)`` so its documentation lives at the field
+itself. Fields whose name starts with ``_`` are exempt.
+
+.. code-block:: python
+
+    # Bad
+    @dataclass(frozen=True, slots=True, kw_only=True)
+    class Point:
+        """A 2D point."""
+
+        x: int
+        y: int
+
+    # Good
+    @dataclass(frozen=True, slots=True, kw_only=True)
+    class Point:
+        """A 2D point with coordinates ``x`` and ``y``."""
+
+        x: int
+        y: int
+
 SLD9xx - Privacy
 ~~~~~~~~~~~~~~~~
 

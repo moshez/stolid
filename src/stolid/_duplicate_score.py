@@ -41,5 +41,5 @@ def node_score(node: ast.AST) -> float:
 
 
 def subtree_score(node: ast.AST) -> float:
-    """Sum the interestingness contributions of every node in the subtree."""
+    """Return the summed interestingness score of every descendant of ``node``."""
     return sum(node_score(child) for child in ast.walk(node))

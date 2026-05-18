@@ -33,9 +33,14 @@ _CLEAN_NO_ERRORS: list[tuple[str, str]] = [
     (
         "well_written_class",
         "from dataclasses import dataclass\nfrom typing import Protocol\n\n"
-        "class DataProvider(Protocol):\n    def get_data(self) -> str: ...\n\n"
+        "class DataProvider(Protocol):\n"
+        '    """A provider."""\n'
+        "    def get_data(self) -> str:\n"
+        '        """Return the data."""\n        ...\n\n'
         "@dataclass(frozen=True, slots=True, kw_only=True)\n"
-        "class MyService:\n    provider: DataProvider\n\n"
+        "class MyService:\n"
+        '    """Hold a ``provider``."""\n'
+        "    provider: DataProvider\n\n"
         "    def __str__(self) -> str:\n"
         "        return f'MyService({self.provider})'\n\n"
         "    def __repr__(self) -> str:\n        return self.__str__()\n",
@@ -43,27 +48,36 @@ _CLEAN_NO_ERRORS: list[tuple[str, str]] = [
     (
         "protocol_definition",
         "from typing import Protocol\n\n"
-        "class DataProvider(Protocol):\n    def get_data(self) -> str: ...\n",
+        "class DataProvider(Protocol):\n"
+        '    """A provider."""\n'
+        "    def get_data(self) -> str:\n"
+        '        """Return the data."""\n        ...\n',
     ),
     (
         "proper_dataclass",
         "from dataclasses import dataclass\n\n"
         "@dataclass(frozen=True, slots=True, kw_only=True)\n"
-        "class Point:\n    x: int\n    y: int\n",
+        "class Point:\n"
+        '    """Holds ``x`` and ``y``."""\n'
+        "    x: int\n    y: int\n",
     ),
     (
         "proper_enum",
         "from enum import Enum\n\n"
-        "class Color(Enum):\n    RED = 1\n    GREEN = 2\n    BLUE = 3\n",
+        "class Color(Enum):\n"
+        '    """Colors of a stoplight."""\n'
+        "    RED = 1\n    GREEN = 2\n    BLUE = 3\n",
     ),
     ("empty_file", ""),
     (
         "module_level_function",
-        "def my_function():\n    pass\n\ndef _private_function():\n    pass\n",
+        'def my_function() -> None:\n    """Do my thing."""\n    pass\n\n'
+        "def _private_function():\n    pass\n",
     ),
     (
         "class_with_only_class_variables",
-        "class Constants:\n    VALUE = 42\n    NAME = 'test'\n",
+        'class Constants:\n    """Module constants."""\n'
+        "    VALUE = 42\n    NAME = 'test'\n",
     ),
     ("import_star", "from typing import *\n"),
 ]
@@ -157,6 +171,7 @@ class TestPresentByCode(unittest.TestCase):
     """Tests that specific code is present for nested/async scenarios."""
 
     def test_present(self) -> None:
+        """Verify present."""
         for name, code, expected in _NESTED_AND_ASYNC_PRESENT:
             with self.subTest(name=name):
                 assert_that(get_error_codes(code), has_item(expected))
@@ -166,6 +181,7 @@ class TestCleanCode(unittest.TestCase):
     """Tests that well-written code produces no errors."""
 
     def test_no_errors(self) -> None:
+        """Verify no errors."""
         for name, code in _CLEAN_NO_ERRORS:
             with self.subTest(name=name):
                 assert_that(get_error_codes(code), empty())
@@ -175,6 +191,7 @@ class TestErrorMessages(unittest.TestCase):
     """Tests for error message content."""
 
     def test_contains_expected(self) -> None:
+        """Verify contains expected."""
         for name, code, sld, expected in _ERROR_MESSAGE_CASES:
             with self.subTest(name=name):
                 errors = check_code(code)
@@ -186,6 +203,7 @@ class TestCheckerMetadata(unittest.TestCase):
     """Tests for checker metadata."""
 
     def test_attributes(self) -> None:
+        """Verify attributes."""
         for attr, expected in [("name", "stolid"), ("version", "0.1.0")]:
             with self.subTest(attr=attr):
                 assert_that(getattr(Checker, attr), equal_to(expected))
@@ -195,11 +213,13 @@ class TestSLD303Exemptions(unittest.TestCase):
     """Tests for SLD303 exemptions (testcase, protocol, deleter)."""
 
     def test_exempt(self) -> None:
+        """Verify exempt."""
         for name, code in _SLD303_EXEMPT:
             with self.subTest(name=name):
                 assert_that("SLD303" in get_error_codes(code), equal_to(False))
 
     def test_not_exempt(self) -> None:
+        """Verify not exempt."""
         for name, code in _SLD303_NOT_EXEMPT:
             with self.subTest(name=name):
                 assert_that(get_error_codes(code), has_item("SLD303"))

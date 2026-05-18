@@ -35,7 +35,7 @@ def is_attribute_in(node: ast.AST, attrs: Iterable[str]) -> bool:
 
 
 def get_base_name(node: ast.expr) -> str | None:
-    """Extract the name from a base class node."""
+    """Return the base-class name expressed by ``node``, or ``None`` if unknown."""
     if isinstance(node, ast.Name):
         return node.id
     if isinstance(node, ast.Attribute):
@@ -46,7 +46,7 @@ def get_base_name(node: ast.expr) -> str | None:
 
 
 def class_inherits_from(node: ast.ClassDef, base_name: str) -> bool:
-    """Check if a class inherits directly from a base with the given name."""
+    """Return True iff class ``node`` lists a base whose name equals ``base_name``."""
     for base in node.bases:
         if get_base_name(base) == base_name:
             return True
@@ -54,7 +54,7 @@ def class_inherits_from(node: ast.ClassDef, base_name: str) -> bool:
 
 
 def is_dataclass_decorator(node: ast.expr) -> bool:
-    """Check if a decorator is @dataclass or @dataclasses.dataclass."""
+    """Return True iff ``node`` is a ``@dataclass`` or ``@dataclasses.dataclass``."""
     if is_name_id(node, "dataclass"):
         return True
     if is_attribute_attr(node, "dataclass"):
@@ -65,7 +65,7 @@ def is_dataclass_decorator(node: ast.expr) -> bool:
 
 
 def get_dataclass_keywords(node: ast.expr) -> dict[str, bool]:
-    """Extract keyword arguments from a dataclass decorator."""
+    """Return the constant ``frozen``/``slots``/``kw_only`` kwargs of ``node``."""
     if not isinstance(node, ast.Call):
         return {}
     result: dict[str, bool] = {}
@@ -79,7 +79,7 @@ def get_dataclass_keywords(node: ast.expr) -> dict[str, bool]:
 def method_accesses_private_state(
     node: FunctionType,
 ) -> bool:
-    """Check if a method accesses self._private attributes."""
+    """Return True iff method ``node`` reads any ``self._private`` attribute."""
     for child in ast.walk(node):
         if isinstance(child, ast.Attribute):
             if is_name_id(child.value, "self") and child.attr.startswith("_"):
@@ -88,7 +88,7 @@ def method_accesses_private_state(
 
 
 def is_method(node: FunctionType) -> bool:
-    """Check if a function definition is a method (has self as first arg)."""
+    """Return True iff function ``node`` has ``self`` as its first positional arg."""
     if not node.args.args:
         return False
     first_arg = node.args.args[0]
@@ -101,7 +101,7 @@ _CM_SM = ("classmethod", "staticmethod")
 def is_classmethod_or_staticmethod(
     node: FunctionType,
 ) -> bool:
-    """Check if a method has @classmethod or @staticmethod decorator."""
+    """Return True iff ``node`` is decorated ``@classmethod`` or ``@staticmethod``."""
     for decorator in node.decorator_list:
         if is_name_in(decorator, _CM_SM) or is_attribute_in(decorator, _CM_SM):
             return True
@@ -109,7 +109,7 @@ def is_classmethod_or_staticmethod(
 
 
 def is_dunder_method(name: str) -> bool:
-    """Check if a method name is a dunder method (__xxx__)."""
+    """Return True iff ``name`` is a dunder identifier (``__xxx__``)."""
     return name.startswith("__") and name.endswith("__")
 
 
@@ -117,7 +117,7 @@ _PROPERTY_SUFFIXES = ("setter", "getter", "deleter")
 
 
 def is_property_method(node: FunctionType) -> bool:
-    """Check if a method is a property (has @property or @xxx.setter decorator)."""
+    """Return True iff ``node`` is ``@property`` or an ``@x.setter``/getter/deleter."""
     for decorator in node.decorator_list:
         if is_name_id(decorator, "property"):
             return True
@@ -127,7 +127,7 @@ def is_property_method(node: FunctionType) -> bool:
 
 
 def get_function_line_count(node: FunctionType) -> int:
-    """Count the number of lines in a function body."""
+    """Return the line span of function ``node``'s body."""
     assert node.body, "Function body cannot be empty in valid Python"
     first_line = node.body[0].lineno
     last_line = node.body[-1].end_lineno or node.body[-1].lineno
@@ -135,7 +135,7 @@ def get_function_line_count(node: FunctionType) -> int:
 
 
 def get_function_arg_count(node: FunctionType) -> int:
-    """Count the number of arguments in a function (excluding self/cls)."""
+    """Return the argument count of function ``node`` (``self``/``cls`` excluded)."""
     args = node.args
     total = len(args.args) + len(args.posonlyargs) + len(args.kwonlyargs)
     if args.args and args.args[0].arg in ("self", "cls"):  # noqa: SLD304
@@ -144,7 +144,7 @@ def get_function_arg_count(node: FunctionType) -> int:
 
 
 def get_class_method_count(node: ast.ClassDef) -> int:
-    """Count the number of methods in a class (excluding dunders)."""
+    """Return the non-dunder method count of class ``node``."""
     count = 0
     for child in node.body:
         if isinstance(child, FUNCTION_DEF_NODES):
@@ -167,7 +167,7 @@ _CAST_WANTED = ("cast",)
 
 
 def collect_imports(tree: ast.AST) -> tuple[set[str], set[str], set[str]]:
-    """Collect names that refer to patch, abstractmethod, or cast."""
+    """Return names bound in ``tree`` that alias patch, abstractmethod, and cast."""
     patch_names: set[str] = set()
     abstractmethod_names: set[str] = {"abstractmethod"}
     cast_names: set[str] = set()
@@ -190,7 +190,9 @@ _WORD_SPLIT_PATTERN = re.compile(r"_|(?<=[a-z])(?=[A-Z])")
 
 
 def split_identifier_into_words(name: str) -> list[str]:
-    """Split an identifier into words by underscores and CamelCase boundaries.
+    """Split identifier ``name`` into its words and return them.
+
+    Splits on underscores and CamelCase boundaries.
 
     Examples:
         "DiskUtil" -> ["Disk", "Util"]
@@ -202,10 +204,7 @@ def split_identifier_into_words(name: str) -> list[str]:
 
 
 def find_bad_name_word(name: str) -> str | None:
-    """Check if an identifier contains a forbidden word at a word boundary.
-
-    Returns the forbidden word if found, None otherwise.
-    """
+    """Return the first forbidden word in identifier ``name``, or ``None`` if absent."""
     words = split_identifier_into_words(name)
     for word in words:
         if word.lower() in BAD_NAME_WORDS:

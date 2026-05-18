@@ -22,10 +22,12 @@ class Frame:
     _bindings: dict[str, int] = field(default_factory=dict)
 
     def add(self, name: str) -> None:
+        """Record ``name`` in this frame, assigning it the next positional slot."""
         if name not in self._bindings:
             self._bindings[name] = len(self._bindings)
 
     def position(self, name: str) -> int | None:
+        """Return ``name``'s positional slot in this frame, or ``None`` if unbound."""
         return self._bindings.get(name)
 
 
@@ -36,9 +38,11 @@ class ScopeStack:
     _frames: list[Frame] = field(default_factory=list)
 
     def enter(self, frame: Frame) -> None:
+        """Push ``frame`` onto the stack as the new innermost scope."""
         self._frames.append(frame)
 
     def exit(self) -> None:
+        """Pop the innermost frame, restoring the prior scope."""
         self._frames.pop()
 
     def normalize(self, name: str) -> str:

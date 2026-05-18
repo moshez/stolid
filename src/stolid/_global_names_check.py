@@ -13,6 +13,12 @@ from ._reserved_names import reserved_name_source
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class GlobalNameError:
+    """A reserved-name shadowing violation.
+
+    ``lineno``/``col_offset`` locate the offending definition; ``message``
+    is the formatted diagnostic.
+    """
+
     lineno: int
     col_offset: int
     message: str
@@ -37,7 +43,7 @@ def _check_name(name: str, lineno: int, col_offset: int) -> Iterator[GlobalNameE
 
 
 def check_global_names(tree: ast.Module) -> Iterator[GlobalNameError]:
-    """Yield errors for module-level definitions that shadow reserved names."""
+    """Yield errors for module-level definitions in ``tree`` shadowing reserved."""
     for node in tree.body:
         if isinstance(node, NAMED_DEF_NODES):
             yield from _check_name(node.name, node.lineno, node.col_offset)

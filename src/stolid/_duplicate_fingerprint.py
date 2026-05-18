@@ -78,7 +78,11 @@ def _(node: ast.Attribute, scope: ScopeStack) -> str:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class Occurrence:
-    """A single fingerprinted subtree."""
+    """A single fingerprinted subtree.
+
+    ``digest`` is the Merkle hash of the subtree, ``node`` is the AST node
+    itself, and ``node_count`` is the total number of AST nodes it contains.
+    """
 
     digest: bytes
     node: ast.AST
@@ -116,8 +120,9 @@ def _hash_node(node: ast.AST, signature: str, child_digests: list[bytes]) -> byt
 def fingerprint(
     node: ast.AST, scope: ScopeStack, collected: list[Occurrence]
 ) -> tuple[bytes, int]:
-    """Compute a Merkle hash of ``node``; record every subtree in ``collected``.
+    """Compute a Merkle hash of ``node`` using the current ``scope``.
 
+    Records every visited subtree (and its digest) into ``collected``.
     Returns the digest and the node count of this subtree.
     """
     frame = _frame_for(node)

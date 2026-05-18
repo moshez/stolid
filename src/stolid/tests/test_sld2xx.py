@@ -162,9 +162,11 @@ class TestSLD201ABCProhibited(unittest.TestCase):
     """Tests for SLD201: ABC import is prohibited."""
 
     def test_present(self) -> None:
+        """Verify present."""
         assert_present(self, _SLD201_PRESENT, "SLD201")
 
     def test_absent(self) -> None:
+        """Verify absent."""
         assert_absent(self, _SLD201_ABSENT, "SLD201")
 
 
@@ -172,9 +174,11 @@ class TestSLD202AbstractMethodProhibited(unittest.TestCase):
     """Tests for SLD202: @abstractmethod is prohibited."""
 
     def test_present(self) -> None:
+        """Verify present."""
         assert_present(self, _SLD202_PRESENT, "SLD202")
 
     def test_count(self) -> None:
+        """Verify count."""
         assert_count(self, _SLD202_COUNT, "SLD202")
 
 
@@ -182,9 +186,11 @@ class TestSLD203CastProhibited(unittest.TestCase):
     """Tests for SLD203: typing.cast is prohibited."""
 
     def test_present(self) -> None:
+        """Verify present."""
         assert_present(self, _SLD203_PRESENT, "SLD203")
 
     def test_absent(self) -> None:
+        """Verify absent."""
         assert_absent(self, _SLD203_ABSENT, "SLD203")
 
 
@@ -192,15 +198,19 @@ class TestSLD204ImportPlacement(unittest.TestCase):
     """Tests for SLD204: imports must be at the top of the module."""
 
     def test_present(self) -> None:
+        """Verify present."""
         assert_present(self, _SLD204_PRESENT, "SLD204")
 
     def test_absent(self) -> None:
+        """Verify absent."""
         assert_absent(self, _SLD204_ABSENT, "SLD204")
 
     def test_count(self) -> None:
+        """Verify count."""
         assert_count(self, _SLD204_COUNT, "SLD204")
 
     def test_no_errors_on_well_formed_module(self) -> None:
+        """Verify no errors on well formed module."""
         code = (
             '"""Module docstring."""\n'
             "from __future__ import annotations\n"

@@ -97,4 +97,5 @@ class TestScopeFeatures(unittest.TestCase):
     """Tests for less-common scope and binding features."""
 
     def test_pair_clones_reported(self) -> None:
+        """Verify pair clones reported."""
         assert_pair_positive(self, _SCOPE_POSITIVE)

@@ -65,20 +65,20 @@ def _argument_names(args: ast.arguments) -> Iterator[str]:
 
 
 def function_binders(node: FunctionType) -> Iterator[str]:
-    """Yield the bindings of a function frame in source order."""
+    """Yield the names bound in function ``node``'s frame in source order."""
     yield from _argument_names(node.args)
     for body_node in _iter_body_nodes(node):
         yield from _statement_binders(body_node)
 
 
 def lambda_binders(node: ast.Lambda) -> Iterator[str]:
-    """Yield the bindings of a lambda frame in source order."""
+    """Yield the names bound in lambda ``node``'s frame in source order."""
     yield from _argument_names(node.args)
 
 
 def comprehension_binders(
     node: ast.ListComp | ast.SetComp | ast.DictComp | ast.GeneratorExp,
 ) -> Iterator[str]:
-    """Yield the bindings of a comprehension frame in source order."""
+    """Yield the names bound in comprehension ``node``'s frame in source order."""
     for generator in node.generators:
         yield from _names_in_target(generator.target)

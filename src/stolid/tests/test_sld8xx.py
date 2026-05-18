@@ -135,14 +135,17 @@ class TestPositiveClones(unittest.TestCase):
     """Cases where SLD801 should be reported across two files."""
 
     def test_two_file_clones(self) -> None:
+        """Verify two file clones."""
         assert_pair_positive(self, _POSITIVE_CASES)
 
     def test_take_quartet(self) -> None:
+        """Verify take quartet."""
         result = check_multifile({f"f{i}.py": TAKE_BODY for i in range(4)})
         codes = [msg.split()[0] for _, _, _, msg in result]
         assert_that(codes.count("SLD801"), equal_to(4))
 
     def test_nested_inner_collide(self) -> None:
+        """Verify nested inner collide."""
         a = (
             "def foo(a, b):\n"
             "    t = 5\n"
@@ -160,6 +163,7 @@ class TestPositiveClones(unittest.TestCase):
         assert_that(result, has_length(2))
 
     def test_same_file_duplication(self) -> None:
+        """Verify same file duplication."""
         body = (
             "import itertools\n"
             "def take1(seq, n): return list(itertools.islice(seq, n))\n"
@@ -170,6 +174,7 @@ class TestPositiveClones(unittest.TestCase):
         assert_that(result, has_length(3))
 
     def test_cross_class_method_duplication(self) -> None:
+        """Verify cross class method duplication."""
         a = (
             "import itertools\n"
             "class A:\n"
@@ -186,6 +191,7 @@ class TestPositiveClones(unittest.TestCase):
         assert_that(codes.count("SLD801"), greater_than(0))
 
     def test_subexpression_collision(self) -> None:
+        """Verify subexpression collision."""
         codes = multifile_codes(files(**{"a.py": _SUBEXPR_A, "b.py": _SUBEXPR_B}))
         assert_that(codes, has_item("SLD801"))
 
@@ -194,19 +200,23 @@ class TestNegativeNoClones(unittest.TestCase):
     """Cases that must not be reported."""
 
     def test_two_file_no_clones(self) -> None:
+        """Verify two file no clones."""
         assert_pair_negative(self, _NEGATIVE_CASES)
 
     def test_single_file_no_clones(self) -> None:
+        """Verify single file no clones."""
         for name, body in _SINGLE_FILE_ABSENT:
             with self.subTest(name=name):
                 codes = multifile_codes({"f.py": body})
                 assert_that("SLD801" in codes, equal_to(False))
 
     def test_below_size_threshold(self) -> None:
+        """Verify below size threshold."""
         codes = multifile_codes({f"f{i}.py": "def f(): return 1\n" for i in range(5)})
         assert_that("SLD801" in codes, equal_to(False))
 
     def test_below_score_threshold(self) -> None:
+        """Verify below score threshold."""
         body = (
             "class C:\n"
             "    def __init__(self, a, b, c, d, e):\n"

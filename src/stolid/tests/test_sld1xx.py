@@ -115,15 +115,19 @@ class TestSLD102(unittest.TestCase):
     """Tests for SLD102: patch/mock detection."""
 
     def test_present(self) -> None:
+        """Verify present."""
         assert_present(self, _SLD102_PRESENT, "SLD102")
 
     def test_absent(self) -> None:
+        """Verify absent."""
         assert_absent(self, _SLD102_ABSENT, "SLD102")
 
     def test_count(self) -> None:
+        """Verify count."""
         assert_count(self, _SLD102_COUNT, "SLD102")
 
     def test_mock_import_no_errors(self) -> None:
+        """Verify mock import no errors."""
         assert_that(
             get_error_codes("from unittest.mock import Mock, MagicMock\n"),
             empty(),

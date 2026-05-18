@@ -49,6 +49,7 @@ class TestSubtreeReporting(unittest.TestCase):
     """Reporting of subtree positions and parent-dominates."""
 
     def test_parent_dominates(self) -> None:
+        """Verify parent dominates."""
         a = (
             "import itertools\n"
             "def take(seq, n): return list(itertools.islice(seq, n))\n"
@@ -62,6 +63,7 @@ class TestEdgeCases(unittest.TestCase):
     """Edge cases: syntax errors, non-.py, gitignore, decorators."""
 
     def test_syntax_error_continues(self) -> None:
+        """Verify syntax error continues."""
         broken = "def take(seq, n: return list(\n"
         result = check_multifile(
             files(**{"a.py": broken, "b.py": TAKE_BODY, "c.py": TAKE_BODY})
@@ -70,6 +72,7 @@ class TestEdgeCases(unittest.TestCase):
         assert_that(codes.count("SLD801"), equal_to(2))
 
     def test_non_py_files_ignored(self) -> None:
+        """Verify non py files ignored."""
         codes = multifile_codes(
             {
                 "f.py": TAKE_BODY,
@@ -81,6 +84,7 @@ class TestEdgeCases(unittest.TestCase):
         assert_that(codes.count("SLD801"), equal_to(2))
 
     def test_gitignore_honored(self) -> None:
+        """Verify gitignore honored."""
         codes = multifile_codes(
             {
                 ".gitignore": "ignored.py\n",
@@ -91,9 +95,11 @@ class TestEdgeCases(unittest.TestCase):
         assert_that("SLD801" in codes, equal_to(False))
 
     def test_pair_negative(self) -> None:
+        """Verify pair negative."""
         assert_pair_negative(self, _NEGATIVE_PAIRS)
 
     def test_pair_positive(self) -> None:
+        """Verify pair positive."""
         assert_pair_positive(self, _POSITIVE_PAIRS)
 
 
@@ -101,6 +107,7 @@ class TestSubtreeDomination(unittest.TestCase):
     """Tests for parent-dominates suppression."""
 
     def test_non_dominated_groups_reported(self) -> None:
+        """Verify non dominated groups reported."""
         a = (
             "import itertools\n"
             "def take(seq, n): return list(itertools.islice(seq, n))\n"
@@ -128,6 +135,7 @@ class TestSameFileTwoClones(unittest.TestCase):
     """A small clone earlier in a file plus a larger one later: both reported."""
 
     def test_both_groups_reported(self) -> None:
+        """Verify both groups reported."""
         body = (
             "import itertools\n"
             "def small(seq, n): return list(itertools.islice(seq, n))\n"
@@ -146,6 +154,7 @@ class TestPathRoots(unittest.TestCase):
     """Tests for root path handling (trailing slash)."""
 
     def test_trailing_slash_root(self) -> None:
+        """Verify trailing slash root."""
         take = (
             "import itertools\n"
             "def take(seq, n): return list(itertools.islice(seq, n))\n"

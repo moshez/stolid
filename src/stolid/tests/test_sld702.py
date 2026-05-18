@@ -48,12 +48,15 @@ class TestSLD702(unittest.TestCase):
     """Tests for SLD702: shadowing reserved names."""
 
     def test_present(self) -> None:
+        """Verify present."""
         assert_present(self, _SLD702_PRESENT, "SLD702")
 
     def test_absent(self) -> None:
+        """Verify absent."""
         assert_absent(self, _SLD702_ABSENT, "SLD702")
 
     def test_message_content(self) -> None:
+        """Verify message content."""
         for name, code, expected in _SLD702_MESSAGE:
             with self.subTest(name=name):
                 errors = check_code(code)

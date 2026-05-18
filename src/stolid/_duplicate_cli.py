@@ -12,6 +12,7 @@ class CommandRunner(Protocol):
     """Runs an external command and returns its exit code."""
 
     def run(self, argv: list[str]) -> int:  # noqa: E704
+        """Run the command described by ``argv`` and return its exit code."""
         ...
 
 
@@ -19,9 +20,11 @@ class OutputSink(Protocol):
     """Receives stdout and stderr lines from the duplicate CLI."""
 
     def stdout(self, line: str) -> None:  # noqa: E704
+        """Emit ``line`` on the standard-output stream."""
         ...
 
     def stderr(self, line: str) -> None:  # noqa: E704
+        """Emit ``line`` on the standard-error stream."""
         ...
 
 
@@ -40,7 +43,7 @@ def _emit_results(result: ScanResult, lines: list[ReportLine], sink: OutputSink)
 
 
 def run_duplicate_scan(fs: FileSystem, sink: OutputSink, paths: list[str]) -> int:
-    """Run only the duplicate scanner (no flake8) and emit reports."""
+    """Scan ``paths`` via ``fs``; emit reports to ``sink``; return the exit code."""
     result = scan_paths(fs, paths)
     lines = report_lines(fs, result)
     return _emit_results(result, lines, sink)
@@ -52,7 +55,11 @@ def run_stolid(
     sink: OutputSink,
     paths: list[str],
 ) -> int:
-    """Run flake8 then the duplicate scanner, returning the merged exit code."""
+    """Run flake8 via ``runner`` then the duplicate scanner over ``paths``.
+
+    Uses ``fs`` to read files and ``sink`` to emit diagnostics. Returns the
+    merged exit code (the maximum of the two stages).
+    """
     flake8_exit = runner.run(_flake8_argv(paths))
     duplicate_exit = run_duplicate_scan(fs, sink, paths)
     return max(flake8_exit, duplicate_exit)

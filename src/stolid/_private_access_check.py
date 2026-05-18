@@ -37,7 +37,11 @@ MODULE_PRIVATE_ATTR = "module_private_attr"
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class PrivacyError:
-    """A privacy convention violation."""
+    """A privacy convention violation.
+
+    ``lineno`` and ``col_offset`` locate the offending access; ``kind`` is
+    one of the module-level constants above; ``attr`` is the private name.
+    """
 
     lineno: int
     col_offset: int
@@ -61,32 +65,41 @@ class _State:
     _violations: list[PrivacyError] = field(default_factory=list)
 
     def in_class(self) -> bool:
+        """Return True iff at least one enclosing class is being visited."""
         return bool(self._class_stack)
 
     def enter_class(self, name: str) -> None:
+        """Push class ``name`` onto the class stack."""
         self._class_stack.append(name)
 
     def exit_class(self) -> None:
+        """Pop the innermost class from the class stack."""
         self._class_stack.pop()
 
     def enter_function(self, privileged: str | None) -> None:
+        """Push a function frame whose privileged first-arg name is ``privileged``."""
         self._privileged_args.append(privileged)
 
     def exit_function(self) -> None:
+        """Pop the innermost function frame."""
         self._privileged_args.pop()
 
     def privileged_arg(self) -> str | None:
+        """Return the innermost function's privileged first-arg name, or ``None``."""
         if not self._privileged_args:
             return None
         return self._privileged_args[-1]
 
     def is_imported(self, name: str) -> bool:
+        """Return True iff ``name`` was bound by an ``import``/``from`` statement."""
         return name in self._imported_names
 
     def bind_import(self, name: str) -> None:
+        """Record that ``name`` is bound to an imported module/symbol."""
         self._imported_names.add(name)
 
     def record(self, node: ast.stmt | ast.expr, kind: str, attr: str) -> None:
+        """Record a violation of ``kind`` for private ``attr`` located at ``node``."""
         self._violations.append(
             PrivacyError(
                 lineno=node.lineno,
@@ -97,6 +110,7 @@ class _State:
         )
 
     def violations(self) -> Iterator[PrivacyError]:
+        """Yield every recorded :class:`PrivacyError` in insertion order."""
         yield from self._violations
 
 

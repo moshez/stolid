@@ -25,7 +25,11 @@ _FUNCTION_NODES = (ast.FunctionDef, ast.AsyncFunctionDef)
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class StringEnumError:
-    """A stringly-typed code violation."""
+    """A stringly-typed code violation.
+
+    ``lineno`` and ``col_offset`` locate the offending literal; ``message``
+    is the formatted SLD30x diagnostic.
+    """
 
     lineno: int
     col_offset: int
@@ -261,7 +265,7 @@ def _check_literal_annotations(tree: ast.Module) -> Iterator[StringEnumError]:
 
 
 def check_string_enum(tree: ast.Module) -> Iterator[StringEnumError]:
-    """Yield errors for stringly-typed code that should use an enum."""
+    """Yield errors in ``tree`` for stringly-typed code that should use an enum."""
     yield from _check_multi_compare(tree)
     yield from _check_match_statements(tree)
     yield from _check_module_string_count(tree)

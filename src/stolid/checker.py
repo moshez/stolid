@@ -36,6 +36,7 @@ from ._constants import (
     MAX_FUNCTION_LINES,
     MAX_MODULE_LINES,
 )
+from ._docstring_check import check_docstrings
 from ._global_names_check import check_global_names
 from ._import_placement_check import check_import_placement
 from ._string_enum_check import check_string_enum
@@ -83,7 +84,7 @@ _PRIVACY_CODES: dict[str, str] = {
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class Error:
-    """Represents a lint error."""
+    """A lint error: ``lineno``/``col_offset`` locate it; ``message`` describes it."""
 
     lineno: int
     col_offset: int
@@ -357,7 +358,7 @@ def _module_level_errors(lines: list[str], filename: str) -> Iterator[Error]:
 
 @dataclass(slots=True)
 class Checker:  # noqa: SLD501 SLD503
-    """Flake8 checker for stolid conventions."""
+    """Flake8 checker for stolid: parsed ``tree``, source ``lines``, ``filename``."""
 
     name = "stolid"
     version = "0.1.0"
@@ -367,7 +368,7 @@ class Checker:  # noqa: SLD501 SLD503
     filename: str = ""
 
     def run(self) -> Iterator[tuple[int, int, str, type]]:  # noqa: SLD303
-        """Run all checks and yield errors."""
+        """Run all stolid checks and yield ``(line, col, message, type)`` tuples."""
         for merr in _module_level_errors(self.lines, self.filename):
             yield (merr.lineno, merr.col_offset, merr.message, type(self))
 
@@ -379,6 +380,9 @@ class Checker:  # noqa: SLD501 SLD503
 
         for serr in check_string_enum(self.tree):
             yield (serr.lineno, serr.col_offset, serr.message, type(self))
+
+        for derr in check_docstrings(self.tree, self.filename):
+            yield (derr.lineno, derr.col_offset, derr.message, type(self))
 
         for perr in check_private_access(self.tree):
             yield (

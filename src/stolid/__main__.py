@@ -19,11 +19,13 @@ from ._duplicate_cli import resolve_paths, run_stolid
 @dataclass(frozen=True, slots=True, kw_only=True)
 class _RealFileSystem:
     def walk(self, root: str) -> Iterator[str]:  # noqa: SLD303
+        """Yield every file path under ``root`` (os.walk-based)."""
         for dirpath, _, filenames in os.walk(root):
             for name in filenames:
                 yield os.path.join(dirpath, name)
 
     def read(self, path: str) -> str:  # noqa: SLD303
+        """Return the UTF-8 text contents of the file at ``path``."""
         with open(path, encoding="utf-8") as handle:
             return handle.read()
 
@@ -31,19 +33,23 @@ class _RealFileSystem:
 @dataclass(frozen=True, slots=True, kw_only=True)
 class _RealRunner:
     def run(self, argv: list[str]) -> int:  # noqa: SLD303
+        """Run subprocess with ``argv`` and return its exit code."""
         return subprocess.call(argv)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class _RealSink:
     def stdout(self, line: str) -> None:  # noqa: SLD303
+        """Print ``line`` to standard output."""
         print(line)
 
     def stderr(self, line: str) -> None:  # noqa: SLD303
+        """Print ``line`` to standard error."""
         print(line, file=sys.stderr)
 
 
 def main() -> int:
+    """Run stolid as ``python -m stolid``; returns the merged exit code."""
     paths = resolve_paths(sys.argv[1:])
     return run_stolid(
         runner=_RealRunner(),

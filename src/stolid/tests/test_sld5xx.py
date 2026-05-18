@@ -131,9 +131,11 @@ class TestSLD501FrozenDataclass(unittest.TestCase):
     """Tests for SLD501: Dataclass missing frozen=True."""
 
     def test_present(self) -> None:
+        """Verify present."""
         assert_present(self, _SLD501_PRESENT, "SLD501")
 
     def test_absent(self) -> None:
+        """Verify absent."""
         assert_absent(self, _SLD501_ABSENT, "SLD501")
 
 
@@ -141,9 +143,11 @@ class TestSLD502SlotsDataclass(unittest.TestCase):
     """Tests for SLD502: Dataclass missing slots=True."""
 
     def test_present(self) -> None:
+        """Verify present."""
         assert_present(self, _SLD502_PRESENT, "SLD502")
 
     def test_absent(self) -> None:
+        """Verify absent."""
         assert_absent(self, _SLD502_ABSENT, "SLD502")
 
 
@@ -151,9 +155,11 @@ class TestSLD503KwOnlyDataclass(unittest.TestCase):
     """Tests for SLD503: Dataclass missing kw_only=True."""
 
     def test_present(self) -> None:
+        """Verify present."""
         assert_present(self, _SLD503_PRESENT, "SLD503")
 
     def test_absent(self) -> None:
+        """Verify absent."""
         assert_absent(self, _SLD503_ABSENT, "SLD503")
 
 
@@ -161,6 +167,7 @@ class TestDataclassVariants(unittest.TestCase):
     """Tests for dataclass decorator variants."""
 
     def test_dataclasses_module_prefix_flags_all(self) -> None:
+        """Verify dataclasses module prefix flags all."""
         code = (
             "import dataclasses\n\n"
             "@dataclasses.dataclass\nclass MyClass:\n    x: int\n"
@@ -171,6 +178,7 @@ class TestDataclassVariants(unittest.TestCase):
                 assert_that(codes, has_item(sld))
 
     def test_no_sld50x_reported(self) -> None:
+        """Verify no sld50x reported."""
         for name, code in _NO_SLD50X:
             with self.subTest(name=name):
                 codes = get_error_codes(code)
