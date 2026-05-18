@@ -1,15 +1,16 @@
-"""Tests for SLD1xx error codes (patch/mock related)."""
+"""Tests for SLD1xx error codes (mocking, dynamic execution)."""
 
 from __future__ import annotations
 
 import unittest
 
-from hamcrest import assert_that, empty
+from hamcrest import assert_that, contains_string, empty, has_length
 
 from .code_parser import (
     assert_absent,
     assert_count,
     assert_present,
+    check_code,
     get_error_codes,
 )
 
@@ -132,3 +133,74 @@ class TestSLD102(unittest.TestCase):
             get_error_codes("from unittest.mock import Mock, MagicMock\n"),
             empty(),
         )
+
+
+_SLD103_PRESENT: list[tuple[str, str]] = [
+    ("exec_call", "exec('x = 1')\n"),
+    ("eval_call", "result = eval('1 + 1')\n"),
+    ("dunder_import_call", "mod = __import__('os')\n"),
+    ("exec_with_globals", "exec('x = 1', {}, {})\n"),
+    ("eval_in_expression", "values = [eval(s) for s in inputs]\n"),
+    ("exec_aliased", "f = exec\n"),
+    ("eval_aliased", "g = eval\n"),
+    ("dunder_import_aliased", "loader = __import__\n"),
+    ("exec_in_default_arg", "def run(code, _exec=exec):\n    _exec(code)\n"),
+    (
+        "eval_inside_function",
+        "def evaluate(source):\n    return eval(source)\n",
+    ),
+]
+
+
+_SLD103_ABSENT: list[tuple[str, str]] = [
+    ("regular_function_call", "print('hello')\n"),
+    ("ast_literal_eval", "import ast\n\nast.literal_eval('1')\n"),
+    ("exec_as_attribute", "obj.exec()\n"),
+    ("eval_as_attribute", "obj.eval(x)\n"),
+    ("exec_as_string_literal", "x = 'exec'\n"),
+    ("exec_assignment_only", "exec = my_safe_runner\n"),
+    ("del_exec", "del exec\n"),
+    ("exec_in_all_list", "__all__ = ['exec']\n"),
+]
+
+
+_SLD103_COUNT: list[tuple[str, str, int]] = [
+    (
+        "alias_and_call",
+        "f = exec\nf('x')\n",
+        1,
+    ),
+    (
+        "three_dangerous_in_one_line",
+        "result = (exec, eval, __import__)\n",
+        3,
+    ),
+    (
+        "exec_called_twice",
+        "exec('a')\nexec('b')\n",
+        2,
+    ),
+]
+
+
+class TestSLD103(unittest.TestCase):
+    """Tests for SLD103: dangerous dynamic-execution builtins."""
+
+    def test_present(self) -> None:
+        """Verify present."""
+        assert_present(self, _SLD103_PRESENT, "SLD103")
+
+    def test_absent(self) -> None:
+        """Verify absent."""
+        assert_absent(self, _SLD103_ABSENT, "SLD103")
+
+    def test_count(self) -> None:
+        """Verify count."""
+        assert_count(self, _SLD103_COUNT, "SLD103")
+
+    def test_message_includes_name(self) -> None:
+        """Verify message includes name."""
+        errors = check_code("exec('x = 1')\n")
+        sld103 = [msg for _, _, msg in errors if msg.startswith("SLD103")]
+        assert_that(sld103, has_length(1))
+        assert_that(sld103[0], contains_string("'exec'"))

@@ -9,7 +9,9 @@ from typing import Iterator
 
 from ._constants import (
     ALLOWED_BASES,
+    DANGEROUS_BUILTINS,
     SLD102,
+    SLD103,
     SLD201,
     SLD202,
     SLD203,
@@ -106,6 +108,8 @@ def _check_node(node: ast.AST, ctx: CheckContext) -> Iterator[Error]:
         yield from _check_call(node, ctx.patch_names, ctx.cast_names)
     elif isinstance(node, ast.With):
         yield from _check_with(node, ctx.patch_names)
+    elif isinstance(node, ast.Name):
+        yield from _check_dangerous_name(node)
 
 
 def _check_import_from(node: ast.ImportFrom) -> Iterator[Error]:
@@ -163,6 +167,12 @@ def _check_call_attribute(node: ast.Call, patch_names: set[str]) -> Iterator[Err
     elif isinstance(func.value, ast.Attribute):  # pragma: no branch
         if func.value.attr == "patch":  # noqa: SLD306
             yield _error(node, SLD102)
+
+
+def _check_dangerous_name(node: ast.Name) -> Iterator[Error]:
+    # Flag any load-context reference to exec/eval/__import__.
+    if isinstance(node.ctx, ast.Load) and node.id in DANGEROUS_BUILTINS:
+        yield _error(node, SLD103.format(node.id))
 
 
 def _check_with(node: ast.With, patch_names: set[str]) -> Iterator[Error]:
