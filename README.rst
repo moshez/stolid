@@ -238,6 +238,29 @@ this project prefers a real ``Enum`` for the readability and refactoring wins.
 
     def handle(status: Status) -> int: ...
 
+**SLD308**: Flags two or more peer module-level string constants whose values
+are valid Python identifiers (e.g. ``READ = "read"``). A cluster of such
+constants is almost always an enum waiting to be written; defining them
+loosely lets the rest of the SLD30x checks miss them (the literal never
+appears in a comparison or ``match`` — only the name does). The check
+ignores values that aren't ``str.isidentifier()``-true, so things like
+``HOST = "example.com"`` or ``GREETING = "hello world"`` don't fire.
+
+.. code-block:: python
+
+    # Bad
+    READ = "read"
+    WRITE = "write"
+    DELETE = "delete"
+
+    # Good
+    from enum import Enum
+
+    class Action(Enum):
+        READ = "read"
+        WRITE = "write"
+        DELETE = "delete"
+
 SLD4xx - Inheritance
 ~~~~~~~~~~~~~~~~~~~~
 

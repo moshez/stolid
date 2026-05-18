@@ -40,6 +40,10 @@ SLD306 = (
     "(use an enum)"
 )
 SLD307 = "SLD307 Literal[...] annotation uses string literal '{}' (use an enum)"
+SLD308 = (
+    "SLD308 Module-level string constant has identifier value '{}' "
+    "(define peers as Enum members)"
+)
 SLD401 = "SLD401 Class '{}' inherits from concrete class '{}' (use composition)"
 SLD501 = "SLD501 Dataclass '{}' missing frozen=True"
 SLD502 = "SLD502 Dataclass '{}' missing slots=True"
