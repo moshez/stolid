@@ -512,6 +512,62 @@ refactor, and that case is left alone.
         do_work(handle)
     print("done")
 
+**SLD606**: Flags ``try``/``finally`` statements outside of
+``@contextlib.contextmanager`` (or ``@contextlib.asynccontextmanager``)
+generators. ``try``/``finally`` is the bare-knuckles version of a
+context manager: the cleanup belongs behind a ``with`` either way, so
+either reuse an existing context manager or define one. The exemption
+is the natural body of a ``@contextmanager``-decorated generator,
+where ``try``/``finally`` around ``yield`` is the conventional shape.
+
+.. code-block:: python
+
+    # Bad
+    def process(path):
+        f = open(path)
+        try:
+            return f.read()
+        finally:
+            f.close()
+
+    # Good (reuse an existing context manager)
+    def process(path):
+        with open(path) as f:
+            return f.read()
+
+    # Good (define your own context manager)
+    from contextlib import contextmanager
+
+    @contextmanager
+    def acquire(resource):
+        resource.lock()
+        try:
+            yield resource
+        finally:
+            resource.unlock()
+
+**SLD607**: Flags ``try``/``except`` blocks whose handlers are all
+just ``pass``. The intent — swallow these exceptions — lands in a
+single line with ``contextlib.suppress``, and the noise of the
+``try``/``except`` scaffolding goes away. Handlers that do real work
+are untouched; a mix of pass-only and real handlers is also left
+alone. ``else`` and ``finally`` clauses are not handled by
+``suppress``, so their presence disables the check.
+
+.. code-block:: python
+
+    # Bad
+    try:
+        config.remove(key)
+    except KeyError:
+        pass
+
+    # Good
+    from contextlib import suppress
+
+    with suppress(KeyError):
+        config.remove(key)
+
 SLD7xx - Naming
 ~~~~~~~~~~~~~~~
 
