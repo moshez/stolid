@@ -1,5 +1,11 @@
 # stolid Development Guidelines
 
+## Documentation
+
+Always update `README.rst` when adding a new SLD error code. Each code
+needs a short description and (where helpful) a bad/good example, placed
+under the appropriate `SLDNxx` section heading.
+
 ## Running Tests and Linting
 
 Use `nox` to run all checks. If nox is not installed:
