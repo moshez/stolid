@@ -4,6 +4,10 @@ from __future__ import annotations
 
 # Error codes and messages
 SLD102 = "SLD102 Use of patch/patch.object is prohibited (use dependency injection)"
+SLD103 = (
+    "SLD103 Use of '{}' is prohibited "
+    "(dynamic code execution; add # noqa: SLD103 to silence if intentional)"
+)
 SLD201 = "SLD201 Import of ABC is prohibited (use Protocol instead)"
 SLD202 = "SLD202 Use of @abstractmethod is prohibited (use Protocol instead)"
 SLD203 = (
@@ -106,6 +110,10 @@ MIN_CLONE_SCORE = 2.5
 BAD_NAME_WORDS: frozenset[str] = frozenset(
     {"help", "helper", "helpers", "util", "utils", "manage", "manager", "managers"}
 )
+
+# Dangerous builtins for dynamic code execution. Any use is a strong signal
+# of metaprogramming shenanigans and should be carefully audited.
+DANGEROUS_BUILTINS: frozenset[str] = frozenset({"exec", "eval", "__import__"})
 
 # Code limits
 # SLD601 counts a *weighted* line budget, not raw lines. Each line's weight is
