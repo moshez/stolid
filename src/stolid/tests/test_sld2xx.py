@@ -139,6 +139,118 @@ _SLD204_ABSENT: list[tuple[str, str]] = [
 ]
 
 
+_BIG_FROM = "from somelib import (a1, a2, a3, a4, a5, a6, a7, a8)\n"
+
+_BIG_FROM_SPLIT = (
+    "from somelib import a1, a2, a3, a4\nfrom somelib import a5, a6, a7, a8\n"
+)
+
+_BIG_IMPORT = (
+    "import somelib\n"
+    "x = (somelib.a1, somelib.a2, somelib.a3, somelib.a4,\n"
+    "     somelib.a5, somelib.a6, somelib.a7, somelib.a8)\n"
+)
+
+_BIG_IMPORT_ALIAS = (
+    "import somelib as sl\n"
+    "x = (sl.a1, sl.a2, sl.a3, sl.a4, sl.a5, sl.a6, sl.a7, sl.a8)\n"
+)
+
+_TYPE_CHECKING_GUARD = (
+    "from typing import TYPE_CHECKING\n"
+    "if TYPE_CHECKING:\n"
+    "    from somelib import a1, a2, a3, a4, a5, a6, a7, a8\n"
+)
+
+_TYPE_CHECKING_USES = (
+    "from typing import TYPE_CHECKING\n"
+    "import somelib\n"
+    "if TYPE_CHECKING:\n"
+    "    x = (somelib.a1, somelib.a2, somelib.a3, somelib.a4,\n"
+    "         somelib.a5, somelib.a6, somelib.a7, somelib.a8)\n"
+)
+
+
+_TYPE_CHECKING_ELSE = (
+    "from typing import TYPE_CHECKING\n"
+    "if TYPE_CHECKING:\n"
+    "    pass\n"
+    "else:\n"
+    "    from somelib import a1, a2, a3, a4, a5, a6, a7, a8\n"
+)
+
+
+_SLD205_PRESENT: list[tuple[str, str]] = [
+    ("from_import_eight_names", _BIG_FROM),
+    ("from_import_aggregated_across_statements", _BIG_FROM_SPLIT),
+    ("import_plus_eight_attribute_accesses", _BIG_IMPORT),
+    ("import_with_alias_plus_attribute_accesses", _BIG_IMPORT_ALIAS),
+    ("type_checking_else_branch_runs_at_runtime", _TYPE_CHECKING_ELSE),
+]
+
+
+_SLD205_ABSENT: list[tuple[str, str]] = [
+    (
+        "from_import_seven_names_under_limit",
+        "from somelib import a1, a2, a3, a4, a5, a6, a7\n",
+    ),
+    (
+        "import_plus_seven_attribute_accesses",
+        "import somelib\n"
+        "x = (somelib.a1, somelib.a2, somelib.a3, somelib.a4,\n"
+        "     somelib.a5, somelib.a6, somelib.a7)\n",
+    ),
+    (
+        "typing_overuse_is_allowed",
+        "from typing import (Any, Iterable, Iterator, List, Mapping, "
+        "Optional, Protocol, Sequence)\n",
+    ),
+    (
+        "import_typing_attribute_uses_allowed",
+        "import typing\n"
+        "x = (typing.Any, typing.Iterable, typing.Iterator,\n"
+        "     typing.List, typing.Mapping, typing.Optional,\n"
+        "     typing.Protocol, typing.Sequence)\n",
+    ),
+    ("import_with_no_attribute_uses", "import somelib\n"),
+    (
+        "repeated_attribute_access_counts_once",
+        "import somelib\n"
+        "x = (somelib.a1, somelib.a1, somelib.a1, somelib.a1,\n"
+        "     somelib.a1, somelib.a1, somelib.a1, somelib.a1)\n",
+    ),
+    ("from_import_inside_type_checking_block", _TYPE_CHECKING_GUARD),
+    ("attribute_uses_inside_type_checking_block", _TYPE_CHECKING_USES),
+    (
+        "qualified_typing_module_test",
+        "import typing\n"
+        "if typing.TYPE_CHECKING:\n"
+        "    from somelib import a1, a2, a3, a4, a5, a6, a7, a8\n",
+    ),
+    (
+        "attribute_on_non_imported_name_ignored",
+        "obj.a1\nobj.a2\nobj.a3\nobj.a4\nobj.a5\nobj.a6\nobj.a7\nobj.a8\n",
+    ),
+    (
+        "from_import_with_relative_module_skipped",
+        "from . import a1, a2, a3, a4, a5, a6, a7, a8\n",
+    ),
+]
+
+
+_SLD205_COUNT: list[tuple[str, str, int]] = [
+    ("from_import_eight_names_one_error", _BIG_FROM, 1),
+    ("split_from_imports_one_error", _BIG_FROM_SPLIT, 1),
+    ("import_eight_attrs_one_error", _BIG_IMPORT, 1),
+    (
+        "two_modules_two_errors",
+        "from libA import a1, a2, a3, a4, a5, a6, a7, a8\n"
+        "from libB import b1, b2, b3, b4, b5, b6, b7, b8\n",
+        2,
+    ),
+]
+
+
 _SLD204_COUNT: list[tuple[str, str, int]] = [
     (
         "multiple_imports_after_code",
@@ -223,3 +335,19 @@ class TestSLD204ImportPlacement(unittest.TestCase):
         )
         codes = [c for c in get_error_codes(code) if c == "SLD204"]
         assert_that(codes, empty())
+
+
+class TestSLD205ModuleOveruse(unittest.TestCase):
+    """Tests for SLD205: too many references to a single module."""
+
+    def test_present(self) -> None:
+        """Verify present."""
+        assert_present(self, _SLD205_PRESENT, "SLD205")
+
+    def test_absent(self) -> None:
+        """Verify absent."""
+        assert_absent(self, _SLD205_ABSENT, "SLD205")
+
+    def test_count(self) -> None:
+        """Verify count."""
+        assert_count(self, _SLD205_COUNT, "SLD205")

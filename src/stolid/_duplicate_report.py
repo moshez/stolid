@@ -6,8 +6,9 @@ import re
 from dataclasses import dataclass
 from typing import Protocol
 
-from ._constants import SLD801
 from ._duplicate_scan import CloneGroup, CloneOccurrence, ScanResult
+
+SLD801 = "SLD801 duplicated structure ({} nodes); also at {}"
 
 
 class SourceReader(Protocol):

@@ -7,8 +7,9 @@ from dataclasses import dataclass
 from typing import Iterator
 
 from ._ast_inspection import NAMED_DEF_NODES, TUPLE_LIST_NODES
-from ._constants import SLD702
 from ._reserved_names import reserved_name_source
+
+SLD702 = "SLD702 Global name '{}' shadows {} (rename to disambiguate)"
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)

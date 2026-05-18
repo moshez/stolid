@@ -24,16 +24,33 @@ from ._ast_inspection import (
     FunctionType,
     is_dataclass_decorator,
 )
-from ._constants import (
-    SLD811,
-    SLD812,
-    SLD813,
-    SLD814,
-    SLD815,
-    SLD816,
-    SLD821,
-    SLD822,
-    SLD823,
+
+SLD811 = "SLD811 Public module '{}' missing docstring"
+SLD812 = "SLD812 Public class '{}' missing docstring"
+SLD813 = "SLD813 Public function/method '{}' missing docstring"
+SLD814 = (
+    "SLD814 Function '{}' docstring does not mention argument '{}' "
+    "(describe the semantics of every parameter)"
+)
+SLD815 = (
+    "SLD815 Function '{}' docstring does not mention the return value "
+    "(use 'return'/'returns'/'yield'/'yields' to describe what is produced)"
+)
+SLD816 = (
+    "SLD816 Dataclass '{}' docstring does not mention field '{}' "
+    "(document every non-private field, or annotate with field(doc=...))"
+)
+SLD821 = (
+    "SLD821 Private module '{}' has a docstring "
+    "(use ``#`` comments for implementation notes)"
+)
+SLD822 = (
+    "SLD822 Private class '{}' has a docstring "
+    "(use ``#`` comments for implementation notes)"
+)
+SLD823 = (
+    "SLD823 Private function/method '{}' has a docstring "
+    "(use ``#`` comments for implementation notes)"
 )
 
 _RETURN_WORDS = re.compile(r"\b(?:returns?|yields?)\b", re.IGNORECASE)
