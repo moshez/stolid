@@ -66,9 +66,9 @@ class TestNoqa(unittest.TestCase):
         )
         paths = [path for path, _, _, _ in result]
         assert_that("a.py" in paths, equal_to(False))
-        for path in ("b.py", "c.py"):
-            with self.subTest(path=path):
-                assert_that(paths.count(path), equal_to(1))
+        for filename in ("b.py", "c.py"):
+            with self.subTest(path=filename):
+                assert_that(paths.count(filename), equal_to(1))
 
     def test_noqa_still_in_also_at(self) -> None:
         """Verify noqa still in also at."""

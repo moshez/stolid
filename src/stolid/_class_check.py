@@ -16,7 +16,7 @@ from ._ast_inspection import (
     get_base_name,
     is_attribute_attr,
     is_dataclass_decorator,
-    is_name_in,
+    is_name_among,
 )
 from ._constants import ALLOWED_BASES, MAX_CLASS_METHODS
 
@@ -100,7 +100,7 @@ def _is_method(node: FunctionType) -> bool:
 
 def _is_classmethod_or_staticmethod(node: FunctionType) -> bool:
     for decorator in node.decorator_list:
-        if is_name_in(decorator, _CM_SM):
+        if is_name_among(decorator, _CM_SM):
             return True
         if isinstance(decorator, ast.Attribute) and decorator.attr in _CM_SM:
             return True
@@ -141,23 +141,23 @@ def check_abc_import(node: ast.ImportFrom) -> Iterator[ClassError]:
 
 
 def _name_decorator_errors(
-    decorators: list[ast.expr], names: set[str], code: str
+    decoration_list: list[ast.expr], names: set[str], template: str
 ) -> Iterator[ClassError]:
-    for decorator in decorators:
-        if is_name_in(decorator, names):
-            yield _error(decorator, code)
+    for decorator in decoration_list:
+        if is_name_among(decorator, names):
+            yield _error(decorator, template)
 
 
 def check_abstract_decorators(
-    decorators: list[ast.expr], names: set[str]
+    decoration_list: list[ast.expr], names: set[str]
 ) -> Iterator[ClassError]:
-    """Yield SLD202 for @abstractmethod use in ``decorators``.
+    """Yield SLD202 for @abstractmethod use in ``decoration_list``.
 
     ``names`` are the module-local bindings that refer to
     ``abstractmethod`` (e.g. when imported under an alias).
     """
-    yield from _name_decorator_errors(decorators, names, SLD202)
-    for decorator in decorators:
+    yield from _name_decorator_errors(decoration_list, names, SLD202)
+    for decorator in decoration_list:
         if is_attribute_attr(decorator, "abstractmethod"):
             yield _error(decorator, SLD202)
 
@@ -172,9 +172,9 @@ def _check_class_bases(node: ast.ClassDef) -> Iterator[ClassError]:
 def _check_dataclass_flags(
     node: ast.ClassDef, keywords: dict[str, bool]
 ) -> Iterator[ClassError]:
-    for flag, code in _DATACLASS_FLAGS:
+    for flag, template in _DATACLASS_FLAGS:
         if not keywords.get(flag, False):
-            yield _error(node, code.format(node.name))
+            yield _error(node, template.format(node.name))
 
 
 def _check_method_naming(node: FunctionType) -> Iterator[ClassError]:

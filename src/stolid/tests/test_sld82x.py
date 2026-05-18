@@ -92,9 +92,9 @@ class TestSLD821PrivateModuleDocstring(unittest.TestCase):
 
     def test_absent(self) -> None:
         """Verify SLD821 is silent when a private module has no docstring."""
-        for name, code in _SLD821_ABSENT:
+        for name, source in _SLD821_ABSENT:
             with self.subTest(name=name):
-                codes = _module_codes(code, "_foo.py")
+                codes = _module_codes(source, "_foo.py")
                 assert_that("SLD821" in codes, equal_to(False))
 
     def test_public_module_with_docstring_not_flagged(self) -> None:

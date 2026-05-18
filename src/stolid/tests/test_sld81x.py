@@ -236,23 +236,23 @@ class TestSLD811PublicModuleDocstring(unittest.TestCase):
 
     def test_absent_when_docstring_present(self) -> None:
         """Verify SLD811 stays silent when the module has a docstring."""
-        for name, code in _SLD811_ABSENT:
+        for name, source in _SLD811_ABSENT:
             with self.subTest(name=name):
-                codes = _module_codes(code, "public.py")
+                codes = _module_codes(source, "public.py")
                 assert_that("SLD811" in codes, equal_to(False))
 
     def test_private_modules_skipped(self) -> None:
         """Verify SLD811 is silent for filenames starting with a single underscore."""
-        for filename, code in _PRIVATE_MODULES:
+        for filename, source in _PRIVATE_MODULES:
             with self.subTest(filename=filename):
-                codes = _module_codes(code, filename)
+                codes = _module_codes(source, filename)
                 assert_that("SLD811" in codes, equal_to(False))
 
     def test_dunder_module_still_checked(self) -> None:
         """Verify SLD811 fires for ``__init__.py`` lacking a module docstring."""
-        for filename, code in _DUNDER_MODULE_NEEDS_DOC:
+        for filename, source in _DUNDER_MODULE_NEEDS_DOC:
             with self.subTest(filename=filename):
-                codes = _module_codes(code, filename)
+                codes = _module_codes(source, filename)
                 assert_that(codes, has_item("SLD811"))
 
     def test_unknown_filename_skipped(self) -> None:
@@ -326,14 +326,14 @@ class TestSLD816EdgeCases(unittest.TestCase):
 
     def test_non_name_annassign_target_is_ignored(self) -> None:
         """Verify an ``obj.attr: int = 0`` form is not flagged as a missing field."""
-        code = (
+        source = (
             "from dataclasses import dataclass\n\n"
             "@dataclass(frozen=True, slots=True, kw_only=True)\n"
             'class A:\n    """Holds ``obj`` only."""\n'
             "    obj: int = 0\n"
             "    obj.attr: int = 1\n"
         )
-        codes = get_error_codes(code)
+        codes = get_error_codes(source)
         assert_that("SLD816" in codes, equal_to(False))
 
 
@@ -342,17 +342,17 @@ class TestSLD813InnerFunctionExempt(unittest.TestCase):
 
     def test_inner_def_in_def(self) -> None:
         """Verify an undocumented inner function does not raise SLD813."""
-        code = (
+        source = (
             "def outer() -> None:\n"
             '    """Outer."""\n'
             "    def inner():\n"
             "        pass\n"
         )
-        codes = get_error_codes(code)
+        codes = get_error_codes(source)
         assert_that("SLD813" in codes, equal_to(False))
 
     def test_method_in_class_not_inner(self) -> None:
         """Verify methods of a class are not treated as inner functions."""
-        code = "class A:\n" '    """A."""\n' "    def m(self):\n" "        pass\n"
-        codes = get_error_codes(code)
+        source = "class A:\n" '    """A."""\n' "    def m(self):\n" "        pass\n"
+        codes = get_error_codes(source)
         assert_that(codes, has_item("SLD813"))

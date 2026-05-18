@@ -20,7 +20,7 @@ def is_name_id(node: ast.AST, name: str) -> bool:
     return isinstance(node, ast.Name) and node.id == name
 
 
-def is_name_in(node: ast.AST, names: Iterable[str]) -> bool:
+def is_name_among(node: ast.AST, names: Iterable[str]) -> bool:
     """Return True iff ``node`` is ``ast.Name`` whose id is in ``names``."""
     return isinstance(node, ast.Name) and node.id in names
 
@@ -202,8 +202,8 @@ def split_identifier_into_words(name: str) -> list[str]:
 
 def find_bad_name_word(name: str) -> str | None:
     """Return the first forbidden word in identifier ``name``, or ``None`` if absent."""
-    words = split_identifier_into_words(name)
-    for word in words:
+    parts = split_identifier_into_words(name)
+    for word in parts:
         if word.lower() in BAD_NAME_WORDS:
             return word.lower()
     return None

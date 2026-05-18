@@ -153,9 +153,9 @@ def _dominated(group: CloneGroup, larger: list[CloneGroup]) -> bool:
     return False
 
 
-def _drop_dominated(groups: list[CloneGroup]) -> list[CloneGroup]:
+def _drop_dominated(clones: list[CloneGroup]) -> list[CloneGroup]:
     ordered = sorted(
-        groups, key=lambda group: group.occurrences[0].node_count, reverse=True
+        clones, key=lambda group: group.occurrences[0].node_count, reverse=True
     )
     kept: list[CloneGroup] = []
     for group in ordered:
@@ -193,9 +193,9 @@ def _scan_one_file(
         return
     occurrences: list[Occurrence] = []
     fingerprint(tree, ScopeStack(), occurrences)
-    for occurrence in occurrences:
-        if _is_eligible(occurrence):
-            entries.append(_PathOccurrence(path=path, occurrence=occurrence))
+    for found in occurrences:
+        if _is_eligible(found):
+            entries.append(_PathOccurrence(path=path, occurrence=found))
 
 
 def _scan_root(
@@ -217,8 +217,8 @@ def scan_paths(fs: FileSystem, roots: list[str]) -> ScanResult:
     """Scan ``roots`` (via filesystem ``fs``) and return the clone groups found."""
     entries: list[_PathOccurrence] = []
     syntax_errors: list[str] = []
-    for root in roots:
-        _scan_root(fs, root, entries, syntax_errors)
+    for path in roots:
+        _scan_root(fs, path, entries, syntax_errors)
     groups = _group_clones(entries)
     groups = _drop_dominated(groups)
     return ScanResult(groups=groups, syntax_errors=syntax_errors)

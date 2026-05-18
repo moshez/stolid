@@ -57,8 +57,8 @@ def _walk_no_function(node: ast.AST) -> Iterator[ast.AST]:
         yield from _walk_no_function(child)
 
 
-def _refs_in_scope(stmts: list[ast.stmt]) -> Iterator[ast.Name]:
-    for stmt in stmts:
+def _refs_in_scope(body: list[ast.stmt]) -> Iterator[ast.Name]:
+    for stmt in body:
         for node in _walk_no_function(stmt):
             if isinstance(node, ast.Name) and node.id == "NotImplementedError":
                 yield node

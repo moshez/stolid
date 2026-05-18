@@ -58,6 +58,6 @@ class ScopeStack:
         return name
 
 
-def _enclosing(frames: list[Frame]) -> Iterator[Frame]:
-    for frame in reversed(frames[:-1]):
+def _enclosing(stack: list[Frame]) -> Iterator[Frame]:
+    for frame in reversed(stack[:-1]):
         yield frame

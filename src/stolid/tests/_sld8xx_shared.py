@@ -27,8 +27,8 @@ def just_801(
     return [item for item in result if "SLD801" in item[3]]
 
 
-def _pair_codes(a: str, b: str) -> list[str]:
-    return multifile_codes(files(**{"a.py": a, "b.py": b}))
+def _pair_codes(first: str, second: str) -> list[str]:
+    return multifile_codes(files(**{"a.py": first, "b.py": second}))
 
 
 def assert_pair_positive(

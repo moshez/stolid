@@ -168,18 +168,18 @@ class TestDataclassVariants(unittest.TestCase):
 
     def test_dataclasses_module_prefix_flags_all(self) -> None:
         """Verify dataclasses module prefix flags all."""
-        code = (
+        source = (
             "import dataclasses\n\n"
             "@dataclasses.dataclass\nclass MyClass:\n    x: int\n"
         )
-        codes = get_error_codes(code)
+        codes = get_error_codes(source)
         for sld in ("SLD501", "SLD502", "SLD503"):
             with self.subTest(code=sld):
                 assert_that(codes, has_item(sld))
 
     def test_no_sld50x_reported(self) -> None:
         """Verify no sld50x reported."""
-        for name, code in _NO_SLD50X:
+        for name, source in _NO_SLD50X:
             with self.subTest(name=name):
-                codes = get_error_codes(code)
+                codes = get_error_codes(source)
                 assert_that([c for c in codes if c.startswith("SLD50")], empty())

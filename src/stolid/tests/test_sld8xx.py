@@ -59,8 +59,8 @@ _POSITIVE_CASES: list[tuple[str, str, str]] = [
 
 _BIG_EXPR = "a*b + c*d + e*f + g*h + i*j"
 
-_SUBEXPR_A = f"def f(a, b, c, d, e, f, g, h, i, j):\n    return {_BIG_EXPR}\n"
-_SUBEXPR_B = (
+_SUBEXPR_FIRST = f"def f(a, b, c, d, e, f, g, h, i, j):\n    return {_BIG_EXPR}\n"
+_SUBEXPR_SECOND = (
     "def g(a, b, c, d, e, f, g, h, i, j):\n"
     "    if a > 0:\n"
     f"        return {_BIG_EXPR}\n"
@@ -146,20 +146,20 @@ class TestPositiveClones(unittest.TestCase):
 
     def test_nested_inner_collide(self) -> None:
         """Verify nested inner collide."""
-        a = (
+        first = (
             "def foo(a, b):\n"
             "    t = 5\n"
             "    def inner(c):\n"
             "        return c*c + c*c*c + c*c*c*c\n"
         )
-        b = (
+        second = (
             "def bar(g, h):\n"
             "    t = 7 + 2\n"
             "    s = 5\n"
             "    def inner2(x):\n"
             "        return x*x + x*x*x + x*x*x*x\n"
         )
-        result = just_801(check_multifile(files(**{"a.py": a, "b.py": b})))
+        result = just_801(check_multifile(files(**{"a.py": first, "b.py": second})))
         assert_that(result, has_length(2))
 
     def test_same_file_duplication(self) -> None:
@@ -175,24 +175,26 @@ class TestPositiveClones(unittest.TestCase):
 
     def test_cross_class_method_duplication(self) -> None:
         """Verify cross class method duplication."""
-        a = (
+        first = (
             "import itertools\n"
             "class A:\n"
             "    def fetch(self, seq, n):\n"
             "        return list(itertools.islice(seq, n))\n"
         )
-        b = (
+        second = (
             "import itertools\n"
             "class B:\n"
             "    def gather(self, items, count):\n"
             "        return list(itertools.islice(items, count))\n"
         )
-        codes = multifile_codes(files(**{"a.py": a, "b.py": b}))
+        codes = multifile_codes(files(**{"a.py": first, "b.py": second}))
         assert_that(codes.count("SLD801"), greater_than(0))
 
     def test_subexpression_collision(self) -> None:
         """Verify subexpression collision."""
-        codes = multifile_codes(files(**{"a.py": _SUBEXPR_A, "b.py": _SUBEXPR_B}))
+        codes = multifile_codes(
+            files(**{"a.py": _SUBEXPR_FIRST, "b.py": _SUBEXPR_SECOND})
+        )
         assert_that(codes, has_item("SLD801"))
 
 
