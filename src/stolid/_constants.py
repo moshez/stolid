@@ -10,6 +10,11 @@ SLD203 = (
     "SLD203 Use of typing.cast is prohibited "
     "(use type narrowing; add # noqa: SLD203 to silence if intentional)"
 )
+SLD204 = (
+    "SLD204 Import not at top of module "
+    "(move all imports above any other statements; "
+    "do not import inside functions or classes)"
+)
 SLD301 = (
     "SLD301 {} method is prohibited (use @dataclass with default_factory "
     "for attribute initialization; use @classmethod for ergonomic parameter "

@@ -7,6 +7,7 @@ testable logic lives in :mod:`stolid._duplicate_cli`.
 
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -18,8 +19,6 @@ from ._duplicate_cli import resolve_paths, run_stolid
 @dataclass(frozen=True, slots=True, kw_only=True)
 class _RealFileSystem:
     def walk(self, root: str) -> Iterator[str]:  # noqa: SLD303
-        import os
-
         for dirpath, _, filenames in os.walk(root):
             for name in filenames:
                 yield os.path.join(dirpath, name)

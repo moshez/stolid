@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import os
 from dataclasses import dataclass
 from typing import Iterator
 
@@ -12,6 +13,7 @@ from ._constants import (
     SLD201,
     SLD202,
     SLD203,
+    SLD204,
     SLD301,
     SLD302,
     SLD303,
@@ -35,6 +37,7 @@ from ._constants import (
     MAX_MODULE_LINES,
 )
 from ._global_names_check import check_global_names
+from ._import_placement_check import check_import_placement
 from ._private_access_check import (
     ABSOLUTE_PRIVATE_IMPORT,
     EXTERNAL_PRIVATE_READ,
@@ -326,8 +329,6 @@ def _check_function(node: FunctionType) -> Iterator[Error]:
 
 def _get_module_name_from_filename(filename: str) -> str | None:
     """Extract module name from filename for bad name checking."""
-    import os
-
     if not filename:
         return None
     basename = os.path.basename(filename)
@@ -369,6 +370,9 @@ class Checker:  # noqa: SLD501 SLD503
 
         for gerr in check_global_names(self.tree):
             yield (gerr.lineno, gerr.col_offset, gerr.message, type(self))
+
+        for ierr in check_import_placement(self.tree):
+            yield (ierr.lineno, ierr.col_offset, SLD204, type(self))
 
         for perr in check_private_access(self.tree):
             yield (
