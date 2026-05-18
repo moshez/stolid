@@ -84,9 +84,9 @@ def _match_pattern_strings(
             yield from _match_pattern_strings(sub)
 
 
-def _iter_scope_nodes(stmts: list[ast.stmt]) -> Iterator[ast.AST]:
-    # Yield all descendants of ``stmts`` without crossing nested scopes.
-    for stmt in stmts:
+def _iter_scope_nodes(body: list[ast.stmt]) -> Iterator[ast.AST]:
+    # Yield all descendants of ``body`` without crossing nested scopes.
+    for stmt in body:
         yield from _walk_no_scope(stmt)
 
 
@@ -116,15 +116,15 @@ def _track_eq_pair(
 
 
 def _collect_str_literals(
-    nodes: list[ast.expr],
+    members: list[ast.expr],
 ) -> list[tuple[ast.Constant, str]] | None:
-    literals: list[tuple[ast.Constant, str]] = []
-    for node in nodes:
+    found: list[tuple[ast.Constant, str]] = []
+    for node in members:
         literal = _as_str_literal(node)
         if literal is None:
             return None
-        literals.append(literal)
-    return literals
+        found.append(literal)
+    return found
 
 
 def _track_in_pair(
@@ -136,11 +136,11 @@ def _track_in_pair(
         return
     if not isinstance(right, _COLLECTION_NODES):
         return
-    literals = _collect_str_literals(right.elts)
-    if literals is None:
+    found = _collect_str_literals(right.elts)
+    if found is None:
         return
     key = ast.unparse(left)
-    for node, value in literals:
+    for node, value in found:
         bucket.setdefault(key, {}).setdefault(value, []).append(node)
 
 
@@ -160,8 +160,8 @@ def _emit_multi_compare(
     for name_key, str_map in bucket.items():
         if len(str_map) < MULTI_COMPARE_THRESHOLD:
             continue
-        for nodes in str_map.values():
-            for node in nodes:
+        for group in str_map.values():
+            for node in group:
                 yield StringEnumError(
                     lineno=node.lineno,
                     col_offset=node.col_offset,
@@ -237,14 +237,14 @@ def _check_module_string_count(tree: ast.Module) -> Iterator[StringEnumError]:
     bucket: dict[str, list[ast.Constant]] = {}
     for node, value in _collect_equality_strings(tree):
         bucket.setdefault(value, []).append(node)
-    for value, nodes in bucket.items():
-        if len(nodes) < MODULE_COUNT_THRESHOLD:
+    for value, group in bucket.items():
+        if len(group) < MODULE_COUNT_THRESHOLD:
             continue
-        for node in nodes:
+        for node in group:
             yield StringEnumError(
                 lineno=node.lineno,
                 col_offset=node.col_offset,
-                message=SLD306.format(value, len(nodes)),
+                message=SLD306.format(value, len(group)),
             )
 
 

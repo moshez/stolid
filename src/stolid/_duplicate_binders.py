@@ -54,13 +54,13 @@ def _iter_body_nodes(parent: ast.AST) -> Iterator[ast.AST]:
             yield from _iter_body_nodes(child)
 
 
-def _argument_names(args: ast.arguments) -> Iterator[str]:
-    for arg in args.posonlyargs + args.args + args.kwonlyargs:
+def _argument_names(arguments: ast.arguments) -> Iterator[str]:
+    for arg in arguments.posonlyargs + arguments.args + arguments.kwonlyargs:
         yield arg.arg
-    if args.vararg is not None:
-        yield args.vararg.arg
-    if args.kwarg is not None:
-        yield args.kwarg.arg
+    if arguments.vararg is not None:
+        yield arguments.vararg.arg
+    if arguments.kwarg is not None:
+        yield arguments.kwarg.arg
 
 
 def function_binders(node: FunctionType) -> Iterator[str]:

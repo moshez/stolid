@@ -323,7 +323,7 @@ class TestSLD204ImportPlacement(unittest.TestCase):
 
     def test_no_errors_on_well_formed_module(self) -> None:
         """Verify no errors on well formed module."""
-        code = (
+        source = (
             '"""Module docstring."""\n'
             "from __future__ import annotations\n"
             "import os\n"
@@ -333,7 +333,7 @@ class TestSLD204ImportPlacement(unittest.TestCase):
             "x: Any = os.getcwd()\n"
             "y = sys.path\n"
         )
-        codes = [c for c in get_error_codes(code) if c == "SLD204"]
+        codes = [c for c in get_error_codes(source) if c == "SLD204"]
         assert_that(codes, empty())
 
 

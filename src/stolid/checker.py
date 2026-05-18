@@ -24,6 +24,7 @@ from ._module_overuse_check import check_module_overuse
 from ._not_implemented_check import check_not_implemented
 from ._string_enum_check import check_string_enum
 from ._try_check import check_try
+from ._variable_naming_check import check_variable_naming
 
 SLD102 = "SLD102 Use of patch/patch.object is prohibited (use dependency injection)"
 SLD103 = (
@@ -182,6 +183,7 @@ def _all_errors(
     yield from check_module_overuse(tree)
     yield from check_not_implemented(tree)
     yield from check_try(tree)
+    yield from check_variable_naming(tree)
     yield from privacy_errors(tree)
     ctx = build_context(tree, lines)
     for node in ast.walk(tree):

@@ -57,9 +57,9 @@ _CLEAN_NO_ERRORS: list[tuple[str, str]] = [
         "proper_dataclass",
         "from dataclasses import dataclass\n\n"
         "@dataclass(frozen=True, slots=True, kw_only=True)\n"
-        "class Point:\n"
-        '    """Holds ``x`` and ``y``."""\n'
-        "    x: int\n    y: int\n",
+        "class Rect:\n"
+        '    """Holds ``width`` and ``height``."""\n'
+        "    width: int\n    height: int\n",
     ),
     (
         "proper_enum",

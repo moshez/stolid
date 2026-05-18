@@ -108,11 +108,11 @@ class TestSubtreeDomination(unittest.TestCase):
 
     def test_non_dominated_groups_reported(self) -> None:
         """Verify non dominated groups reported."""
-        a = (
+        first = (
             "import itertools\n"
             "def take(seq, n): return list(itertools.islice(seq, n))\n"
         )
-        b = (
+        second = (
             "import itertools\n"
             "def take(seq, n): return list(itertools.islice(seq, n))\n"
             "def fetch(items, count):\n"
@@ -120,14 +120,15 @@ class TestSubtreeDomination(unittest.TestCase):
             "        for i in items:\n"
             "            print(i.value)\n"
         )
-        c = (
+        third = (
             "import itertools\n"
             "def fetch(items, count):\n"
             "    if items:\n"
             "        for i in items:\n"
             "            print(i.value)\n"
         )
-        result = just_801(check_multifile(files(**{"a.py": a, "b.py": b, "c.py": c})))
+        bundle = files(**{"a.py": first, "b.py": second, "c.py": third})
+        result = just_801(check_multifile(bundle))
         assert_that(len(_node_counts(result)) >= 1, equal_to(True))
 
 

@@ -32,12 +32,12 @@ def _flake8_argv(paths: list[str]) -> list[str]:
     return ["flake8", *paths]
 
 
-def _emit_results(result: ScanResult, lines: list[ReportLine], sink: OutputSink) -> int:
+def _emit_results(result: ScanResult, rows: list[ReportLine], sink: OutputSink) -> int:
     for path in result.syntax_errors:
         sink.stderr(f"{path}: syntax error; skipped")
-    for line in lines:
+    for line in rows:
         sink.stdout(format_line(line))
-    if lines or result.syntax_errors:
+    if rows or result.syntax_errors:
         return 1
     return 0
 

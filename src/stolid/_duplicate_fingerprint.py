@@ -91,8 +91,8 @@ class Occurrence:
 
 def _frame_from_names(names: Iterable[str]) -> Frame:
     frame = Frame()
-    for name in names:
-        frame.add(name)
+    for n in names:
+        frame.add(n)
     return frame
 
 
@@ -106,12 +106,12 @@ def _frame_for(node: ast.AST) -> Frame | None:
     return None
 
 
-def _hash_node(node: ast.AST, signature: str, child_digests: list[bytes]) -> bytes:
+def _hash_node(node: ast.AST, signature: str, subtree_digests: list[bytes]) -> bytes:
     digest = hashlib.blake2s(digest_size=16)
     digest.update(type(node).__name__.encode())
     digest.update(b"\x00")
     digest.update(signature.encode())
-    for child in child_digests:
+    for child in subtree_digests:
         digest.update(b"\x00")
         digest.update(child)
     return digest.digest()
@@ -128,14 +128,14 @@ def fingerprint(
     frame = _frame_for(node)
     if frame is not None:
         scope.enter(frame)
-    child_digests: list[bytes] = []
+    subtree_digests: list[bytes] = []
     node_count = 1
     for child in ast.iter_child_nodes(node):
-        child_digest, child_count = fingerprint(child, scope, collected)
-        child_digests.append(child_digest)
+        sub_digest, child_count = fingerprint(child, scope, collected)
+        subtree_digests.append(sub_digest)
         node_count += child_count
     signature = _local_signature(node, scope)
-    digest = _hash_node(node, signature, child_digests)
+    digest = _hash_node(node, signature, subtree_digests)
     if frame is not None:
         scope.exit()
     collected.append(Occurrence(digest=digest, node=node, node_count=node_count))

@@ -23,7 +23,7 @@ from ._ast_inspection import (
     FUNCTION_DEF_NODES,
     FunctionType,
     is_attribute_in,
-    is_name_in,
+    is_name_among,
 )
 
 SLD606 = (
@@ -61,7 +61,7 @@ def _is_contextmanager_decorator(node: ast.expr) -> bool:
     # @contextmanager() is syntactically allowed).
     if isinstance(node, ast.Call):
         return _is_contextmanager_decorator(node.func)
-    return is_name_in(node, _CONTEXTMANAGER_NAMES) or is_attribute_in(
+    return is_name_among(node, _CONTEXTMANAGER_NAMES) or is_attribute_in(
         node, _CONTEXTMANAGER_NAMES
     )
 
