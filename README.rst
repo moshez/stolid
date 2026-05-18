@@ -183,6 +183,37 @@ this code actually uses.
     # callers/...
     from .somelib_facade import do_thing
 
+**SLD206**: Prohibits any reference to ``NotImplementedError`` outside the
+body of a function directly decorated with ``functools.singledispatch``.
+``NotImplementedError`` is the conventional marker for an abstract method
+that subclasses must override; stolid rejects subclassing for behavior
+(see SLD201/SLD202/SLD401), so the only legitimate use is the default body
+of a ``singledispatch`` generic function, where it signals that no
+registered overload matched the argument type. Registered overloads
+(``@f.register``) are not exempt — they implement the work and should
+either handle the case or not be registered.
+
+.. code-block:: python
+
+    # Bad
+    class Handler:
+        def handle(self, event):
+            raise NotImplementedError
+
+    def parse(source):
+        raise NotImplementedError("subclass this")
+
+    # Good
+    import functools
+
+    @functools.singledispatch
+    def serialize(obj) -> bytes:
+        raise NotImplementedError(f"no serializer for {type(obj)}")
+
+    @serialize.register
+    def _(obj: User) -> bytes:
+        return json.dumps({"name": obj.name}).encode()
+
 SLD3xx - Object-Oriented Design
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
