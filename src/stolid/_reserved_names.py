@@ -1,4 +1,4 @@
-"""Reserved names that global definitions must not shadow."""
+# Reserved names that global definitions must not shadow.
 
 from __future__ import annotations
 

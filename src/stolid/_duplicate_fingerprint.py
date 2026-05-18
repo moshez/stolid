@@ -1,4 +1,4 @@
-"""Merkle fingerprint for AST subtrees with scope-aware normalization."""
+# Merkle fingerprint for AST subtrees with scope-aware normalization.
 
 from __future__ import annotations
 

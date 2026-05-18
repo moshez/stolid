@@ -1,4 +1,4 @@
-"""Formatting and noqa filtering for duplicate-detector reports."""
+# Formatting and noqa filtering for duplicate-detector reports.
 
 from __future__ import annotations
 
@@ -41,7 +41,7 @@ def format_line(line: ReportLine) -> str:
 
 
 def _noqa_codes_on_line(text: str) -> frozenset[str] | None:
-    """Parse the noqa marker on ``text``. None if no marker."""
+    # Parse the noqa marker on ``text``. None if no marker.
     match = _NOQA_RE.search(text)
     if match is None:
         return None

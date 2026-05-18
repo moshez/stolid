@@ -1,9 +1,8 @@
-"""Discovery of binding sites within a scope frame.
-
-Walks the body of a function, lambda, comprehension, or generator and yields
-the names that are bound there, in source order. The walk does not descend
-into nested scopes (their bodies have their own frames).
-"""
+# Discovery of binding sites within a scope frame.
+#
+# Walks the body of a function, lambda, comprehension, or generator and yields
+# the names that are bound there, in source order. The walk does not descend
+# into nested scopes (their bodies have their own frames).
 
 from __future__ import annotations
 
@@ -48,7 +47,7 @@ def _statement_binders(node: ast.AST) -> Iterator[str]:
 
 
 def _iter_body_nodes(parent: ast.AST) -> Iterator[ast.AST]:
-    """Yield all descendants of ``parent`` without entering nested scopes."""
+    # Yield all descendants of ``parent`` without entering nested scopes.
     for child in ast.iter_child_nodes(parent):
         yield child
         if not isinstance(child, SCOPE_NODES + COMPREHENSION_NODES):

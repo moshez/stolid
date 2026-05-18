@@ -1,4 +1,4 @@
-"""Checks that flag stringly-typed code that should use an enum."""
+# Checks that flag stringly-typed code that should use an enum.
 
 from __future__ import annotations
 
@@ -37,7 +37,7 @@ class StringEnumError:
 
 
 def _as_str_literal(node: ast.AST) -> tuple[ast.Constant, str] | None:
-    """Return (node, value) when node is a string-literal Constant."""
+    # Return (node, value) when node is a string-literal Constant.
     if isinstance(node, ast.Constant) and isinstance(node.value, str):
         return node, node.value
     return None
@@ -64,7 +64,7 @@ def _match_pattern_strings(
 
 
 def _iter_scope_nodes(stmts: list[ast.stmt]) -> Iterator[ast.AST]:
-    """Yield all descendants of ``stmts`` without crossing nested scopes."""
+    # Yield all descendants of ``stmts`` without crossing nested scopes.
     for stmt in stmts:
         yield from _walk_no_scope(stmt)
 

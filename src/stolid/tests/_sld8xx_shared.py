@@ -1,4 +1,4 @@
-"""Shared constants and helpers for SLD8xx test modules."""
+# Shared constants and helpers for SLD8xx test modules.
 
 from __future__ import annotations
 

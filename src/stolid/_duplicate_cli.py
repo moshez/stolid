@@ -1,4 +1,4 @@
-"""Command-line entry point for ``python -m stolid``."""
+# Command-line entry point for ``python -m stolid``.
 
 from __future__ import annotations
 

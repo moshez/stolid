@@ -1,4 +1,4 @@
-"""Check for module-level names that shadow builtins/typing/stdlib."""
+# Check for module-level names that shadow builtins/typing/stdlib.
 
 from __future__ import annotations
 

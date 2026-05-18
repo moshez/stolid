@@ -1,4 +1,4 @@
-"""Helper functions for AST inspection."""
+# Helper functions for AST inspection.
 
 from __future__ import annotations
 

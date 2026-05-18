@@ -1,4 +1,4 @@
-"""Filesystem walk, parsing, and clone grouping for the duplicate detector."""
+# Filesystem walk, parsing, and clone grouping for the duplicate detector.
 
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-"""Constants and error messages for stolid."""
+# Constants and error messages for stolid.
 
 from __future__ import annotations
 
@@ -61,6 +61,18 @@ SLD815 = (
 SLD816 = (
     "SLD816 Dataclass '{}' docstring does not mention field '{}' "
     "(document every non-private field, or annotate with field(doc=...))"
+)
+SLD821 = (
+    "SLD821 Private module '{}' has a docstring "
+    "(use ``#`` comments for implementation notes)"
+)
+SLD822 = (
+    "SLD822 Private class '{}' has a docstring "
+    "(use ``#`` comments for implementation notes)"
+)
+SLD823 = (
+    "SLD823 Private function/method '{}' has a docstring "
+    "(use ``#`` comments for implementation notes)"
 )
 SLD901 = (
     "SLD901 External read of private attribute '{}' "

@@ -296,18 +296,23 @@ stdlib module:
 
 Imports of these names are fine — only definitions are flagged.
 
-SLD81x - Documentation
-~~~~~~~~~~~~~~~~~~~~~~
+SLD81x / SLD82x - Documentation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Every public surface needs a docstring. A module is public when its
-filename does not start with a single underscore (``__init__.py`` is
-treated as public because the package itself usually is). A class,
-function, or method is public when its name does not start with an
-underscore. Dunder methods (``__str__``, ``__eq__``, ...) are exempt:
-they implement protocols, not API. Inner functions — functions defined
-inside another function — are also exempt, regardless of name. The
-content checks (SLD814/SLD815/SLD816) apply only once a docstring is
-present.
+stolid takes a strict, symmetric view of docstrings:
+
+- Public surfaces **must** carry a docstring (SLD81x).
+- Private surfaces **must not** carry a docstring — implementation notes
+  belong in ``#`` comments (SLD82x).
+
+A module is public when its filename does not start with a single
+underscore (``__init__.py`` is treated as public because the package
+itself usually is). A class, function, or method is public when its
+name does not start with an underscore. Dunder names (``__str__``,
+``__eq__``, ...) are exempt from both policies: they implement
+protocols, not API. Inner functions — functions defined inside another
+function — are also exempt, regardless of name. The content checks
+(SLD814/SLD815/SLD816) apply only once a docstring is present.
 
 **SLD811**: Public module missing a module docstring. Add a top-level
 string literal as the first statement.
@@ -409,6 +414,55 @@ itself. Fields whose name starts with ``_`` are exempt.
 
         x: int
         y: int
+
+**SLD821**: Private module (filename starts with ``_``) has a module
+docstring. Convert it to a top-of-file ``#`` comment block.
+
+.. code-block:: python
+
+    # Bad: _internals.py
+    """Implementation details for the duplicate scanner."""
+
+    import ast
+    ...
+
+    # Good: _internals.py
+    # Implementation details for the duplicate scanner.
+
+    import ast
+    ...
+
+**SLD822**: Private class has a docstring. Convert it to a ``#`` comment
+immediately above the body (or before the ``class`` line).
+
+.. code-block:: python
+
+    # Bad
+    class _State:
+        """Traversal state for the visitor."""
+
+        depth: int = 0
+
+    # Good
+    class _State:
+        # Traversal state for the visitor.
+
+        depth: int = 0
+
+**SLD823**: Private function or method has a docstring. Use a ``#``
+comment instead.
+
+.. code-block:: python
+
+    # Bad
+    def _normalize(text):
+        """Lowercase and strip ``text``."""
+        return text.strip().lower()
+
+    # Good
+    # Lowercase and strip ``text``.
+    def _normalize(text):
+        return text.strip().lower()
 
 SLD9xx - Privacy
 ~~~~~~~~~~~~~~~~

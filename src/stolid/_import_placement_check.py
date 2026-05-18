@@ -1,4 +1,4 @@
-"""Check for module imports not at the top of the module."""
+# Check for module imports not at the top of the module.
 
 from __future__ import annotations
 

@@ -1,8 +1,7 @@
-"""Interestingness scoring for duplicate-detector subtrees.
-
-The score filters out structurally trivial subtrees. A subtree must score at
-least :data:`stolid._constants.MIN_CLONE_SCORE` to qualify as a clone.
-"""
+# Interestingness scoring for duplicate-detector subtrees.
+#
+# The score filters out structurally trivial subtrees. A subtree must score at
+# least :data:`stolid._constants.MIN_CLONE_SCORE` to qualify as a clone.
 
 from __future__ import annotations
 

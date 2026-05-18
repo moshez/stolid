@@ -10,7 +10,7 @@ from .code_parser import assert_absent, assert_present, check_code, get_error_co
 
 
 def _module_codes(code: str, filename: str) -> list[str]:
-    """Return the error codes produced by checking ``code`` under ``filename``."""
+    # Return the error codes produced by checking ``code`` under ``filename``.
     return [msg.split()[0] for _, _, msg in check_code(code, filename=filename)]
 
 

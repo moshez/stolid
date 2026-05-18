@@ -1,13 +1,12 @@
-"""Scope tracking for duplicate-detector name normalization.
-
-Maintains a stack of binding frames. Each frame records the bindings created
-in a function, lambda, or comprehension, in order of first appearance. A
-``Name`` is normalized to one of three forms:
-
-- ``$n`` if it is bound in the current frame (positional placeholder).
-- ``^d.$n`` if it is bound in an enclosing frame ``d`` levels up.
-- the raw identifier otherwise (free name; globals, builtins, imports).
-"""
+# Scope tracking for duplicate-detector name normalization.
+#
+# Maintains a stack of binding frames. Each frame records the bindings created
+# in a function, lambda, or comprehension, in order of first appearance. A
+# ``Name`` is normalized to one of three forms:
+#
+# - ``$n`` if it is bound in the current frame (positional placeholder).
+# - ``^d.$n`` if it is bound in an enclosing frame ``d`` levels up.
+# - the raw identifier otherwise (free name; globals, builtins, imports).
 
 from __future__ import annotations
 

@@ -1,18 +1,17 @@
-"""Detect violations of Python's underscore-prefix privacy convention.
-
-Five violation kinds are emitted:
-
-- ``external_private_read``: reading ``obj._attr`` outside the owning class.
-- ``external_private_write``: assigning or deleting ``obj._attr`` outside it.
-- ``absolute_private_import``: ``from pkg import _name`` (absolute import).
-- ``private_submodule_import``: ``import pkg._sub`` or
-  ``from pkg._sub import x``.
-- ``module_private_attr``: ``mod._attr`` where ``mod`` is a name bound by an
-  import.
-
-Relative imports (``from . import _x``, ``from ._sub import y``) are permitted:
-the syntax itself draws the package boundary.
-"""
+# Detect violations of Python's underscore-prefix privacy convention.
+#
+# Five violation kinds are emitted:
+#
+# - ``external_private_read``: reading ``obj._attr`` outside the owning class.
+# - ``external_private_write``: assigning or deleting ``obj._attr`` outside it.
+# - ``absolute_private_import``: ``from pkg import _name`` (absolute import).
+# - ``private_submodule_import``: ``import pkg._sub`` or
+#   ``from pkg._sub import x``.
+# - ``module_private_attr``: ``mod._attr`` where ``mod`` is a name bound by an
+#   import.
+#
+# Relative imports (``from . import _x``, ``from ._sub import y``) are permitted:
+# the syntax itself draws the package boundary.
 
 from __future__ import annotations
 
@@ -51,13 +50,12 @@ class PrivacyError:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class _State:
-    """Traversal state for the privacy visitor.
-
-    ``_class_stack`` records enclosing class names; only its emptiness matters.
-    ``_privileged_args`` records the first-arg name per enclosing function frame
-    (``None`` if the frame is not a method). ``_imported_names`` is the set of
-    names bound by any ``import`` or ``from`` statement seen so far.
-    """
+    # Traversal state for the privacy visitor.
+    #
+    # ``_class_stack`` records enclosing class names; only its emptiness matters.
+    # ``_privileged_args`` records the first-arg name per enclosing function frame
+    # (``None`` if the frame is not a method). ``_imported_names`` is the set of
+    # names bound by any ``import`` or ``from`` statement seen so far.
 
     _class_stack: list[str] = field(default_factory=list)
     _privileged_args: list[str | None] = field(default_factory=list)
@@ -115,12 +113,12 @@ class _State:
 
 
 def _is_private(name: str) -> bool:
-    """True for a single- or double-underscore name that is not a dunder."""
+    # True for a single- or double-underscore name that is not a dunder.
     return name.startswith("_") and not is_dunder_method(name)
 
 
 def _has_private_segment(dotted: str) -> bool:
-    """True if any segment of ``dotted`` is a private name."""
+    # True if any segment of ``dotted`` is a private name.
     return any(_is_private(part) for part in dotted.split("."))
 
 
