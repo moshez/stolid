@@ -1,18 +1,17 @@
-"""Detect violations of Python's underscore-prefix privacy convention.
-
-Five violation kinds are emitted:
-
-- ``external_private_read``: reading ``obj._attr`` outside the owning class.
-- ``external_private_write``: assigning or deleting ``obj._attr`` outside it.
-- ``absolute_private_import``: ``from pkg import _name`` (absolute import).
-- ``private_submodule_import``: ``import pkg._sub`` or
-  ``from pkg._sub import x``.
-- ``module_private_attr``: ``mod._attr`` where ``mod`` is a name bound by an
-  import.
-
-Relative imports (``from . import _x``, ``from ._sub import y``) are permitted:
-the syntax itself draws the package boundary.
-"""
+# Detect violations of Python's underscore-prefix privacy convention.
+#
+# Five violation kinds are emitted:
+#
+# - ``external_private_read``: reading ``obj._attr`` outside the owning class.
+# - ``external_private_write``: assigning or deleting ``obj._attr`` outside it.
+# - ``absolute_private_import``: ``from pkg import _name`` (absolute import).
+# - ``private_submodule_import``: ``import pkg._sub`` or
+#   ``from pkg._sub import x``.
+# - ``module_private_attr``: ``mod._attr`` where ``mod`` is a name bound by an
+#   import.
+#
+# Relative imports (``from . import _x``, ``from ._sub import y``) are permitted:
+# the syntax itself draws the package boundary.
 
 from __future__ import annotations
 
@@ -37,7 +36,11 @@ MODULE_PRIVATE_ATTR = "module_private_attr"
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class PrivacyError:
-    """A privacy convention violation."""
+    """A privacy convention violation.
+
+    ``lineno`` and ``col_offset`` locate the offending access; ``kind`` is
+    one of the module-level constants above; ``attr`` is the private name.
+    """
 
     lineno: int
     col_offset: int
@@ -47,13 +50,12 @@ class PrivacyError:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class _State:
-    """Traversal state for the privacy visitor.
-
-    ``_class_stack`` records enclosing class names; only its emptiness matters.
-    ``_privileged_args`` records the first-arg name per enclosing function frame
-    (``None`` if the frame is not a method). ``_imported_names`` is the set of
-    names bound by any ``import`` or ``from`` statement seen so far.
-    """
+    # Traversal state for the privacy visitor.
+    #
+    # ``_class_stack`` records enclosing class names; only its emptiness matters.
+    # ``_privileged_args`` records the first-arg name per enclosing function frame
+    # (``None`` if the frame is not a method). ``_imported_names`` is the set of
+    # names bound by any ``import`` or ``from`` statement seen so far.
 
     _class_stack: list[str] = field(default_factory=list)
     _privileged_args: list[str | None] = field(default_factory=list)
@@ -61,32 +63,41 @@ class _State:
     _violations: list[PrivacyError] = field(default_factory=list)
 
     def in_class(self) -> bool:
+        """Return True iff at least one enclosing class is being visited."""
         return bool(self._class_stack)
 
     def enter_class(self, name: str) -> None:
+        """Push class ``name`` onto the class stack."""
         self._class_stack.append(name)
 
     def exit_class(self) -> None:
+        """Pop the innermost class from the class stack."""
         self._class_stack.pop()
 
     def enter_function(self, privileged: str | None) -> None:
+        """Push a function frame whose privileged first-arg name is ``privileged``."""
         self._privileged_args.append(privileged)
 
     def exit_function(self) -> None:
+        """Pop the innermost function frame."""
         self._privileged_args.pop()
 
     def privileged_arg(self) -> str | None:
+        """Return the innermost function's privileged first-arg name, or ``None``."""
         if not self._privileged_args:
             return None
         return self._privileged_args[-1]
 
     def is_imported(self, name: str) -> bool:
+        """Return True iff ``name`` was bound by an ``import``/``from`` statement."""
         return name in self._imported_names
 
     def bind_import(self, name: str) -> None:
+        """Record that ``name`` is bound to an imported module/symbol."""
         self._imported_names.add(name)
 
     def record(self, node: ast.stmt | ast.expr, kind: str, attr: str) -> None:
+        """Record a violation of ``kind`` for private ``attr`` located at ``node``."""
         self._violations.append(
             PrivacyError(
                 lineno=node.lineno,
@@ -97,16 +108,17 @@ class _State:
         )
 
     def violations(self) -> Iterator[PrivacyError]:
+        """Yield every recorded :class:`PrivacyError` in insertion order."""
         yield from self._violations
 
 
 def _is_private(name: str) -> bool:
-    """True for a single- or double-underscore name that is not a dunder."""
+    # True for a single- or double-underscore name that is not a dunder.
     return name.startswith("_") and not is_dunder_method(name)
 
 
 def _has_private_segment(dotted: str) -> bool:
-    """True if any segment of ``dotted`` is a private name."""
+    # True if any segment of ``dotted`` is a private name.
     return any(_is_private(part) for part in dotted.split("."))
 
 

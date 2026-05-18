@@ -1,4 +1,4 @@
-"""Filesystem walk, parsing, and clone grouping for the duplicate detector."""
+# Filesystem walk, parsing, and clone grouping for the duplicate detector.
 
 from __future__ import annotations
 
@@ -19,15 +19,21 @@ class FileSystem(Protocol):
     """Filesystem operations the scanner depends on."""
 
     def walk(self, root: str) -> Iterator[str]:  # noqa: E704
+        """Yield every file path beneath ``root``."""
         ...
 
     def read(self, path: str) -> str:  # noqa: E704
+        """Return the text contents of the file at ``path``."""
         ...
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class Location:
-    """A position within a source file."""
+    """A position within a source file.
+
+    ``path`` is the file location; ``line`` and ``col`` give the 1-based line
+    number and 0-based column offset within it.
+    """
 
     path: str
     line: int
@@ -36,7 +42,11 @@ class Location:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class CloneOccurrence:
-    """An occurrence of a clone, with its location and size."""
+    """An occurrence of a clone, with its ``location`` and size.
+
+    ``node_count`` is the total number of AST nodes in the cloned subtree;
+    ``end_line`` is the 1-based last line the subtree spans.
+    """
 
     location: Location
     node_count: int
@@ -45,7 +55,11 @@ class CloneOccurrence:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class CloneGroup:
-    """A group of structurally identical subtree occurrences."""
+    """A group of structurally identical subtree occurrences.
+
+    ``digest`` is the shared Merkle hash and ``occurrences`` lists every
+    place that subtree was found.
+    """
 
     digest: bytes
     occurrences: tuple[CloneOccurrence, ...]
@@ -53,7 +67,11 @@ class CloneGroup:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ScanResult:
-    """The output of a duplicate scan."""
+    """The output of a duplicate scan.
+
+    ``groups`` lists the clone groups found; ``syntax_errors`` lists paths
+    that could not be parsed.
+    """
 
     groups: list[CloneGroup] = field(default_factory=list)
     syntax_errors: list[str] = field(default_factory=list)
@@ -196,7 +214,7 @@ def _scan_root(
 
 
 def scan_paths(fs: FileSystem, roots: list[str]) -> ScanResult:
-    """Scan ``roots`` and return the clone groups found."""
+    """Scan ``roots`` (via filesystem ``fs``) and return the clone groups found."""
     entries: list[_PathOccurrence] = []
     syntax_errors: list[str] = []
     for root in roots:

@@ -74,7 +74,9 @@ class TestSLD401InheritanceProhibited(unittest.TestCase):
     """Tests for SLD401: Inheritance from concrete classes is prohibited."""
 
     def test_present(self) -> None:
+        """Verify present."""
         assert_present(self, _SLD401_PRESENT, "SLD401")
 
     def test_absent(self) -> None:
+        """Verify absent."""
         assert_absent(self, _SLD401_ABSENT, "SLD401")

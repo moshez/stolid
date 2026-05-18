@@ -186,9 +186,11 @@ class TestSLD301InitProhibited(unittest.TestCase):
     """Tests for SLD301: __init__ method is prohibited."""
 
     def test_present(self) -> None:
+        """Verify present."""
         assert_present(self, _SLD301_PRESENT, "SLD301")
 
     def test_absent(self) -> None:
+        """Verify absent."""
         assert_absent(self, _SLD301_ABSENT, "SLD301")
 
 
@@ -196,9 +198,11 @@ class TestSLD302PrivateMethodsProhibited(unittest.TestCase):
     """Tests for SLD302: Private methods are prohibited."""
 
     def test_present(self) -> None:
+        """Verify present."""
         assert_present(self, _SLD302_PRESENT, "SLD302")
 
     def test_absent(self) -> None:
+        """Verify absent."""
         assert_absent(self, _SLD302_ABSENT, "SLD302")
 
 
@@ -206,12 +210,15 @@ class TestSLD303PublicAccess(unittest.TestCase):
     """Tests for SLD303: methods that don't access private state."""
 
     def test_present(self) -> None:
+        """Verify present."""
         assert_present(self, _SLD303_PRESENT, "SLD303")
 
     def test_absent(self) -> None:
+        """Verify absent."""
         assert_absent(self, _SLD303_ABSENT, "SLD303")
 
     def test_function_without_self_no_lint(self) -> None:
+        """Verify function without self no lint."""
         codes = get_error_codes(
             "class MyClass:\n    def not_a_method():\n        pass\n"
         )

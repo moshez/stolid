@@ -1,4 +1,4 @@
-"""Checks that flag stringly-typed code that should use an enum."""
+# Checks that flag stringly-typed code that should use an enum.
 
 from __future__ import annotations
 
@@ -25,7 +25,11 @@ _FUNCTION_NODES = (ast.FunctionDef, ast.AsyncFunctionDef)
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class StringEnumError:
-    """A stringly-typed code violation."""
+    """A stringly-typed code violation.
+
+    ``lineno`` and ``col_offset`` locate the offending literal; ``message``
+    is the formatted SLD30x diagnostic.
+    """
 
     lineno: int
     col_offset: int
@@ -33,7 +37,7 @@ class StringEnumError:
 
 
 def _as_str_literal(node: ast.AST) -> tuple[ast.Constant, str] | None:
-    """Return (node, value) when node is a string-literal Constant."""
+    # Return (node, value) when node is a string-literal Constant.
     if isinstance(node, ast.Constant) and isinstance(node.value, str):
         return node, node.value
     return None
@@ -60,7 +64,7 @@ def _match_pattern_strings(
 
 
 def _iter_scope_nodes(stmts: list[ast.stmt]) -> Iterator[ast.AST]:
-    """Yield all descendants of ``stmts`` without crossing nested scopes."""
+    # Yield all descendants of ``stmts`` without crossing nested scopes.
     for stmt in stmts:
         yield from _walk_no_scope(stmt)
 
@@ -261,7 +265,7 @@ def _check_literal_annotations(tree: ast.Module) -> Iterator[StringEnumError]:
 
 
 def check_string_enum(tree: ast.Module) -> Iterator[StringEnumError]:
-    """Yield errors for stringly-typed code that should use an enum."""
+    """Yield errors in ``tree`` for stringly-typed code that should use an enum."""
     yield from _check_multi_compare(tree)
     yield from _check_match_statements(tree)
     yield from _check_module_string_count(tree)

@@ -1,8 +1,7 @@
-"""Interestingness scoring for duplicate-detector subtrees.
-
-The score filters out structurally trivial subtrees. A subtree must score at
-least :data:`stolid._constants.MIN_CLONE_SCORE` to qualify as a clone.
-"""
+# Interestingness scoring for duplicate-detector subtrees.
+#
+# The score filters out structurally trivial subtrees. A subtree must score at
+# least :data:`stolid._constants.MIN_CLONE_SCORE` to qualify as a clone.
 
 from __future__ import annotations
 
@@ -41,5 +40,5 @@ def node_score(node: ast.AST) -> float:
 
 
 def subtree_score(node: ast.AST) -> float:
-    """Sum the interestingness contributions of every node in the subtree."""
+    """Return the summed interestingness score of every descendant of ``node``."""
     return sum(node_score(child) for child in ast.walk(node))

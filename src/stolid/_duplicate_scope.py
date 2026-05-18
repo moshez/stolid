@@ -1,13 +1,12 @@
-"""Scope tracking for duplicate-detector name normalization.
-
-Maintains a stack of binding frames. Each frame records the bindings created
-in a function, lambda, or comprehension, in order of first appearance. A
-``Name`` is normalized to one of three forms:
-
-- ``$n`` if it is bound in the current frame (positional placeholder).
-- ``^d.$n`` if it is bound in an enclosing frame ``d`` levels up.
-- the raw identifier otherwise (free name; globals, builtins, imports).
-"""
+# Scope tracking for duplicate-detector name normalization.
+#
+# Maintains a stack of binding frames. Each frame records the bindings created
+# in a function, lambda, or comprehension, in order of first appearance. A
+# ``Name`` is normalized to one of three forms:
+#
+# - ``$n`` if it is bound in the current frame (positional placeholder).
+# - ``^d.$n`` if it is bound in an enclosing frame ``d`` levels up.
+# - the raw identifier otherwise (free name; globals, builtins, imports).
 
 from __future__ import annotations
 
@@ -22,10 +21,12 @@ class Frame:
     _bindings: dict[str, int] = field(default_factory=dict)
 
     def add(self, name: str) -> None:
+        """Record ``name`` in this frame, assigning it the next positional slot."""
         if name not in self._bindings:
             self._bindings[name] = len(self._bindings)
 
     def position(self, name: str) -> int | None:
+        """Return ``name``'s positional slot in this frame, or ``None`` if unbound."""
         return self._bindings.get(name)
 
 
@@ -36,9 +37,11 @@ class ScopeStack:
     _frames: list[Frame] = field(default_factory=list)
 
     def enter(self, frame: Frame) -> None:
+        """Push ``frame`` onto the stack as the new innermost scope."""
         self._frames.append(frame)
 
     def exit(self) -> None:
+        """Pop the innermost frame, restoring the prior scope."""
         self._frames.pop()
 
     def normalize(self, name: str) -> str:

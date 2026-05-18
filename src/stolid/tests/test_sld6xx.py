@@ -119,9 +119,11 @@ class TestSLD601FunctionLineLimit(unittest.TestCase):
     """Tests for SLD601: Function exceeds line limit."""
 
     def test_present(self) -> None:
+        """Verify present."""
         assert_present(self, _SLD601_PRESENT, "SLD601")
 
     def test_absent(self) -> None:
+        """Verify absent."""
         assert_absent(self, _SLD601_ABSENT, "SLD601")
 
 
@@ -129,9 +131,11 @@ class TestSLD602ArgumentLimit(unittest.TestCase):
     """Tests for SLD602: Function exceeds argument limit."""
 
     def test_present(self) -> None:
+        """Verify present."""
         assert_present(self, _SLD602_PRESENT, "SLD602")
 
     def test_absent(self) -> None:
+        """Verify absent."""
         assert_absent(self, _SLD602_ABSENT, "SLD602")
 
 
@@ -139,9 +143,11 @@ class TestSLD603ClassMethodLimit(unittest.TestCase):
     """Tests for SLD603: Class exceeds method limit."""
 
     def test_class_exceeds_limit(self) -> None:
+        """Verify class exceeds limit."""
         assert_that(get_error_codes(_big_class()), has_item("SLD603"))
 
     def test_absent(self) -> None:
+        """Verify absent."""
         assert_absent(self, _SLD603_ABSENT, "SLD603")
 
 
@@ -149,12 +155,15 @@ class TestSLD604ModuleLineLimit(unittest.TestCase):
     """Tests for SLD604: Module exceeds line limit."""
 
     def test_module_exceeds_limit(self) -> None:
+        """Verify module exceeds limit."""
         assert_that(get_error_codes(_long_module(450)), has_item("SLD604"))
 
     def test_absent(self) -> None:
+        """Verify absent."""
         assert_absent(self, _SLD604_ABSENT, "SLD604")
 
     def test_error_message_includes_line_count(self) -> None:
+        """Verify error message includes line count."""
         errors = check_code(_long_module(450))
         messages = [msg for _, _, msg in errors if "SLD604" in msg]
         for expected in ("450", "400"):

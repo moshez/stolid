@@ -36,6 +36,7 @@ from ._constants import (
     MAX_FUNCTION_LINES,
     MAX_MODULE_LINES,
 )
+from ._docstring_check import check_docstrings
 from ._global_names_check import check_global_names
 from ._import_placement_check import check_import_placement
 from ._string_enum_check import check_string_enum
@@ -83,7 +84,7 @@ _PRIVACY_CODES: dict[str, str] = {
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class Error:
-    """Represents a lint error."""
+    """A lint error: ``lineno``/``col_offset`` locate it; ``message`` describes it."""
 
     lineno: int
     col_offset: int
@@ -97,7 +98,7 @@ def _error(node: ast.stmt | ast.expr, message: str) -> Error:
 def _name_decorator_errors(
     decorators: list[ast.expr], names: set[str], code: str
 ) -> Iterator[Error]:
-    """Yield SLD202-style errors for decorators that are Names in ``names``."""
+    # Yield SLD202-style errors for decorators that are Names in ``names``.
     for decorator in decorators:
         if is_name_in(decorator, names):
             yield _error(decorator, code)
@@ -115,7 +116,7 @@ def _check_node(
     abstractmethod_names: set[str],
     cast_names: set[str],
 ) -> Iterator[Error]:
-    """Check a single AST node for violations."""
+    # Check a single AST node for violations.
     if isinstance(node, ast.ImportFrom):
         yield from _check_import_from(node)
     elif isinstance(node, ast.Attribute):
@@ -131,7 +132,7 @@ def _check_node(
 
 
 def _check_import_from(node: ast.ImportFrom) -> Iterator[Error]:
-    """Check ImportFrom statements."""
+    # Check ImportFrom statements.
     if node.module in ("unittest.mock", "mock"):  # noqa: SLD304
         for alias in node.names:
             if alias.name == "patch":  # noqa: SLD304 SLD306
@@ -146,7 +147,7 @@ def _check_import_from(node: ast.ImportFrom) -> Iterator[Error]:
 
 
 def _check_attribute(node: ast.Attribute) -> Iterator[Error]:
-    """Check attribute access for patch usage."""
+    # Check attribute access for patch usage.
     if node.attr != "patch":  # noqa: SLD306
         return
     value = node.value
@@ -159,7 +160,7 @@ def _check_attribute(node: ast.Attribute) -> Iterator[Error]:
 def _check_call(
     node: ast.Call, patch_names: set[str], cast_names: set[str]
 ) -> Iterator[Error]:
-    """Check function calls."""
+    # Check function calls.
     if isinstance(node.func, ast.Name):
         if node.func.id in patch_names:
             yield _error(node, SLD102)
@@ -170,7 +171,7 @@ def _check_call(
 
 
 def _check_call_attribute(node: ast.Call, patch_names: set[str]) -> Iterator[Error]:
-    """Check Call nodes whose func is an Attribute (patch.object, typing.cast)."""
+    # Check Call nodes whose func is an Attribute (patch.object, typing.cast).
     func = node.func
     assert isinstance(func, ast.Attribute)
     if func.attr == "cast":  # noqa: SLD304
@@ -188,7 +189,7 @@ def _check_call_attribute(node: ast.Call, patch_names: set[str]) -> Iterator[Err
 
 
 def _check_with(node: ast.With, patch_names: set[str]) -> Iterator[Error]:
-    """Check with statements for patch context managers."""
+    # Check with statements for patch context managers.
     for item in node.items:
         call = item.context_expr
         if not isinstance(call, ast.Call) or not isinstance(call.func, ast.Name):
@@ -198,7 +199,7 @@ def _check_with(node: ast.With, patch_names: set[str]) -> Iterator[Error]:
 
 
 def _check_bad_name(name: str, lineno: int, col_offset: int) -> Iterator[Error]:
-    """Check if a name contains a forbidden word."""
+    # Check if a name contains a forbidden word.
     bad_word = find_bad_name_word(name)
     if bad_word is not None:
         yield Error(
@@ -209,7 +210,7 @@ def _check_bad_name(name: str, lineno: int, col_offset: int) -> Iterator[Error]:
 
 
 def _check_class_bases(node: ast.ClassDef) -> Iterator[Error]:
-    """Check class base classes for inheritance violations."""
+    # Check class base classes for inheritance violations.
     for base in node.bases:
         base_name = get_base_name(base)
         if base_name is not None and base_name not in ALLOWED_BASES:
@@ -222,14 +223,14 @@ _DATACLASS_FLAGS = (("frozen", SLD501), ("slots", SLD502), ("kw_only", SLD503))
 def _check_dataclass_flags(
     node: ast.ClassDef, keywords: dict[str, bool]
 ) -> Iterator[Error]:
-    """Check dataclass decorator flags."""
+    # Check dataclass decorator flags.
     for flag, code in _DATACLASS_FLAGS:
         if not keywords.get(flag, False):
             yield _error(node, code.format(node.name))
 
 
 def _check_class(node: ast.ClassDef, abstractmethod_names: set[str]) -> Iterator[Error]:
-    """Check class definitions."""
+    # Check class definitions.
     is_dataclass = False
     dataclass_keywords: dict[str, bool] = {}
 
@@ -255,7 +256,7 @@ def _check_class(node: ast.ClassDef, abstractmethod_names: set[str]) -> Iterator
 def _check_class_method_bodies(
     node: ast.ClassDef, abstractmethod_names: set[str]
 ) -> Iterator[Error]:
-    """Check method bodies of a class."""
+    # Check method bodies of a class.
     is_testcase = class_inherits_from(node, "TestCase")
     is_protocol = class_inherits_from(node, "Protocol")
     for child in node.body:
@@ -271,7 +272,7 @@ def _check_class_method_bodies(
 def _check_abstract_decorators(
     decorators: list[ast.expr], names: set[str]
 ) -> Iterator[Error]:
-    """Yield SLD202 for both Name and Attribute-form @abstractmethod decorators."""
+    # Yield SLD202 for both Name and Attribute-form @abstractmethod decorators.
     yield from _name_decorator_errors(decorators, names, SLD202)
     for decorator in decorators:
         if is_attribute_attr(decorator, "abstractmethod"):
@@ -281,7 +282,7 @@ def _check_abstract_decorators(
 def _check_method_naming(
     node: FunctionType,
 ) -> Iterator[Error]:
-    """Check method naming conventions."""
+    # Check method naming conventions.
     if node.name in ("__init__", "__post_init__"):  # noqa: SLD304
         yield _error(node, SLD301.format(node.name))
     if node.name.startswith("_") and not is_dunder_method(node.name):
@@ -294,7 +295,7 @@ def _check_method_in_class(
     is_testcase: bool = False,
     is_protocol: bool = False,
 ) -> Iterator[Error]:
-    """Check a method within a class context."""
+    # Check a method within a class context.
     yield from _check_abstract_decorators(node.decorator_list, abstractmethod_names)
 
     if not is_method(node) or is_classmethod_or_staticmethod(node):
@@ -316,7 +317,7 @@ def _check_method_in_class(
 
 
 def _check_function(node: FunctionType) -> Iterator[Error]:
-    """Check function definitions for limit violations."""
+    # Check function definitions for limit violations.
     yield from _check_node_name(node)
 
     line_count = get_function_line_count(node)
@@ -329,7 +330,7 @@ def _check_function(node: FunctionType) -> Iterator[Error]:
 
 
 def _get_module_name_from_filename(filename: str) -> str | None:
-    """Extract module name from filename for bad name checking."""
+    # Extract module name from filename for bad name checking.
     if not filename:
         return None
     basename = os.path.basename(filename)
@@ -343,7 +344,7 @@ def _get_module_name_from_filename(filename: str) -> str | None:
 
 
 def _module_level_errors(lines: list[str], filename: str) -> Iterator[Error]:
-    """Yield errors derived from the module's lines or filename."""
+    # Yield errors derived from the module's lines or filename.
     if len(lines) > MAX_MODULE_LINES:
         yield Error(
             lineno=1,
@@ -357,7 +358,7 @@ def _module_level_errors(lines: list[str], filename: str) -> Iterator[Error]:
 
 @dataclass(slots=True)
 class Checker:  # noqa: SLD501 SLD503
-    """Flake8 checker for stolid conventions."""
+    """Flake8 checker for stolid: parsed ``tree``, source ``lines``, ``filename``."""
 
     name = "stolid"
     version = "0.1.0"
@@ -367,7 +368,7 @@ class Checker:  # noqa: SLD501 SLD503
     filename: str = ""
 
     def run(self) -> Iterator[tuple[int, int, str, type]]:  # noqa: SLD303
-        """Run all checks and yield errors."""
+        """Run all stolid checks and yield ``(line, col, message, type)`` tuples."""
         for merr in _module_level_errors(self.lines, self.filename):
             yield (merr.lineno, merr.col_offset, merr.message, type(self))
 
@@ -379,6 +380,9 @@ class Checker:  # noqa: SLD501 SLD503
 
         for serr in check_string_enum(self.tree):
             yield (serr.lineno, serr.col_offset, serr.message, type(self))
+
+        for derr in check_docstrings(self.tree, self.filename):
+            yield (derr.lineno, derr.col_offset, derr.message, type(self))
 
         for perr in check_private_access(self.tree):
             yield (

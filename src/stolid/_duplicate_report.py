@@ -1,4 +1,4 @@
-"""Formatting and noqa filtering for duplicate-detector reports."""
+# Formatting and noqa filtering for duplicate-detector reports.
 
 from __future__ import annotations
 
@@ -14,6 +14,7 @@ class SourceReader(Protocol):
     """Reads the textual content of a source file."""
 
     def read(self, path: str) -> str:  # noqa: E704
+        """Return the text contents of the file at ``path``."""
         ...
 
 
@@ -22,7 +23,11 @@ _NOQA_RE = re.compile(r"#\s*noqa(?::\s*([A-Z]+\d+(?:\s*,\s*[A-Z]+\d+)*))?", re.I
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ReportLine:
-    """A single flake8-format diagnostic line."""
+    """A single flake8-format diagnostic line.
+
+    Fields ``path``, ``line``, and ``col`` locate the diagnostic; ``message``
+    is the human-readable text.
+    """
 
     path: str
     line: int
@@ -31,12 +36,12 @@ class ReportLine:
 
 
 def format_line(line: ReportLine) -> str:
-    """Render a :class:`ReportLine` as ``path:line:col: message``."""
+    """Render report ``line`` as ``path:line:col: message`` and return the string."""
     return f"{line.path}:{line.line}:{line.col}: {line.message}"
 
 
 def _noqa_codes_on_line(text: str) -> frozenset[str] | None:
-    """Parse the noqa marker on ``text``. None if no marker."""
+    # Parse the noqa marker on ``text``. None if no marker.
     match = _NOQA_RE.search(text)
     if match is None:
         return None
@@ -78,7 +83,10 @@ def _line_text(source: str, line_number: int) -> str:
 
 
 def report_lines(reader: SourceReader, result: ScanResult) -> list[ReportLine]:
-    """Format ``result`` into flake8-style diagnostic lines, honoring noqa."""
+    """Format ``result`` (using ``reader`` to load source lines) into report lines.
+
+    Returns flake8-style diagnostic lines and honors per-line ``noqa`` markers.
+    """
     sources: dict[str, str] = {}
     output: list[ReportLine] = []
     for group in result.groups:

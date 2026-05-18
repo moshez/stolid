@@ -53,17 +53,20 @@ class TestCLIIntegration(unittest.TestCase):
     """CLI integration: exit code merging, path defaults, paths."""
 
     def test_exit_codes(self) -> None:
+        """Verify exit codes."""
         for name, files, flake8_exit, expected in _EXIT_CASES:
             with self.subTest(name=name):
                 result, _, _ = _run_with(files, flake8_exit)
                 assert_that(result, equal_to(expected))
 
     def test_resolve_paths(self) -> None:
+        """Verify resolve paths."""
         for name, argv, expected in _RESOLVE_CASES:
             with self.subTest(name=name):
                 assert_that(resolve_paths(argv), equal_to(expected))
 
     def test_multiple_paths_routed_to_flake8(self) -> None:
+        """Verify multiple paths routed to flake8."""
         fs = InMemoryFileSystem(_files={"src/f.py": TAKE_BODY})
         runner = FixedRunner(_exit_code=0)
         sink = CapturedSink()
@@ -72,6 +75,7 @@ class TestCLIIntegration(unittest.TestCase):
         assert_that(runner.calls[0][1:], equal_to(["src", "tests"]))
 
     def test_syntax_error_produces_stderr(self) -> None:
+        """Verify syntax error produces stderr."""
         result, sink, _ = _run_with({"a.py": "def f(\n"}, 0)
         assert_that(sink.err, is_not(empty()))
         assert_that(result, equal_to(1))

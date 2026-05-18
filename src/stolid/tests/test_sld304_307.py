@@ -273,12 +273,15 @@ class TestSLD304MultiCompare(unittest.TestCase):
     """SLD304: Same expression compared against multiple string literals."""
 
     def test_present(self) -> None:
+        """Verify present."""
         assert_present(self, _SLD304_PRESENT, "SLD304")
 
     def test_absent(self) -> None:
+        """Verify absent."""
         assert_absent(self, _SLD304_ABSENT, "SLD304")
 
     def test_one_per_literal(self) -> None:
+        """Verify one per literal."""
         cases = [
             (
                 "or_chain_two_reports",
@@ -300,9 +303,11 @@ class TestSLD305MatchStringCases(unittest.TestCase):
     """SLD305: match statement with string-literal case patterns."""
 
     def test_present(self) -> None:
+        """Verify present."""
         assert_present(self, _SLD305_PRESENT, "SLD305")
 
     def test_absent(self) -> None:
+        """Verify absent."""
         assert_absent(self, _SLD305_ABSENT, "SLD305")
 
 
@@ -310,9 +315,11 @@ class TestSLD306ModuleStringCount(unittest.TestCase):
     """SLD306: String literal appears in 3+ equality contexts in the module."""
 
     def test_present(self) -> None:
+        """Verify present."""
         assert_present(self, _SLD306_PRESENT, "SLD306")
 
     def test_absent(self) -> None:
+        """Verify absent."""
         assert_absent(self, _SLD306_ABSENT, "SLD306")
 
 
@@ -320,7 +327,9 @@ class TestSLD307LiteralAnnotation(unittest.TestCase):
     """SLD307: Literal[...] annotation contains a string literal."""
 
     def test_present(self) -> None:
+        """Verify present."""
         assert_present(self, _SLD307_PRESENT, "SLD307")
 
     def test_absent(self) -> None:
+        """Verify absent."""
         assert_absent(self, _SLD307_ABSENT, "SLD307")
