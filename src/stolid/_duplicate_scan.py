@@ -155,7 +155,7 @@ def _read_gitignore(fs: FileSystem, root: str) -> pathspec.PathSpec:
 
 
 def _join(root: str, name: str) -> str:
-    if root in ("", "."):
+    if root in ("", "."):  # noqa: SLD304
         return name
     if root.endswith("/"):
         return root + name

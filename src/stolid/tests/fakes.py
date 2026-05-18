@@ -13,7 +13,7 @@ class InMemoryFileSystem:
     _files: dict[str, str]
 
     def walk(self, root: str) -> Iterator[str]:
-        prefix = "" if root in ("", ".") else root.rstrip("/") + "/"
+        prefix = "" if root in ("", ".") else root.rstrip("/") + "/"  # noqa: SLD304
         for path in self._files:
             if not prefix or path.startswith(prefix):
                 yield path

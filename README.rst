@@ -145,6 +145,74 @@ Convert to module-level functions or use ``functools.singledispatch``:
     def display_name(user: User) -> str:
         return user.name.title()
 
+**SLD304**: Flags an expression compared (via ``==``, ``!=``, or ``in`` against
+a tuple/list/set literal) with two or more distinct string literals within a
+single function or module scope. Single ``x == "foo"`` comparisons are fine
+(parsers commonly need them); the smell is having multiple candidate values.
+
+.. code-block:: python
+
+    # Bad
+    def handle(status: str) -> int:
+        if status == "open":
+            return 1
+        if status == "closed":
+            return 2
+        return 0
+
+    # Good
+    from enum import Enum
+
+    class Status(Enum):
+        OPEN = "open"
+        CLOSED = "closed"
+
+    def handle(status: Status) -> int:
+        if status is Status.OPEN:
+            return 1
+        if status is Status.CLOSED:
+            return 2
+        return 0
+
+**SLD305**: Flags ``match`` statements with two or more string-literal ``case``
+patterns (including ``case "a" | "b":`` alternatives). Pattern matching on
+string values is a strong enum smell.
+
+.. code-block:: python
+
+    # Bad
+    def handle(status):
+        match status:
+            case "open":
+                return 1
+            case "closed":
+                return 2
+
+**SLD306**: Flags any string literal that appears in equality contexts (``==``,
+``!=``, ``in`` collection, or a ``match`` case) three or more times across the
+module. A value special enough to be checked from many sites should be a
+named enum member.
+
+**SLD307**: Flags ``Literal[...]`` annotations whose arguments include string
+literals. ``Literal["a", "b"]`` is a lightweight alternative to an enum, but
+this project prefers a real ``Enum`` for the readability and refactoring wins.
+
+.. code-block:: python
+
+    # Bad
+    from typing import Literal
+
+    def handle(status: Literal["open", "closed"]) -> int: ...
+
+    # Good
+    from enum import Enum
+
+    class Status(Enum):
+        OPEN = "open"
+        CLOSED = "closed"
+
+    def handle(status: Status) -> int: ...
+
 SLD4xx - Inheritance
 ~~~~~~~~~~~~~~~~~~~~
 

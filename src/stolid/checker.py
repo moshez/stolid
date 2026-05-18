@@ -38,6 +38,7 @@ from ._constants import (
 )
 from ._global_names_check import check_global_names
 from ._import_placement_check import check_import_placement
+from ._string_enum_check import check_string_enum
 from ._private_access_check import (
     ABSOLUTE_PRIVATE_IMPORT,
     EXTERNAL_PRIVATE_READ,
@@ -131,22 +132,22 @@ def _check_node(
 
 def _check_import_from(node: ast.ImportFrom) -> Iterator[Error]:
     """Check ImportFrom statements."""
-    if node.module in ("unittest.mock", "mock"):
+    if node.module in ("unittest.mock", "mock"):  # noqa: SLD304
         for alias in node.names:
-            if alias.name == "patch":
+            if alias.name == "patch":  # noqa: SLD304 SLD306
                 yield _error(node, SLD102)
 
-    if node.module == "abc":
+    if node.module == "abc":  # noqa: SLD304
         for alias in node.names:
-            if alias.name == "ABC":
+            if alias.name == "ABC":  # noqa: SLD304
                 yield _error(node, SLD201)
-            if alias.name == "abstractmethod":
+            if alias.name == "abstractmethod":  # noqa: SLD304
                 yield _error(node, SLD202)
 
 
 def _check_attribute(node: ast.Attribute) -> Iterator[Error]:
     """Check attribute access for patch usage."""
-    if node.attr != "patch":
+    if node.attr != "patch":  # noqa: SLD306
         return
     value = node.value
     if is_attribute_attr(value, "mock"):
@@ -172,17 +173,17 @@ def _check_call_attribute(node: ast.Call, patch_names: set[str]) -> Iterator[Err
     """Check Call nodes whose func is an Attribute (patch.object, typing.cast)."""
     func = node.func
     assert isinstance(func, ast.Attribute)
-    if func.attr == "cast":
+    if func.attr == "cast":  # noqa: SLD304
         if is_name_id(func.value, "typing"):
             yield _error(node, SLD203)
         return
-    if func.attr != "object":
+    if func.attr != "object":  # noqa: SLD304
         return
     if isinstance(func.value, ast.Name):
         if func.value.id in patch_names:
             yield _error(node, SLD102)
     elif isinstance(func.value, ast.Attribute):  # pragma: no branch
-        if func.value.attr == "patch":
+        if func.value.attr == "patch":  # noqa: SLD306
             yield _error(node, SLD102)
 
 
@@ -281,7 +282,7 @@ def _check_method_naming(
     node: FunctionType,
 ) -> Iterator[Error]:
     """Check method naming conventions."""
-    if node.name in ("__init__", "__post_init__"):
+    if node.name in ("__init__", "__post_init__"):  # noqa: SLD304
         yield _error(node, SLD301.format(node.name))
     if node.name.startswith("_") and not is_dunder_method(node.name):
         yield _error(node, SLD302.format(node.name))
@@ -375,6 +376,9 @@ class Checker:  # noqa: SLD501 SLD503
 
         for ierr in check_import_placement(self.tree):
             yield (ierr.lineno, ierr.col_offset, SLD204, type(self))
+
+        for serr in check_string_enum(self.tree):
+            yield (serr.lineno, serr.col_offset, serr.message, type(self))
 
         for perr in check_private_access(self.tree):
             yield (
