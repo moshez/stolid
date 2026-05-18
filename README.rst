@@ -410,6 +410,35 @@ are penalized exponentially -- four levels of ``if``/``for`` cost roughly
 
 **SLD604**: Modules limited to 400 lines
 
+**SLD605**: Flags nested ``with`` statements that can be flattened into a
+single ``contextlib.ExitStack``. The check fires on a ``with`` statement
+whose body's *last* statement is another ``with`` — every ``__exit__``
+in the chain runs at the same point at the end, so an ``ExitStack``
+preserves the exact semantics with one level of indentation. Statements
+*between* the ``with``\ s are fine, and anything after the whole nest
+(outside the outermost ``with``) is fine; only stuff sandwiched between
+an inner ``with`` and the end of its enclosing ``with`` blocks the
+refactor, and that case is left alone.
+
+.. code-block:: python
+
+    # Bad
+    with acquire() as resource:
+        prepared = prepare(resource)
+        with process(prepared) as handle:
+            do_work(handle)
+    print("done")
+
+    # Good
+    from contextlib import ExitStack
+
+    with ExitStack() as stack:
+        resource = stack.enter_context(acquire())
+        prepared = prepare(resource)
+        handle = stack.enter_context(process(prepared))
+        do_work(handle)
+    print("done")
+
 SLD7xx - Naming
 ~~~~~~~~~~~~~~~
 
