@@ -28,10 +28,29 @@ def _method_body(n: int) -> str:
     )
 
 
+def _nested_function(depth: int, body_lines: int) -> str:
+    # Build a function whose body sits at ``depth`` indent levels of if-nesting.
+    head = "def deeply_nested():\n"
+    nesting = "".join("    " * (i + 1) + f"if x{i}:\n" for i in range(depth))
+    inner_indent = "    " * (depth + 1)
+    body = "\n".join(f"{inner_indent}y{i} = {i}" for i in range(body_lines))
+    return head + nesting + body + "\n"
+
+
+def _bracket_heavy_function(lines: int) -> str:
+    # Each body line opens three nested brackets on itself.
+    body = "\n".join(f"    r{i} = foo(bar([baz({i})]))" for i in range(lines))
+    return "def bracket_heavy():\n" + body + "\n"
+
+
 _SLD601_PRESENT: list[tuple[str, str]] = [
     ("function_exceeds_limit", _function_body("def long_function():", 35)),
     ("method_exceeds_limit", _method_body(35)),
     ("async_function_exceeds_limit", _function_body("async def long_async():", 35)),
+    # 4-deep nesting at ~10 lines blows the weighted budget.
+    ("deep_nesting_exceeds_limit", _nested_function(depth=4, body_lines=10)),
+    # 3 nested brackets per line gives bracket extra of 2 per line.
+    ("bracket_nesting_exceeds_limit", _bracket_heavy_function(20)),
 ]
 
 
@@ -63,40 +82,57 @@ def _big_class() -> str:
     return "\n".join(lines) + "\n"
 
 
+_DUNDERS = (
+    "__str__",
+    "__repr__",
+    "__eq__",
+    "__ne__",
+    "__lt__",
+    "__le__",
+    "__gt__",
+    "__ge__",
+    "__hash__",
+    "__bool__",
+    "__len__",
+    "__getitem__",
+    "__setitem__",
+    "__delitem__",
+    "__iter__",
+    "__contains__",
+    "__call__",
+)
+
+
 def _class_with_many_dunders() -> str:
-    dunders = [
-        "__str__",
-        "__repr__",
-        "__eq__",
-        "__ne__",
-        "__lt__",
-        "__le__",
-        "__gt__",
-        "__ge__",
-        "__hash__",
-        "__bool__",
-        "__len__",
-        "__getitem__",
-        "__setitem__",
-        "__delitem__",
-        "__iter__",
-        "__contains__",
-        "__call__",
-    ]
-    lines = ["class MyClass:"]
-    for dunder in dunders:
-        lines.append(f"    def {dunder}(self): pass")
-    for i in range(15):
-        lines.append(f"    def method{i}(self): pass")
-    return "\n".join(lines) + "\n"
+    dunder_lines = [f"    def {d}(self): pass" for d in _DUNDERS]
+    method_lines = [f"    def method{i}(self): pass" for i in range(15)]
+    return "\n".join(["class MyClass:", *dunder_lines, *method_lines]) + "\n"
 
 
 def _long_module(n: int) -> str:
     return "\n".join(f"x{i} = {i}" for i in range(n)) + "\n"
 
 
+def _blank_padded_function(blanks: int) -> str:
+    # A short function padded with blank lines that should not be counted.
+    head = "def padded():\n    x = 1\n"
+    pad = "\n" * blanks
+    return head + pad + "    return x\n"
+
+
+def _comment_padded_function(comments: int) -> str:
+    # A short function padded with comment-only lines (each weighs 1 flat).
+    head = "def padded():\n    x = 1\n"
+    pad = "\n".join("    # noted" for _ in range(comments)) + "\n"
+    return head + pad + "    return x\n"
+
+
 _SLD601_ABSENT: list[tuple[str, str]] = [
     ("short_function", "def short_function():\n    x = 1\n    return x\n"),
+    # 200 blank lines weigh 0; the body has 2 real lines.
+    ("blank_lines_not_counted", _blank_padded_function(200)),
+    # 25 comment lines + 2 real lines = 27, under the budget of 30.
+    ("comments_unweighted", _comment_padded_function(25)),
 ]
 
 
@@ -116,7 +152,7 @@ _SLD604_ABSENT: list[tuple[str, str]] = [
 
 
 class TestSLD601FunctionLineLimit(unittest.TestCase):
-    """Tests for SLD601: Function exceeds line limit."""
+    """Tests for SLD601: Function exceeds weighted line budget."""
 
     def test_present(self) -> None:
         """Verify present."""
@@ -125,6 +161,15 @@ class TestSLD601FunctionLineLimit(unittest.TestCase):
     def test_absent(self) -> None:
         """Verify absent."""
         assert_absent(self, _SLD601_ABSENT, "SLD601")
+
+    def test_message_reports_heaviest_line(self) -> None:
+        """Verify the SLD601 message names the heaviest line and its breakdown."""
+        code = _nested_function(depth=4, body_lines=10)
+        errors = check_code(code)
+        messages = [msg for _, _, msg in errors if "SLD601" in msg]
+        assert_that(messages[0], contains_string("complexity"))
+        assert_that(messages[0], contains_string("heaviest line"))
+        assert_that(messages[0], contains_string("indent depth"))
 
 
 class TestSLD602ArgumentLimit(unittest.TestCase):

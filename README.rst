@@ -264,7 +264,41 @@ All dataclasses must have:
 SLD6xx - Code Complexity
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-**SLD601**: Functions limited to 30 lines
+**SLD601**: Functions limited to a weighted complexity of 30. A flat
+function still costs ~1 per line, so the budget reads roughly like a line
+count for unnested code. Each body line's weight is
+
+::
+
+    1.3 ** (indent_depth + max(0, bracket_depth - 1))
+
+where ``indent_depth`` counts indentation past the function body's
+baseline (one step = 4 spaces) and ``bracket_depth`` is the deepest stack
+of ``(``, ``[``, ``{`` opened on that line. Blank lines weigh 0;
+comment-only lines weigh 1 unweighted. Deep nesting and dense expressions
+are penalized exponentially -- four levels of ``if``/``for`` cost roughly
+2.86x per line, pushing functions toward early returns or extraction.
+
+.. code-block:: python
+
+    # Bad (passes line count, fails complexity)
+    def process(items):
+        for item in items:
+            if item.active:
+                for child in item.children:
+                    if child.valid:
+                        if check(child):
+                            do_work(child)  # depth 5, weight ~3.7
+
+    # Good (guard clauses keep weights near 1.0 per line)
+    def process(items):
+        for item in items:
+            if not item.active:
+                continue
+            for child in item.children:
+                if not child.valid or not check(child):
+                    continue
+                do_work(child)
 
 **SLD602**: Functions limited to 4 arguments (excludes ``self``/``cls``)
 

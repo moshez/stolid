@@ -13,7 +13,6 @@ from ._constants import (
     SLD201,
     SLD202,
     SLD203,
-    SLD204,
     SLD301,
     SLD302,
     SLD303,
@@ -21,16 +20,10 @@ from ._constants import (
     SLD501,
     SLD502,
     SLD503,
-    SLD601,
     SLD602,
     SLD603,
     SLD604,
     SLD701,
-    SLD901,
-    SLD902,
-    SLD903,
-    SLD904,
-    SLD905,
     MAX_CLASS_METHODS,
     MAX_FUNCTION_ARGS,
     MAX_FUNCTION_LINES,
@@ -38,27 +31,25 @@ from ._constants import (
 )
 from ._docstring_check import check_docstrings
 from ._global_names_check import check_global_names
-from ._import_placement_check import check_import_placement
 from ._string_enum_check import check_string_enum
-from ._private_access_check import (
-    ABSOLUTE_PRIVATE_IMPORT,
-    EXTERNAL_PRIVATE_READ,
-    EXTERNAL_PRIVATE_WRITE,
-    MODULE_PRIVATE_ATTR,
-    PRIVATE_SUBMODULE_IMPORT,
-    check_private_access,
+from ._check_runner import (
+    CheckContext,
+    ErrorLike,
+    build_context,
+    format_sld601,
+    import_placement_errors,
+    privacy_errors,
 )
 from ._ast_inspection import (
     FUNCTION_DEF_NODES,
     FunctionType,
     class_inherits_from,
-    collect_imports,
     find_bad_name_word,
     get_base_name,
     get_class_method_count,
     get_dataclass_keywords,
     get_function_arg_count,
-    get_function_line_count,
+    get_function_complexity,
     is_attribute_attr,
     is_classmethod_or_staticmethod,
     is_dataclass_decorator,
@@ -71,15 +62,6 @@ from ._ast_inspection import (
 )
 
 __all__ = ["Checker"]
-
-
-_PRIVACY_CODES: dict[str, str] = {
-    EXTERNAL_PRIVATE_READ: SLD901,
-    EXTERNAL_PRIVATE_WRITE: SLD902,
-    ABSOLUTE_PRIVATE_IMPORT: SLD903,
-    PRIVATE_SUBMODULE_IMPORT: SLD904,
-    MODULE_PRIVATE_ATTR: SLD905,
-}
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -110,25 +92,20 @@ def _check_node_name(
     return _check_bad_name(node.name, node.lineno, node.col_offset)
 
 
-def _check_node(
-    node: ast.AST,
-    patch_names: set[str],
-    abstractmethod_names: set[str],
-    cast_names: set[str],
-) -> Iterator[Error]:
+def _check_node(node: ast.AST, ctx: CheckContext) -> Iterator[Error]:
     # Check a single AST node for violations.
     if isinstance(node, ast.ImportFrom):
         yield from _check_import_from(node)
     elif isinstance(node, ast.Attribute):
         yield from _check_attribute(node)
     elif isinstance(node, ast.ClassDef):
-        yield from _check_class(node, abstractmethod_names)
+        yield from _check_class(node, ctx.abstractmethod_names)
     elif isinstance(node, FUNCTION_DEF_NODES):
-        yield from _check_function(node)
+        yield from _check_function(node, ctx.lines, ctx.bracket_depths)
     elif isinstance(node, ast.Call):
-        yield from _check_call(node, patch_names, cast_names)
+        yield from _check_call(node, ctx.patch_names, ctx.cast_names)
     elif isinstance(node, ast.With):
-        yield from _check_with(node, patch_names)
+        yield from _check_with(node, ctx.patch_names)
 
 
 def _check_import_from(node: ast.ImportFrom) -> Iterator[Error]:
@@ -316,14 +293,14 @@ def _check_method_in_class(
         yield _error(node, SLD303.format(node.name))
 
 
-def _check_function(node: FunctionType) -> Iterator[Error]:
+def _check_function(
+    node: FunctionType, lines: list[str], bracket_depths: dict[int, int]
+) -> Iterator[Error]:
     # Check function definitions for limit violations.
     yield from _check_node_name(node)
-
-    line_count = get_function_line_count(node)
-    if line_count > MAX_FUNCTION_LINES:
-        yield _error(node, SLD601.format(node.name, line_count, MAX_FUNCTION_LINES))
-
+    complexity = get_function_complexity(node, lines, bracket_depths)
+    if complexity.weight > MAX_FUNCTION_LINES:
+        yield _error(node, format_sld601(node.name, complexity))
     arg_count = get_function_arg_count(node)
     if arg_count > MAX_FUNCTION_ARGS:
         yield _error(node, SLD602.format(node.name, arg_count, MAX_FUNCTION_ARGS))
@@ -356,6 +333,20 @@ def _module_level_errors(lines: list[str], filename: str) -> Iterator[Error]:
         yield from _check_bad_name(module_name, 1, 0)
 
 
+def _all_errors(
+    tree: ast.Module, lines: list[str], filename: str
+) -> Iterator[ErrorLike]:
+    yield from _module_level_errors(lines, filename)
+    yield from check_global_names(tree)
+    yield from import_placement_errors(tree)
+    yield from check_string_enum(tree)
+    yield from check_docstrings(tree, filename)
+    yield from privacy_errors(tree)
+    ctx = build_context(tree, lines)
+    for node in ast.walk(tree):
+        yield from _check_node(node, ctx)
+
+
 @dataclass(slots=True)
 class Checker:  # noqa: SLD501 SLD503
     """Flake8 checker for stolid: parsed ``tree``, source ``lines``, ``filename``."""
@@ -369,30 +360,6 @@ class Checker:  # noqa: SLD501 SLD503
 
     def run(self) -> Iterator[tuple[int, int, str, type]]:  # noqa: SLD303
         """Run all stolid checks and yield ``(line, col, message, type)`` tuples."""
-        for merr in _module_level_errors(self.lines, self.filename):
-            yield (merr.lineno, merr.col_offset, merr.message, type(self))
-
-        for gerr in check_global_names(self.tree):
-            yield (gerr.lineno, gerr.col_offset, gerr.message, type(self))
-
-        for ierr in check_import_placement(self.tree):
-            yield (ierr.lineno, ierr.col_offset, SLD204, type(self))
-
-        for serr in check_string_enum(self.tree):
-            yield (serr.lineno, serr.col_offset, serr.message, type(self))
-
-        for derr in check_docstrings(self.tree, self.filename):
-            yield (derr.lineno, derr.col_offset, derr.message, type(self))
-
-        for perr in check_private_access(self.tree):
-            yield (
-                perr.lineno,
-                perr.col_offset,
-                _PRIVACY_CODES[perr.kind].format(perr.attr),
-                type(self),
-            )
-
-        patch_names, abstractmethod_names, cast_names = collect_imports(self.tree)
-        for node in ast.walk(self.tree):
-            for err in _check_node(node, patch_names, abstractmethod_names, cast_names):
-                yield (err.lineno, err.col_offset, err.message, type(self))
+        cls = type(self)
+        for err in _all_errors(self.tree, self.lines, self.filename):
+            yield (err.lineno, err.col_offset, err.message, cls)

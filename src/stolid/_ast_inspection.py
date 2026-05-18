@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import ast
 import re
-from typing import Iterable
+from dataclasses import dataclass
+from typing import Iterable, Iterator
 
-from ._constants import BAD_NAME_WORDS
+from ._constants import BAD_NAME_WORDS, COMPLEXITY_FACTOR, INDENT_WIDTH
 
 FUNCTION_DEF_NODES = (ast.FunctionDef, ast.AsyncFunctionDef)
 FunctionType = ast.FunctionDef | ast.AsyncFunctionDef
@@ -126,12 +127,83 @@ def is_property_method(node: FunctionType) -> bool:
     return False
 
 
-def get_function_line_count(node: FunctionType) -> int:
-    """Return the line span of function ``node``'s body."""
-    assert node.body, "Function body cannot be empty in valid Python"
+@dataclass(frozen=True, slots=True, kw_only=True)
+class FunctionComplexity:
+    """Weighted-line complexity score for a function body.
+
+    ``weight`` is the sum of per-line weights. ``heaviest_line`` is the line
+    number of the most expensive body line; ``heaviest_weight`` is its
+    weight, and ``heaviest_indent`` / ``heaviest_brackets`` are the indent
+    depth and bracket depth that produced it.
+    """
+
+    weight: float
+    heaviest_line: int
+    heaviest_weight: float
+    heaviest_indent: int
+    heaviest_brackets: int
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class _LineCost:
+    lineno: int
+    weight: float
+    indent: int
+    brackets: int
+
+
+def _line_cost(
+    lineno: int, line: str, baseline_indent: int, bracket_depth: int
+) -> _LineCost:
+    stripped = line.lstrip()
+    if not stripped:
+        return _LineCost(lineno=lineno, weight=0.0, indent=0, brackets=bracket_depth)
+    if stripped.startswith("#"):
+        return _LineCost(lineno=lineno, weight=1.0, indent=0, brackets=bracket_depth)
+    indent_chars = len(line) - len(stripped)
+    indent = max(0, (indent_chars - baseline_indent) // INDENT_WIDTH)
+    weight = COMPLEXITY_FACTOR ** (indent + max(0, bracket_depth - 1))
+    return _LineCost(
+        lineno=lineno, weight=weight, indent=indent, brackets=bracket_depth
+    )
+
+
+def _iter_line_costs(
+    node: FunctionType, lines: list[str], bracket_depths: dict[int, int]
+) -> Iterator[_LineCost]:
     first_line = node.body[0].lineno
     last_line = node.body[-1].end_lineno or node.body[-1].lineno
-    return last_line - first_line + 1
+    baseline = node.body[0].col_offset
+    for lineno in range(first_line, last_line + 1):
+        yield _line_cost(
+            lineno, lines[lineno - 1], baseline, bracket_depths.get(lineno, 0)
+        )
+
+
+def _cost_weight(cost: _LineCost) -> float:
+    return cost.weight
+
+
+def get_function_complexity(
+    node: FunctionType, lines: list[str], bracket_depths: dict[int, int]
+) -> FunctionComplexity:
+    """Return the weighted-line complexity of function ``node``.
+
+    ``lines`` is the source of the enclosing module and ``bracket_depths``
+    maps each line number to its deepest opened bracket stack. See
+    ``_constants.py`` for the formula and rationale behind
+    ``COMPLEXITY_FACTOR`` and ``INDENT_WIDTH``.
+    """
+    assert node.body, "Function body cannot be empty in valid Python"
+    costs = list(_iter_line_costs(node, lines, bracket_depths))
+    heaviest = max(costs, key=_cost_weight)
+    return FunctionComplexity(
+        weight=sum(c.weight for c in costs),
+        heaviest_line=heaviest.lineno,
+        heaviest_weight=heaviest.weight,
+        heaviest_indent=heaviest.indent,
+        heaviest_brackets=heaviest.brackets,
+    )
 
 
 def get_function_arg_count(node: FunctionType) -> int:
