@@ -110,6 +110,37 @@ Use ``typing.Protocol`` for interfaces instead:
         def get(self, url: str) -> Response:
             ...
 
+**SLD205**: Flags broad coupling to a single module. Two patterns count
+toward the same per-module budget (limit: 7 distinct references):
+
+- ``from Y import a, b, c, ...`` — distinct names imported, aggregated
+  across every such statement for the same ``Y``.
+- ``import Y`` (or ``import Y as A``) — distinct attribute names
+  accessed via ``Y.x`` / ``A.x``.
+
+``typing`` and ``ast`` are allowlisted: both are broad-API stdlib
+namespaces where reaching for many members is structural rather than
+coupling. Imports and uses inside ``if TYPE_CHECKING:`` blocks are
+ignored entirely.
+
+.. code-block:: python
+
+    # Bad (8 names from one module)
+    from somelib import a, b, c, d, e, f, g, h
+
+    # Bad (8 distinct attribute accesses on one module)
+    import somelib
+    use(somelib.a, somelib.b, somelib.c, somelib.d,
+        somelib.e, somelib.f, somelib.g, somelib.h)
+
+    # Good (allowlisted)
+    from typing import Any, Iterable, Iterator, List, Mapping, Optional, Protocol
+
+    # Good (typing-only block ignored)
+    from typing import TYPE_CHECKING
+    if TYPE_CHECKING:
+        from somelib import A, B, C, D, E, F, G, H
+
 SLD3xx - Object-Oriented Design
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

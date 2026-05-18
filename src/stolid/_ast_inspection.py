@@ -46,14 +46,6 @@ def get_base_name(node: ast.expr) -> str | None:
     return None
 
 
-def class_inherits_from(node: ast.ClassDef, base_name: str) -> bool:
-    """Return True iff class ``node`` lists a base whose name equals ``base_name``."""
-    for base in node.bases:
-        if get_base_name(base) == base_name:
-            return True
-    return False
-
-
 def is_dataclass_decorator(node: ast.expr) -> bool:
     """Return True iff ``node`` is a ``@dataclass`` or ``@dataclasses.dataclass``."""
     if is_name_id(node, "dataclass"):
@@ -65,66 +57,9 @@ def is_dataclass_decorator(node: ast.expr) -> bool:
     return False
 
 
-def get_dataclass_keywords(node: ast.expr) -> dict[str, bool]:
-    """Return the constant ``frozen``/``slots``/``kw_only`` kwargs of ``node``."""
-    if not isinstance(node, ast.Call):
-        return {}
-    result: dict[str, bool] = {}
-    for keyword in node.keywords:
-        if keyword.arg in ("frozen", "slots", "kw_only"):  # noqa: SLD304
-            if isinstance(keyword.value, ast.Constant):
-                result[keyword.arg] = bool(keyword.value.value)
-    return result
-
-
-def method_accesses_private_state(
-    node: FunctionType,
-) -> bool:
-    """Return True iff method ``node`` reads any ``self._private`` attribute."""
-    for child in ast.walk(node):
-        if isinstance(child, ast.Attribute):
-            if is_name_id(child.value, "self") and child.attr.startswith("_"):
-                return True
-    return False
-
-
-def is_method(node: FunctionType) -> bool:
-    """Return True iff function ``node`` has ``self`` as its first positional arg."""
-    if not node.args.args:
-        return False
-    first_arg = node.args.args[0]
-    return first_arg.arg == "self"
-
-
-_CM_SM = ("classmethod", "staticmethod")
-
-
-def is_classmethod_or_staticmethod(
-    node: FunctionType,
-) -> bool:
-    """Return True iff ``node`` is decorated ``@classmethod`` or ``@staticmethod``."""
-    for decorator in node.decorator_list:
-        if is_name_in(decorator, _CM_SM) or is_attribute_in(decorator, _CM_SM):
-            return True
-    return False
-
-
 def is_dunder_method(name: str) -> bool:
     """Return True iff ``name`` is a dunder identifier (``__xxx__``)."""
     return name.startswith("__") and name.endswith("__")
-
-
-_PROPERTY_SUFFIXES = ("setter", "getter", "deleter")
-
-
-def is_property_method(node: FunctionType) -> bool:
-    """Return True iff ``node`` is ``@property`` or an ``@x.setter``/getter/deleter."""
-    for decorator in node.decorator_list:
-        if is_name_id(decorator, "property"):
-            return True
-        if is_attribute_in(decorator, _PROPERTY_SUFFIXES):
-            return True
-    return False
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -215,16 +150,6 @@ def get_function_arg_count(node: FunctionType) -> int:
     return total
 
 
-def get_class_method_count(node: ast.ClassDef) -> int:
-    """Return the non-dunder method count of class ``node``."""
-    count = 0
-    for child in node.body:
-        if isinstance(child, FUNCTION_DEF_NODES):
-            if not is_dunder_method(child.name):
-                count += 1
-    return count
-
-
 def _add_matching_aliases(
     aliases: list[ast.alias], wanted: tuple[str, ...], target: set[str]
 ) -> None:
@@ -282,3 +207,31 @@ def find_bad_name_word(name: str) -> str | None:
         if word.lower() in BAD_NAME_WORDS:
             return word.lower()
     return None
+
+
+SLD701 = "SLD701 Name '{}' contains forbidden word '{}' (use a more specific name)"
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class BadNameError:
+    """A bad-name violation.
+
+    ``lineno`` and ``col_offset`` locate the offending name; ``message``
+    is the formatted SLD701 diagnostic.
+    """
+
+    lineno: int
+    col_offset: int
+    message: str
+
+
+def bad_name_errors(name: str, lineno: int, col_offset: int) -> Iterator[BadNameError]:
+    """Yield SLD701 if ``name`` contains a forbidden word.
+
+    ``lineno`` and ``col_offset`` locate the offending name.
+    """
+    bad_word = find_bad_name_word(name)
+    if bad_word is not None:
+        yield BadNameError(
+            lineno=lineno, col_offset=col_offset, message=SLD701.format(name, bad_word)
+        )

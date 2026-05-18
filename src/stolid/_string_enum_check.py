@@ -7,7 +7,25 @@ from dataclasses import dataclass
 from typing import Iterator
 
 from ._ast_inspection import get_base_name
-from ._constants import SLD304, SLD305, SLD306, SLD307, SLD308, SLD309
+
+SLD304 = (
+    "SLD304 Expression '{}' compared against multiple distinct string literals "
+    "(use an enum)"
+)
+SLD305 = "SLD305 match case uses string literal '{}' (use an enum)"
+SLD306 = (
+    "SLD306 String literal '{}' appears in {} equality contexts in this module "
+    "(use an enum)"
+)
+SLD307 = "SLD307 Literal[...] annotation uses string literal '{}' (use an enum)"
+SLD308 = (
+    "SLD308 Module-level string constant has identifier value '{}' "
+    "(define peers as Enum members)"
+)
+SLD309 = (
+    "SLD309 Enum member has identifier-shaped string value '{}' "
+    "(use auto() to avoid a stringly-typed backdoor)"
+)
 
 MULTI_COMPARE_THRESHOLD = 2
 MODULE_COUNT_THRESHOLD = 3
