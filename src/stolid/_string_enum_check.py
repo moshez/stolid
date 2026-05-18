@@ -6,11 +6,14 @@ import ast
 from dataclasses import dataclass
 from typing import Iterator
 
-from ._constants import SLD304, SLD305, SLD306, SLD307
+from ._ast_inspection import get_base_name
+from ._constants import SLD304, SLD305, SLD306, SLD307, SLD308, SLD309
 
 MULTI_COMPARE_THRESHOLD = 2
 MODULE_COUNT_THRESHOLD = 3
 MATCH_CASE_THRESHOLD = 2
+PEER_CONSTANT_THRESHOLD = 2
+_ENUM_BASES = frozenset({"Enum", "IntEnum", "StrEnum", "Flag", "IntFlag"})
 
 _TRACKABLE_NAMELIKE = (ast.Name, ast.Attribute, ast.Subscript)
 _COLLECTION_NODES = (ast.Tuple, ast.List, ast.Set)
@@ -264,9 +267,91 @@ def _check_literal_annotations(tree: ast.Module) -> Iterator[StringEnumError]:
             )
 
 
+def _assignment_string_value(stmt: ast.stmt) -> tuple[ast.Constant, str] | None:
+    # If ``stmt`` is a single-target ``NAME = "literal"`` (with or without an
+    # annotation), return ``(Constant, value)``; else return ``None``.
+    if isinstance(stmt, ast.Assign):
+        if len(stmt.targets) != 1:
+            return None
+        if not isinstance(stmt.targets[0], ast.Name):
+            return None
+        value: ast.expr = stmt.value
+    elif isinstance(stmt, ast.AnnAssign):
+        if not isinstance(stmt.target, ast.Name):
+            return None
+        if stmt.value is None:
+            return None
+        value = stmt.value
+    else:
+        return None
+    if not isinstance(value, ast.Constant):
+        return None
+    if not isinstance(value.value, str):
+        return None
+    return value, value.value
+
+
+def _check_module_string_constants(tree: ast.Module) -> Iterator[StringEnumError]:
+    found: list[tuple[ast.Constant, str]] = []
+    for stmt in tree.body:
+        result = _assignment_string_value(stmt)
+        if result is None:
+            continue
+        _, value = result
+        if not value.isidentifier():
+            continue
+        found.append(result)
+    if len(found) < PEER_CONSTANT_THRESHOLD:
+        return
+    for node, value in found:
+        yield StringEnumError(
+            lineno=node.lineno,
+            col_offset=node.col_offset,
+            message=SLD308.format(value),
+        )
+
+
+def _is_enum_class(node: ast.ClassDef) -> bool:
+    return any(get_base_name(base) in _ENUM_BASES for base in node.bases)
+
+
+def _enum_classes(tree: ast.Module) -> Iterator[ast.ClassDef]:
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ClassDef) and _is_enum_class(node):
+            yield node
+
+
+def _identifier_string_members(
+    node: ast.ClassDef,
+) -> list[tuple[ast.Constant, str]]:
+    # Return the class's string-valued members if *all* of them are valid
+    # identifiers; else an empty list.
+    members: list[tuple[ast.Constant, str]] = []
+    for stmt in node.body:
+        result = _assignment_string_value(stmt)
+        if result is None:
+            continue
+        if not result[1].isidentifier():
+            return []
+        members.append(result)
+    return members
+
+
+def _check_enum_identifier_values(tree: ast.Module) -> Iterator[StringEnumError]:
+    for node in _enum_classes(tree):
+        for const, value in _identifier_string_members(node):
+            yield StringEnumError(
+                lineno=const.lineno,
+                col_offset=const.col_offset,
+                message=SLD309.format(value),
+            )
+
+
 def check_string_enum(tree: ast.Module) -> Iterator[StringEnumError]:
     """Yield errors in ``tree`` for stringly-typed code that should use an enum."""
     yield from _check_multi_compare(tree)
     yield from _check_match_statements(tree)
     yield from _check_module_string_count(tree)
     yield from _check_literal_annotations(tree)
+    yield from _check_module_string_constants(tree)
+    yield from _check_enum_identifier_values(tree)

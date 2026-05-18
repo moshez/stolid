@@ -238,6 +238,54 @@ this project prefers a real ``Enum`` for the readability and refactoring wins.
 
     def handle(status: Status) -> int: ...
 
+**SLD308**: Flags two or more peer module-level string constants whose values
+are valid Python identifiers (e.g. ``READ = "read"``). A cluster of such
+constants is almost always an enum waiting to be written; defining them
+loosely lets the rest of the SLD30x checks miss them (the literal never
+appears in a comparison or ``match`` — only the name does). The check
+ignores values that aren't ``str.isidentifier()``-true, so things like
+``HOST = "example.com"`` or ``GREETING = "hello world"`` don't fire.
+
+.. code-block:: python
+
+    # Bad
+    READ = "read"
+    WRITE = "write"
+    DELETE = "delete"
+
+    # Good
+    from enum import Enum, auto
+
+    class Action(Enum):
+        READ = auto()
+        WRITE = auto()
+        DELETE = auto()
+
+**SLD309**: Flags ``Enum`` subclasses (including ``StrEnum``, ``IntEnum``,
+``Flag``, ``IntFlag``) where every string-constant member has an
+identifier-shaped value. Such enums leak a stringly-typed backdoor:
+``MyEnum("read")`` round-trips a bare string into a member. Use
+``auto()`` instead — it generates unique values without exposing
+identifier-shaped strings. Non-identifier values (``"#ff0000"``,
+``"application/json"``) are kept; the check only fires when every
+string member is identifier-shaped.
+
+.. code-block:: python
+
+    # Bad
+    from enum import Enum
+
+    class Action(Enum):
+        READ = "read"
+        WRITE = "write"
+
+    # Good
+    from enum import Enum, auto
+
+    class Action(Enum):
+        READ = auto()
+        WRITE = auto()
+
 SLD4xx - Inheritance
 ~~~~~~~~~~~~~~~~~~~~
 

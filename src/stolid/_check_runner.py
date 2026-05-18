@@ -21,14 +21,7 @@ from ._constants import (
     SLD905,
 )
 from ._import_placement_check import check_import_placement
-from ._private_access_check import (
-    ABSOLUTE_PRIVATE_IMPORT,
-    EXTERNAL_PRIVATE_READ,
-    EXTERNAL_PRIVATE_WRITE,
-    MODULE_PRIVATE_ATTR,
-    PRIVATE_SUBMODULE_IMPORT,
-    check_private_access,
-)
+from ._private_access_check import PrivacyKind, check_private_access
 
 
 class ErrorLike(Protocol):
@@ -78,12 +71,12 @@ class CheckContext:
     bracket_depths: dict[int, int]
 
 
-_PRIVACY_CODES: dict[str, str] = {
-    EXTERNAL_PRIVATE_READ: SLD901,
-    EXTERNAL_PRIVATE_WRITE: SLD902,
-    ABSOLUTE_PRIVATE_IMPORT: SLD903,
-    PRIVATE_SUBMODULE_IMPORT: SLD904,
-    MODULE_PRIVATE_ATTR: SLD905,
+_PRIVACY_CODES: dict[PrivacyKind, str] = {
+    PrivacyKind.EXTERNAL_PRIVATE_READ: SLD901,
+    PrivacyKind.EXTERNAL_PRIVATE_WRITE: SLD902,
+    PrivacyKind.ABSOLUTE_PRIVATE_IMPORT: SLD903,
+    PrivacyKind.PRIVATE_SUBMODULE_IMPORT: SLD904,
+    PrivacyKind.MODULE_PRIVATE_ATTR: SLD905,
 }
 
 

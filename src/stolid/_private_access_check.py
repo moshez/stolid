@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import ast
 from dataclasses import dataclass, field
+from enum import Enum, auto
 from typing import Iterator
 
 from ._ast_inspection import (
@@ -27,11 +28,15 @@ from ._ast_inspection import (
     is_name_id,
 )
 
-EXTERNAL_PRIVATE_READ = "external_private_read"
-EXTERNAL_PRIVATE_WRITE = "external_private_write"
-ABSOLUTE_PRIVATE_IMPORT = "absolute_private_import"
-PRIVATE_SUBMODULE_IMPORT = "private_submodule_import"
-MODULE_PRIVATE_ATTR = "module_private_attr"
+
+class PrivacyKind(Enum):
+    """The five categories of private-access violation tracked by the checker."""
+
+    EXTERNAL_PRIVATE_READ = auto()
+    EXTERNAL_PRIVATE_WRITE = auto()
+    ABSOLUTE_PRIVATE_IMPORT = auto()
+    PRIVATE_SUBMODULE_IMPORT = auto()
+    MODULE_PRIVATE_ATTR = auto()
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -39,12 +44,12 @@ class PrivacyError:
     """A privacy convention violation.
 
     ``lineno`` and ``col_offset`` locate the offending access; ``kind`` is
-    one of the module-level constants above; ``attr`` is the private name.
+    a :class:`PrivacyKind` member; ``attr`` is the private name.
     """
 
     lineno: int
     col_offset: int
-    kind: str
+    kind: PrivacyKind
     attr: str
 
 
@@ -96,7 +101,7 @@ class _State:
         """Record that ``name`` is bound to an imported module/symbol."""
         self._imported_names.add(name)
 
-    def record(self, node: ast.stmt | ast.expr, kind: str, attr: str) -> None:
+    def record(self, node: ast.stmt | ast.expr, kind: PrivacyKind, attr: str) -> None:
         """Record a violation of ``kind`` for private ``attr`` located at ``node``."""
         self._violations.append(
             PrivacyError(
@@ -170,12 +175,12 @@ def _check_attribute(node: ast.Attribute, state: _State) -> None:
         if node.value.id == state.privileged_arg():
             return
         if state.is_imported(node.value.id):
-            state.record(node, MODULE_PRIVATE_ATTR, attr)
+            state.record(node, PrivacyKind.MODULE_PRIVATE_ATTR, attr)
             return
     if _is_write_context(node):
-        state.record(node, EXTERNAL_PRIVATE_WRITE, attr)
+        state.record(node, PrivacyKind.EXTERNAL_PRIVATE_WRITE, attr)
     else:
-        state.record(node, EXTERNAL_PRIVATE_READ, attr)
+        state.record(node, PrivacyKind.EXTERNAL_PRIVATE_READ, attr)
 
 
 def _visit_attribute(node: ast.Attribute, state: _State) -> None:
@@ -186,7 +191,7 @@ def _visit_attribute(node: ast.Attribute, state: _State) -> None:
 def _visit_import(node: ast.Import, state: _State) -> None:
     for alias in node.names:
         if _has_private_segment(alias.name):
-            state.record(node, PRIVATE_SUBMODULE_IMPORT, alias.name)
+            state.record(node, PrivacyKind.PRIVATE_SUBMODULE_IMPORT, alias.name)
         bound = (alias.asname or alias.name).split(".")[0]
         state.bind_import(bound)
 
@@ -197,10 +202,10 @@ def _visit_import_from(node: ast.ImportFrom, state: _State) -> None:
             state.bind_import(alias.asname or alias.name)
         return
     if node.module is not None and _has_private_segment(node.module):
-        state.record(node, PRIVATE_SUBMODULE_IMPORT, node.module)
+        state.record(node, PrivacyKind.PRIVATE_SUBMODULE_IMPORT, node.module)
     for alias in node.names:
         if _is_private(alias.name):
-            state.record(node, ABSOLUTE_PRIVATE_IMPORT, alias.name)
+            state.record(node, PrivacyKind.ABSOLUTE_PRIVATE_IMPORT, alias.name)
         state.bind_import(alias.asname or alias.name)
 
 

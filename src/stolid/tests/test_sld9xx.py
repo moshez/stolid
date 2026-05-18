@@ -7,14 +7,7 @@ import unittest
 
 from hamcrest import assert_that, contains_string, equal_to, has_item
 
-from .._private_access_check import (
-    ABSOLUTE_PRIVATE_IMPORT,
-    EXTERNAL_PRIVATE_READ,
-    EXTERNAL_PRIVATE_WRITE,
-    MODULE_PRIVATE_ATTR,
-    PRIVATE_SUBMODULE_IMPORT,
-    check_private_access,
-)
+from .._private_access_check import PrivacyKind, check_private_access
 from .code_parser import assert_absent, assert_present, check_code
 
 _SLD901_PRESENT: list[tuple[str, str]] = [
@@ -296,7 +289,7 @@ class TestErrorMessages(unittest.TestCase):
                 assert_that(messages[0], contains_string(expected))
 
 
-def kinds_for(source: str) -> set[str]:
+def kinds_for(source: str) -> set[PrivacyKind]:
     """Return the set of violation kinds emitted by the visitor for ``source``."""
     return {err.kind for err in check_private_access(ast.parse(source))}
 
@@ -307,12 +300,12 @@ class TestKindAndAttrEmission(unittest.TestCase):
     def test_emits_expected_kinds(self) -> None:
         """Verify emits expected kinds."""
         cases = [
-            ("def f(x): return x._private\n", EXTERNAL_PRIVATE_READ),
-            ("obj._token = 'x'\n", EXTERNAL_PRIVATE_WRITE),
-            ("del obj._cache\n", EXTERNAL_PRIVATE_WRITE),
-            ("from pkg import _helper\n", ABSOLUTE_PRIVATE_IMPORT),
-            ("from numpy._core import x\n", PRIVATE_SUBMODULE_IMPORT),
-            ("import numpy as np\nnp._core\n", MODULE_PRIVATE_ATTR),
+            ("def f(x): return x._private\n", PrivacyKind.EXTERNAL_PRIVATE_READ),
+            ("obj._token = 'x'\n", PrivacyKind.EXTERNAL_PRIVATE_WRITE),
+            ("del obj._cache\n", PrivacyKind.EXTERNAL_PRIVATE_WRITE),
+            ("from pkg import _helper\n", PrivacyKind.ABSOLUTE_PRIVATE_IMPORT),
+            ("from numpy._core import x\n", PrivacyKind.PRIVATE_SUBMODULE_IMPORT),
+            ("import numpy as np\nnp._core\n", PrivacyKind.MODULE_PRIVATE_ATTR),
         ]
         for source, expected in cases:
             with self.subTest(kind=expected):
