@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import unittest
 
-from hamcrest import assert_that, contains_string, has_item
+from hamcrest import assert_that, contains_string, equal_to, has_item
 
 from .code_parser import (
     assert_absent,
@@ -214,3 +214,111 @@ class TestSLD604ModuleLineLimit(unittest.TestCase):
         for expected in ("450", "400"):
             with self.subTest(expected=expected):
                 assert_that(messages[0], contains_string(expected))
+
+
+_SLD605_PRESENT: list[tuple[str, str]] = [
+    (
+        "two_level_direct_nest",
+        "with a() as x:\n" "    with b(x) as y:\n" "        do(y)\n",
+    ),
+    (
+        "stuff_between_then_inner_last",
+        "with a() as x:\n"
+        "    t = step(x)\n"
+        "    with b(t) as y:\n"
+        "        do(y)\n",
+    ),
+    (
+        "trailing_outside_nest_is_fine",
+        "with a() as x:\n" "    with b(x) as y:\n" "        do(y)\n" "print('done')\n",
+    ),
+    (
+        "nested_inside_function_body",
+        "def run():\n"
+        "    with a() as x:\n"
+        "        with b(x) as y:\n"
+        "            do(y)\n",
+    ),
+    (
+        "multi_item_outer_still_nests",
+        "with a() as x, c() as z:\n" "    with b(x) as y:\n" "        do(y)\n",
+    ),
+]
+
+
+_SLD605_ABSENT: list[tuple[str, str]] = [
+    ("single_with", "with a() as x:\n    do(x)\n"),
+    ("multi_item_with_no_nest", "with a() as x, b() as y:\n    do(x, y)\n"),
+    (
+        "stuff_after_inner_with",
+        "with a() as x:\n" "    with b(x) as y:\n" "        do(y)\n" "    after(x)\n",
+    ),
+    (
+        "inner_with_inside_if_not_last",
+        "with a() as x:\n"
+        "    if cond(x):\n"
+        "        with b(x) as y:\n"
+        "            do(y)\n",
+    ),
+    (
+        "async_inner_is_not_sync_nest",
+        "async def run():\n"
+        "    with a() as x:\n"
+        "        async with b(x) as y:\n"
+        "            do(y)\n",
+    ),
+    (
+        "siblings_not_nested",
+        "with a() as x:\n" "    do(x)\n" "with b() as y:\n" "    do(y)\n",
+    ),
+]
+
+
+_SLD605_COUNT: list[tuple[str, str, int]] = [
+    (
+        "triple_nest_counts_two",
+        "with a() as x:\n"
+        "    with b(x) as y:\n"
+        "        with c(y) as z:\n"
+        "            do(z)\n",
+        2,
+    ),
+    (
+        "two_independent_nests",
+        "with a() as x:\n"
+        "    with b(x) as y:\n"
+        "        do(y)\n"
+        "with c() as p:\n"
+        "    with d(p) as q:\n"
+        "        do(q)\n",
+        2,
+    ),
+]
+
+
+class TestSLD605NestedWith(unittest.TestCase):
+    """Tests for SLD605: nested ``with`` flattenable to ``ExitStack``."""
+
+    def test_present(self) -> None:
+        """Verify present."""
+        assert_present(self, _SLD605_PRESENT, "SLD605")
+
+    def test_absent(self) -> None:
+        """Verify absent."""
+        assert_absent(self, _SLD605_ABSENT, "SLD605")
+
+    def test_count(self) -> None:
+        """Verify count."""
+        for name, code, count in _SLD605_COUNT:
+            with self.subTest(name=name):
+                assert_that(
+                    get_error_codes(code).count("SLD605"),
+                    equal_to(count),
+                )
+
+    def test_message_mentions_exitstack(self) -> None:
+        """Verify the SLD605 message points at contextlib.ExitStack."""
+        code = "with a() as x:\n" "    with b(x) as y:\n" "        do(y)\n"
+        errors = check_code(code)
+        messages = [msg for _, _, msg in errors if "SLD605" in msg]
+        assert_that(messages[0], contains_string("ExitStack"))

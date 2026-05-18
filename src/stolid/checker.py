@@ -33,6 +33,10 @@ SLD203 = (
     "(use type narrowing; add # noqa: SLD203 to silence if intentional)"
 )
 SLD604 = "SLD604 Module has {} lines (limit: {})"
+SLD605 = (
+    "SLD605 'with' statement's body ends in a nested 'with' "
+    "(flatten into contextlib.ExitStack)"
+)
 
 __all__ = ["Checker"]
 
@@ -127,13 +131,15 @@ def _check_dangerous_name(node: ast.Name) -> Iterator[Error]:
 
 
 def _check_with(node: ast.With, patch_names: set[str]) -> Iterator[Error]:
-    # Check with statements for patch context managers.
+    # Check with statements for patch context managers and ExitStack-friendly nesting.
     for item in node.items:
         call = item.context_expr
         if not isinstance(call, ast.Call) or not isinstance(call.func, ast.Name):
             continue
         if call.func.id in patch_names:
             yield _error(node, SLD102)
+    if isinstance(node.body[-1], ast.With):
+        yield _error(node, SLD605)
 
 
 def _get_module_name_from_filename(filename: str) -> str | None:
