@@ -70,7 +70,7 @@ def get_dataclass_keywords(node: ast.expr) -> dict[str, bool]:
         return {}
     result: dict[str, bool] = {}
     for keyword in node.keywords:
-        if keyword.arg in ("frozen", "slots", "kw_only"):
+        if keyword.arg in ("frozen", "slots", "kw_only"):  # noqa: SLD304
             if isinstance(keyword.value, ast.Constant):
                 result[keyword.arg] = bool(keyword.value.value)
     return result
@@ -138,7 +138,7 @@ def get_function_arg_count(node: FunctionType) -> int:
     """Count the number of arguments in a function (excluding self/cls)."""
     args = node.args
     total = len(args.args) + len(args.posonlyargs) + len(args.kwonlyargs)
-    if args.args and args.args[0].arg in ("self", "cls"):
+    if args.args and args.args[0].arg in ("self", "cls"):  # noqa: SLD304
         total -= 1
     return total
 
@@ -174,11 +174,11 @@ def collect_imports(tree: ast.AST) -> tuple[set[str], set[str], set[str]]:
     for node in ast.walk(tree):
         if not isinstance(node, ast.ImportFrom):
             continue
-        if node.module in ("unittest.mock", "mock"):
+        if node.module in ("unittest.mock", "mock"):  # noqa: SLD304
             _add_matching_aliases(node.names, _PATCH_NAMES_WANTED, patch_names)
-        if node.module == "abc":
+        if node.module == "abc":  # noqa: SLD304
             _add_matching_aliases(node.names, _ABSTRACT_WANTED, abstractmethod_names)
-        if node.module == "typing":
+        if node.module == "typing":  # noqa: SLD304
             _add_matching_aliases(node.names, _CAST_WANTED, cast_names)
     return patch_names, abstractmethod_names, cast_names
 

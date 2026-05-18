@@ -26,6 +26,16 @@ SLD303 = (
     "(convert to module-level function; use functools.singledispatch "
     "if polymorphism is needed)"
 )
+SLD304 = (
+    "SLD304 Expression '{}' compared against multiple distinct string literals "
+    "(use an enum)"
+)
+SLD305 = "SLD305 match case uses string literal '{}' (use an enum)"
+SLD306 = (
+    "SLD306 String literal '{}' appears in {} equality contexts in this module "
+    "(use an enum)"
+)
+SLD307 = "SLD307 Literal[...] annotation uses string literal '{}' (use an enum)"
 SLD401 = "SLD401 Class '{}' inherits from concrete class '{}' (use composition)"
 SLD501 = "SLD501 Dataclass '{}' missing frozen=True"
 SLD502 = "SLD502 Dataclass '{}' missing slots=True"
