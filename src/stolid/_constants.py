@@ -44,6 +44,10 @@ SLD308 = (
     "SLD308 Module-level string constant has identifier value '{}' "
     "(define peers as Enum members)"
 )
+SLD309 = (
+    "SLD309 Enum member has identifier-shaped string value '{}' "
+    "(use auto() to avoid a stringly-typed backdoor)"
+)
 SLD401 = "SLD401 Class '{}' inherits from concrete class '{}' (use composition)"
 SLD501 = "SLD501 Dataclass '{}' missing frozen=True"
 SLD502 = "SLD502 Dataclass '{}' missing slots=True"

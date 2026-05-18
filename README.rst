@@ -254,12 +254,37 @@ ignores values that aren't ``str.isidentifier()``-true, so things like
     DELETE = "delete"
 
     # Good
+    from enum import Enum, auto
+
+    class Action(Enum):
+        READ = auto()
+        WRITE = auto()
+        DELETE = auto()
+
+**SLD309**: Flags ``Enum`` subclasses (including ``StrEnum``, ``IntEnum``,
+``Flag``, ``IntFlag``) where every string-constant member has an
+identifier-shaped value. Such enums leak a stringly-typed backdoor:
+``MyEnum("read")`` round-trips a bare string into a member. Use
+``auto()`` instead — it generates unique values without exposing
+identifier-shaped strings. Non-identifier values (``"#ff0000"``,
+``"application/json"``) are kept; the check only fires when every
+string member is identifier-shaped.
+
+.. code-block:: python
+
+    # Bad
     from enum import Enum
 
     class Action(Enum):
         READ = "read"
         WRITE = "write"
-        DELETE = "delete"
+
+    # Good
+    from enum import Enum, auto
+
+    class Action(Enum):
+        READ = auto()
+        WRITE = auto()
 
 SLD4xx - Inheritance
 ~~~~~~~~~~~~~~~~~~~~

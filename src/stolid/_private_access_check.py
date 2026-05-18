@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import ast
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import Enum, auto
 from typing import Iterator
 
 from ._ast_inspection import (
@@ -32,11 +32,11 @@ from ._ast_inspection import (
 class PrivacyKind(Enum):
     """The five categories of private-access violation tracked by the checker."""
 
-    EXTERNAL_PRIVATE_READ = "external_private_read"
-    EXTERNAL_PRIVATE_WRITE = "external_private_write"
-    ABSOLUTE_PRIVATE_IMPORT = "absolute_private_import"
-    PRIVATE_SUBMODULE_IMPORT = "private_submodule_import"
-    MODULE_PRIVATE_ATTR = "module_private_attr"
+    EXTERNAL_PRIVATE_READ = auto()
+    EXTERNAL_PRIVATE_WRITE = auto()
+    ABSOLUTE_PRIVATE_IMPORT = auto()
+    PRIVATE_SUBMODULE_IMPORT = auto()
+    MODULE_PRIVATE_ATTR = auto()
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
