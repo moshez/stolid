@@ -3,14 +3,13 @@
 from __future__ import annotations
 
 import ast
+import io
+import itertools
+import tokenize
 from dataclasses import dataclass
-from typing import Iterator, Protocol
+from typing import Iterable, Iterator, Protocol
 
-from ._ast_inspection import (
-    FunctionComplexity,
-    collect_imports,
-    max_bracket_depths_by_line,
-)
+from ._ast_inspection import FunctionComplexity, collect_imports
 from ._constants import (
     MAX_FUNCTION_LINES,
     SLD204,
@@ -104,6 +103,38 @@ def privacy_errors(tree: ast.Module) -> Iterator[AdaptedError]:
         )
 
 
+_OPEN_BRACKETS = frozenset("([{")
+_CLOSE_BRACKETS = frozenset(")]}")
+
+
+def _line_max_bracket_depth(tokens: Iterable[tokenize.TokenInfo]) -> int:
+    stack = 0
+    max_depth = 0
+    for tok in tokens:
+        if tok.type != tokenize.OP:
+            continue
+        if tok.string in _OPEN_BRACKETS:
+            stack += 1
+            max_depth = max(max_depth, stack)
+        elif tok.string in _CLOSE_BRACKETS and stack > 0:
+            stack -= 1
+    return max_depth
+
+
+def _token_line(tok: tokenize.TokenInfo) -> int:
+    return tok.start[0]
+
+
+def _bracket_depths_by_line(source: str) -> dict[int, int]:
+    # Map line numbers in ``source`` to the deepest bracket stack opened on
+    # that line. Only brackets that open on the line are counted: a wrapped
+    # continuation line does not inherit the depth from the line that opened
+    # the wrap. Closers are tolerated when their opener was on a previous line.
+    tokens = tokenize.generate_tokens(io.StringIO(source).readline)
+    groups = itertools.groupby(tokens, key=_token_line)
+    return {line: _line_max_bracket_depth(toks) for line, toks in groups if line > 0}
+
+
 def build_context(tree: ast.AST, lines: list[str]) -> CheckContext:
     """Return per-module state for ``tree`` (source ``lines``) used by node checks."""
     patch_names, abstractmethod_names, cast_names = collect_imports(tree)
@@ -112,7 +143,7 @@ def build_context(tree: ast.AST, lines: list[str]) -> CheckContext:
         abstractmethod_names=abstractmethod_names,
         cast_names=cast_names,
         lines=lines,
-        bracket_depths=max_bracket_depths_by_line("\n".join(lines) + "\n"),
+        bracket_depths=_bracket_depths_by_line("\n".join(lines) + "\n"),
     )
 
 

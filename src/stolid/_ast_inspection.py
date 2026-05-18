@@ -3,10 +3,7 @@
 from __future__ import annotations
 
 import ast
-import io
-import itertools
 import re
-import tokenize
 from dataclasses import dataclass
 from typing import Iterable, Iterator
 
@@ -147,40 +144,6 @@ class FunctionComplexity:
     heaviest_brackets: int
 
 
-_OPEN_BRACKETS = frozenset("([{")
-_CLOSE_BRACKETS = frozenset(")]}")
-
-
-def _line_max_bracket_depth(tokens: Iterable[tokenize.TokenInfo]) -> int:
-    stack = 0
-    max_depth = 0
-    for tok in tokens:
-        if tok.type != tokenize.OP:
-            continue
-        if tok.string in _OPEN_BRACKETS:
-            stack += 1
-            max_depth = max(max_depth, stack)
-        elif tok.string in _CLOSE_BRACKETS and stack > 0:
-            stack -= 1
-    return max_depth
-
-
-def _token_line(tok: tokenize.TokenInfo) -> int:
-    return tok.start[0]
-
-
-def max_bracket_depths_by_line(source: str) -> dict[int, int]:
-    """Return a map of line numbers in ``source`` to deepest bracket stack opened.
-
-    Only brackets that open on the line are counted: a wrapped continuation
-    line does not inherit the depth from the line that opened the wrap.
-    Closers are tolerated when their opener was on a previous line.
-    """
-    tokens = tokenize.generate_tokens(io.StringIO(source).readline)
-    groups = itertools.groupby(tokens, key=_token_line)
-    return {line: _line_max_bracket_depth(toks) for line, toks in groups if line > 0}
-
-
 @dataclass(frozen=True, slots=True, kw_only=True)
 class _LineCost:
     lineno: int
@@ -227,9 +190,9 @@ def get_function_complexity(
     """Return the weighted-line complexity of function ``node``.
 
     ``lines`` is the source of the enclosing module and ``bracket_depths``
-    maps each line number to its deepest opened bracket stack (as produced
-    by :func:`max_bracket_depths_by_line`). See ``_constants.py`` for the
-    formula and rationale behind ``COMPLEXITY_FACTOR`` and ``INDENT_WIDTH``.
+    maps each line number to its deepest opened bracket stack. See
+    ``_constants.py`` for the formula and rationale behind
+    ``COMPLEXITY_FACTOR`` and ``INDENT_WIDTH``.
     """
     assert node.body, "Function body cannot be empty in valid Python"
     costs = list(_iter_line_costs(node, lines, bracket_depths))
