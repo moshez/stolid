@@ -20,6 +20,14 @@ nox -s lint     # Run black and flake8
 nox -s mypy     # Run type checking
 ```
 
+**Always run the full `nox` before declaring a task complete.** Running
+individual tools (e.g. `flake8`, `pytest`, `mypy`) directly is not enough:
+stolid itself runs as a flake8 plugin, and the `lint` session is the only
+configuration that actually loads the stolid plugin and self-checks the
+codebase against its own rules. Per-tool invocations outside of nox can
+silently miss stolid violations (for example, SLD60x function-length or
+SLD20x import-placement errors).
+
 ## Testing Framework: Virtue
 
 This project uses **Virtue** as the test runner, not pytest. Tests are standard `unittest.TestCase` classes with methods prefixed with `test_`. Use **PyHamcrest** matchers for readable assertions.

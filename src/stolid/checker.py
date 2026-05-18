@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import os
 from dataclasses import dataclass
 from typing import Iterator
 
@@ -12,6 +13,7 @@ from ._constants import (
     SLD201,
     SLD202,
     SLD203,
+    SLD204,
     SLD301,
     SLD302,
     SLD303,
@@ -35,6 +37,7 @@ from ._constants import (
     MAX_MODULE_LINES,
 )
 from ._global_names_check import check_global_names
+from ._import_placement_check import check_import_placement
 from ._private_access_check import (
     ABSOLUTE_PRIVATE_IMPORT,
     EXTERNAL_PRIVATE_READ,
@@ -326,8 +329,6 @@ def _check_function(node: FunctionType) -> Iterator[Error]:
 
 def _get_module_name_from_filename(filename: str) -> str | None:
     """Extract module name from filename for bad name checking."""
-    import os
-
     if not filename:
         return None
     basename = os.path.basename(filename)
@@ -338,6 +339,19 @@ def _get_module_name_from_filename(filename: str) -> str | None:
             return None
         return module_name
     return None
+
+
+def _module_level_errors(lines: list[str], filename: str) -> Iterator[Error]:
+    """Yield errors derived from the module's lines or filename."""
+    if len(lines) > MAX_MODULE_LINES:
+        yield Error(
+            lineno=1,
+            col_offset=0,
+            message=SLD604.format(len(lines), MAX_MODULE_LINES),
+        )
+    module_name = _get_module_name_from_filename(filename)
+    if module_name is not None:
+        yield from _check_bad_name(module_name, 1, 0)
 
 
 @dataclass(slots=True)
@@ -353,22 +367,14 @@ class Checker:  # noqa: SLD501 SLD503
 
     def run(self) -> Iterator[tuple[int, int, str, type]]:  # noqa: SLD303
         """Run all checks and yield errors."""
-        if len(self.lines) > MAX_MODULE_LINES:
-            yield (
-                1,
-                0,
-                SLD604.format(len(self.lines), MAX_MODULE_LINES),
-                type(self),
-            )
-
-        # Check module name
-        module_name = _get_module_name_from_filename(self.filename)
-        if module_name is not None:
-            for error in _check_bad_name(module_name, 1, 0):
-                yield (error.lineno, error.col_offset, error.message, type(self))
+        for merr in _module_level_errors(self.lines, self.filename):
+            yield (merr.lineno, merr.col_offset, merr.message, type(self))
 
         for gerr in check_global_names(self.tree):
             yield (gerr.lineno, gerr.col_offset, gerr.message, type(self))
+
+        for ierr in check_import_placement(self.tree):
+            yield (ierr.lineno, ierr.col_offset, SLD204, type(self))
 
         for perr in check_private_access(self.tree):
             yield (
