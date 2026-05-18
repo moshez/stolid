@@ -110,23 +110,52 @@ Use ``typing.Protocol`` for interfaces instead:
         def get(self, url: str) -> Response:
             ...
 
-**SLD205**: Flags broad coupling to a single module. Two patterns count
-toward the same per-module budget (limit: 7 distinct references):
+**SLD205**: Flags broad coupling to a single module. Heavy reliance on
+one dependency is a refactoring liability: changes to that module
+ripple through every importer, and the wide surface area is hard to
+test, replace, or summarize at the boundary.
 
-- ``from Y import a, b, c, ...`` — distinct names imported, aggregated
-  across every such statement for the same ``Y``.
+The limit is **7 distinct references per module**, tracked
+independently for the two import patterns:
+
+- ``from Y import a, b, c, ...`` — distinct names imported from
+  ``Y``, aggregated across every ``from Y import ...`` statement in
+  the module. A name imported in two statements counts once. The
+  diagnostic is reported on the first such statement.
 - ``import Y`` (or ``import Y as A``) — distinct attribute names
-  accessed via ``Y.x`` / ``A.x``.
+  accessed via ``Y.x`` / ``A.x``. Repeated accesses to the same
+  attribute count once. The diagnostic is reported on the ``import``
+  statement.
 
-``typing`` and ``ast`` are allowlisted: both are broad-API stdlib
-namespaces where reaching for many members is structural rather than
-coupling. Imports and uses inside ``if TYPE_CHECKING:`` blocks are
-ignored entirely.
+The two budgets are independent: mixing ``from somelib import ...``
+with ``import somelib; somelib.x`` does not compound. Each pattern
+must exceed 7 on its own to fire.
+
+Exemptions:
+
+- ``typing`` and ``ast`` are allowlisted: both are broad-API stdlib
+  namespaces where reaching for many members is structural rather
+  than coupling.
+- Imports and uses inside ``if TYPE_CHECKING:`` blocks are ignored
+  entirely (the ``else:`` branch of such an ``if`` still runs at
+  runtime and is checked).
+- ``from . import ...`` (relative import with no module name) is
+  skipped — the package boundary is already drawn by the dot.
+
+To fix a real violation, either split the dependency across more
+focused call sites (so no single file carries the whole surface) or
+wrap the wide API behind a narrower local abstraction — a small
+class, function, or module facade that exposes only the operations
+this code actually uses.
 
 .. code-block:: python
 
     # Bad (8 names from one module)
     from somelib import a, b, c, d, e, f, g, h
+
+    # Bad (split statements still aggregate per module)
+    from somelib import a, b, c, d
+    from somelib import e, f, g, h
 
     # Bad (8 distinct attribute accesses on one module)
     import somelib
@@ -140,6 +169,19 @@ ignored entirely.
     from typing import TYPE_CHECKING
     if TYPE_CHECKING:
         from somelib import A, B, C, D, E, F, G, H
+
+    # Good (relative import — package boundary)
+    from . import a, b, c, d, e, f, g, h
+
+    # Good (wrap the wide API behind a narrower facade)
+    # somelib_facade.py
+    from somelib import a, b, c  # only what callers actually need
+
+    def do_thing(x):
+        return b(a(x)) + c()
+
+    # callers/...
+    from .somelib_facade import do_thing
 
 SLD3xx - Object-Oriented Design
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
