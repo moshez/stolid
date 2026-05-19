@@ -24,6 +24,10 @@ cross-file scanner under `python -m stolid`.
 
 ## Running Tests and Linting
 
+**Always run `nox` to verify your changes.** Never rely on reasoning,
+type-checks, or partial runs alone — every task must be verified by
+actually running `nox` against the code.
+
 Use `nox` to run all checks. If nox is not installed:
 
 ```bash
@@ -49,6 +53,53 @@ configuration that actually loads the stolid plugin and self-checks the
 codebase against its own rules. Per-tool invocations outside of nox can
 silently miss stolid violations (for example, SLD60x function-length or
 SLD20x import-placement errors).
+
+### Installing Python 3.14
+
+`nox` requires Python 3.12, 3.13, and 3.14 (see `VERSIONS` in
+`noxfile.py`). The `tests-3.14`, `lint`, `mypy`, `docs`, `build`, and
+`dry_release` sessions all run on 3.14, so a working `python3.14` on
+`PATH` is mandatory. The interpreter must be a full system install
+(stdlib alongside the binary) so that `virtualenv` — which nox uses to
+build session venvs — can resolve `encodings` and friends.
+
+On Ubuntu 24.04 (Noble), install Python 3.14 from the deadsnakes PPA:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y software-properties-common
+sudo add-apt-repository -y ppa:deadsnakes/ppa
+sudo apt-get update
+sudo apt-get install -y python3.14 python3.14-venv
+```
+
+Then verify the interpreter and that `venv` works end-to-end (this is
+what `virtualenv` needs):
+
+```bash
+python3.14 --version
+python3.14 -m venv /tmp/check-314 && /tmp/check-314/bin/python -c 'import encodings'
+rm -rf /tmp/check-314
+```
+
+Do **not** install Python 3.14 with `uv python install` and symlink the
+binary into `/usr/local/bin`: `virtualenv` resolves `home` from the
+symlink target and fails with `ModuleNotFoundError: No module named
+'encodings'` when nox tries to create the session env.
+
+If `python3.12` or `python3.13` are missing, install them the same way
+(`apt-get install -y python3.12 python3.12-venv` etc.) so `nox -s tests`
+runs the full version matrix.
+
+## Checking CI
+
+**Do not declare a task complete until CI is green.** A clean local
+`nox` is necessary but not sufficient — push the branch, watch the
+checks defined in `.github/workflows/pr-main.yml` (`tests-3.12`,
+`tests-3.13`, `tests-3.14`, `lint`, `mypy`, `docs`, `build`,
+`dry_release`), and only call the task done once every required check
+has passed. If a check fails, fix the underlying issue, push again, and
+re-check — CI is the final verification, not a formality.
 
 ## Testing Framework: Virtue
 
