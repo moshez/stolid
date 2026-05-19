@@ -22,11 +22,26 @@ Installation
 Usage
 -----
 
-Stolid integrates directly with flake8:
+Run stolid as a module to check your code:
 
 .. code-block:: bash
 
-    flake8 your_code.py
+    python -m stolid your_package/
+
+``python -m stolid`` is the unified entry point. It runs the flake8
+plugin (which emits every per-file SLDxxx code) and then the cross-file
+scanners that produce the SLD80x public-contract diagnostics, exiting
+with the worst of the two stages' exit codes. Paths default to ``.`` if
+none are given.
+
+Running ``flake8`` directly still works and is fine for editor
+integration, but it only loads the in-file plugin — the SLD80x
+cross-file checks require the workspace-wide view that ``python -m
+stolid`` provides:
+
+.. code-block:: bash
+
+    flake8 your_code.py  # in-file SLDxxx only, no SLD80x
 
 Error Codes
 -----------
