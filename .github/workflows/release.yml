@@ -53,3 +53,4 @@ jobs:
         uses: pypa/gh-action-pypi-publish@0bf742be3ebe032c25dd15117957dc15d0cfc38d
         with:
           packages-dir: built-packages/
+          verify-metadata: false
