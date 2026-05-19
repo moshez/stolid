@@ -9,7 +9,13 @@ from __future__ import annotations
 import ast
 from typing import Iterator
 
-from ._ast_inspection import FunctionType, NAMED_DEF_NODES, TUPLE_LIST_NODES
+from ._ast_inspection import (
+    COMPREHENSION_NODES,
+    FunctionType,
+    NAMED_DEF_NODES,
+    SCOPE_NODES,
+    TUPLE_LIST_NODES,
+)
 
 
 def _names_in_target(target: ast.expr) -> Iterator[str]:
@@ -20,10 +26,6 @@ def _names_in_target(target: ast.expr) -> Iterator[str]:
             yield from _names_in_target(elt)
     elif isinstance(target, ast.Starred):
         yield from _names_in_target(target.value)
-
-
-SCOPE_NODES = (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef, ast.Lambda)
-COMPREHENSION_NODES = (ast.ListComp, ast.SetComp, ast.DictComp, ast.GeneratorExp)
 
 
 def _statement_binders(node: ast.AST) -> Iterator[str]:

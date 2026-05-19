@@ -13,6 +13,9 @@ FUNCTION_DEF_NODES = (ast.FunctionDef, ast.AsyncFunctionDef)
 FunctionType = ast.FunctionDef | ast.AsyncFunctionDef
 NAMED_DEF_NODES = FUNCTION_DEF_NODES + (ast.ClassDef,)
 TUPLE_LIST_NODES = (ast.Tuple, ast.List)
+LAMBDA_FUNCTION_NODES = FUNCTION_DEF_NODES + (ast.Lambda,)
+SCOPE_NODES = NAMED_DEF_NODES + (ast.Lambda,)
+COMPREHENSION_NODES = (ast.ListComp, ast.SetComp, ast.DictComp, ast.GeneratorExp)
 
 
 def is_name_id(node: ast.AST, name: str) -> bool:

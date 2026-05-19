@@ -6,7 +6,7 @@ import ast
 from dataclasses import dataclass
 from typing import Iterator
 
-from ._ast_inspection import get_base_name
+from ._ast_inspection import FUNCTION_DEF_NODES, SCOPE_NODES, get_base_name
 
 SLD304 = (
     "SLD304 Expression '{}' compared against multiple distinct string literals "
@@ -35,13 +35,6 @@ _ENUM_BASES = frozenset({"Enum", "IntEnum", "StrEnum", "Flag", "IntFlag"})
 
 _TRACKABLE_NAMELIKE = (ast.Name, ast.Attribute, ast.Subscript)
 _COLLECTION_NODES = (ast.Tuple, ast.List, ast.Set)
-_SCOPE_BOUNDARY_NODES = (
-    ast.FunctionDef,
-    ast.AsyncFunctionDef,
-    ast.ClassDef,
-    ast.Lambda,
-)
-_FUNCTION_NODES = (ast.FunctionDef, ast.AsyncFunctionDef)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -92,7 +85,7 @@ def _iter_scope_nodes(body: list[ast.stmt]) -> Iterator[ast.AST]:
 
 def _walk_no_scope(node: ast.AST) -> Iterator[ast.AST]:
     yield node
-    if isinstance(node, _SCOPE_BOUNDARY_NODES):
+    if isinstance(node, SCOPE_NODES):
         return
     for child in ast.iter_child_nodes(node):
         yield from _walk_no_scope(child)
@@ -180,7 +173,7 @@ def _check_scope_compares(stmts: list[ast.stmt]) -> Iterator[StringEnumError]:
 def _check_multi_compare(tree: ast.Module) -> Iterator[StringEnumError]:
     yield from _check_scope_compares(tree.body)
     for node in ast.walk(tree):
-        if isinstance(node, _FUNCTION_NODES):
+        if isinstance(node, FUNCTION_DEF_NODES):
             yield from _check_scope_compares(node.body)
 
 

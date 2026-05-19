@@ -11,7 +11,12 @@ import ast
 from dataclasses import dataclass
 from typing import Iterator
 
-from ._ast_inspection import NAMED_DEF_NODES, TUPLE_LIST_NODES
+from ._ast_inspection import (
+    COMPREHENSION_NODES,
+    LAMBDA_FUNCTION_NODES,
+    NAMED_DEF_NODES,
+    TUPLE_LIST_NODES,
+)
 
 SLD703 = (
     "SLD703 Name '{}' differs from earlier '{}' by only one letter "
@@ -40,9 +45,7 @@ class _Binding:
     is_loop: bool
 
 
-_FUNCTION_LIKE = (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)
-_COMPREHENSIONS = (ast.ListComp, ast.SetComp, ast.DictComp, ast.GeneratorExp)
-_NESTED_SCOPES = _FUNCTION_LIKE + (ast.ClassDef,) + _COMPREHENSIONS
+_NESTED_SCOPES = LAMBDA_FUNCTION_NODES + (ast.ClassDef,) + COMPREHENSION_NODES
 
 
 def _bind(target: ast.expr, is_loop: bool) -> _Binding:
@@ -147,9 +150,9 @@ def _walk_local(parent: ast.AST) -> Iterator[ast.AST]:
 
 
 def _scope_bindings(scope: ast.AST) -> Iterator[_Binding]:
-    if isinstance(scope, _FUNCTION_LIKE):
+    if isinstance(scope, LAMBDA_FUNCTION_NODES):
         yield from _arg_bindings(scope.args)
-    if isinstance(scope, _COMPREHENSIONS):
+    if isinstance(scope, COMPREHENSION_NODES):
         for generator in scope.generators:
             yield from _targets(generator.target, True)
     for descendant in _walk_local(scope):
