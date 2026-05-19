@@ -79,3 +79,9 @@ class TestCLIIntegration(unittest.TestCase):
         result, sink, _ = _run_with({"a.py": "def f(\n"}, 0)
         assert_that(sink.err, is_not(empty()))
         assert_that(result, equal_to(1))
+
+    def test_contract_violation_emitted_on_stdout(self) -> None:
+        """Verify SLD80x diagnostics flow through ``sink.stdout`` with exit 1."""
+        result, sink, _ = _run_with({"a.py": "def f(xs: list[int]) -> None: ...\n"}, 0)
+        assert_that([line for line in sink.out if "SLD803" in line], is_not(empty()))
+        assert_that(result, equal_to(1))

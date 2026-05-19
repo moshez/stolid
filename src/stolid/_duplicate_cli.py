@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Protocol
 
+from ._contract_scan import scan_paths as contract_scan_paths
 from ._duplicate_report import ReportLine, format_line, report_lines
 from ._duplicate_scan import FileSystem, ScanResult, scan_paths
 
@@ -49,20 +50,30 @@ def run_duplicate_scan(fs: FileSystem, sink: OutputSink, paths: list[str]) -> in
     return _emit_results(result, lines, sink)
 
 
+def run_contract_scan(fs: FileSystem, sink: OutputSink, paths: list[str]) -> int:
+    """Scan ``paths`` for SLD80x public-contract violations; return the exit code."""
+    lines = contract_scan_paths(fs, paths)
+    for line in lines:
+        sink.stdout(format_line(line))
+    return 1 if lines else 0
+
+
 def run_stolid(
     runner: CommandRunner,
     fs: FileSystem,
     sink: OutputSink,
     paths: list[str],
 ) -> int:
-    """Run flake8 via ``runner`` then the duplicate scanner over ``paths``.
+    """Run flake8 via ``runner`` then the cross-file scanners over ``paths``.
 
     Uses ``fs`` to read files and ``sink`` to emit diagnostics. Returns the
-    merged exit code (the maximum of the two stages).
+    merged exit code (the maximum across flake8, duplicate scan, and
+    contract scan).
     """
     flake8_exit = runner.run(_flake8_argv(paths))
     duplicate_exit = run_duplicate_scan(fs, sink, paths)
-    return max(flake8_exit, duplicate_exit)
+    contract_exit = run_contract_scan(fs, sink, paths)
+    return max(flake8_exit, duplicate_exit, contract_exit)
 
 
 def resolve_paths(argv: list[str]) -> list[str]:

@@ -8,6 +8,7 @@ import unittest
 
 from hamcrest import assert_that, equal_to, has_item
 
+from .._contract_scan import scan_paths as contract_scan_paths
 from .._duplicate_report import report_lines
 from .._duplicate_scan import scan_paths
 from ..checker import Checker
@@ -38,15 +39,19 @@ def _dedent_files(files: dict[str, str]) -> dict[str, str]:
 def check_multifile(
     files: dict[str, str], roots: list[str] | None = None
 ) -> list[tuple[str, int, int, str]]:
-    """Run the duplicate scanner over virtual ``files`` under ``roots``.
+    """Run the cross-file scanners over virtual ``files`` under ``roots``.
 
-    Returns a list of report entries.
+    Returns a list of report entries from the duplicate and contract scanners.
     """
     sources = _dedent_files(files)
     fs = InMemoryFileSystem(_files=sources)
-    result = scan_paths(fs, roots if roots is not None else ["."])
-    lines = report_lines(fs, result)
-    return [(item.path, item.line, item.col, item.message) for item in lines]
+    targets = roots if roots is not None else ["."]
+    duplicate_lines = report_lines(fs, scan_paths(fs, targets))
+    contract_lines = contract_scan_paths(fs, targets)
+    return [
+        (item.path, item.line, item.col, item.message)
+        for item in duplicate_lines + contract_lines
+    ]
 
 
 def multifile_codes(files: dict[str, str]) -> list[str]:
