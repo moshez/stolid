@@ -4,7 +4,7 @@ import os
 import nox
 
 nox.options.envdir = "build/nox"
-nox.options.sessions = ["lint", "tests", "mypy", "docs", "build"]
+nox.options.sessions = ["lint", "tests", "mypy", "docs", "dry_release"]
 
 VERSIONS = ["3.11", "3.12"]
 
@@ -41,6 +41,16 @@ def tests(session):
 def build(session):
     session.install("build")
     session.run("python", "-m", "build", "--wheel")
+
+
+@nox.session(python=VERSIONS[-1])
+def dry_release(session):
+    """Build sdist and wheel and validate them with twine (does not upload)."""
+    output = os.path.abspath(os.path.join(session.create_tmp(), "dist"))
+    session.install("build", "twine")
+    session.run("python", "-m", "build", "--outdir", output)
+    files = sorted(os.path.join(output, name) for name in os.listdir(output))
+    session.run("twine", "check", "--strict", *files)
 
 
 @nox.session(python=VERSIONS[-1])
