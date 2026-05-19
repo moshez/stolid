@@ -59,8 +59,7 @@ def lint(session):
     session.install("-r", "requirements-lint.txt")
     session.install("-e", ".")
     session.run("black", "--check", "--diff", *files)
-    black_compat = ["--max-line-length=88", "--ignore=E203,E503,W503"]
-    session.run("flake8", *black_compat, "src/")
+    session.run("python", "-m", "stolid", "src/")
 
 
 @nox.session(python=VERSIONS[-1])
