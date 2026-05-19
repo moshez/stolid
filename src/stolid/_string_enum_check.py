@@ -50,7 +50,10 @@ class StringEnumError:
     message: str
 
 
-def _as_str_literal(node: ast.AST) -> tuple[ast.Constant, str] | None:
+_StrLiteral = tuple[ast.Constant, str] | None
+
+
+def _as_str_literal(node: ast.AST) -> _StrLiteral:
     # Return (node, value) when node is a string-literal Constant.
     if isinstance(node, ast.Constant) and isinstance(node.value, str):
         return node, node.value
@@ -278,7 +281,7 @@ def _check_literal_annotations(tree: ast.Module) -> Iterator[StringEnumError]:
             )
 
 
-def _assignment_string_value(stmt: ast.stmt) -> tuple[ast.Constant, str] | None:
+def _assignment_string_value(stmt: ast.stmt) -> _StrLiteral:
     # If ``stmt`` is a single-target ``NAME = "literal"`` (with or without an
     # annotation), return ``(Constant, value)``; else return ``None``.
     if isinstance(stmt, ast.Assign):
@@ -286,20 +289,14 @@ def _assignment_string_value(stmt: ast.stmt) -> tuple[ast.Constant, str] | None:
             return None
         if not isinstance(stmt.targets[0], ast.Name):
             return None
-        value: ast.expr = stmt.value
-    elif isinstance(stmt, ast.AnnAssign):
+        return _as_str_literal(stmt.value)
+    if isinstance(stmt, ast.AnnAssign):
         if not isinstance(stmt.target, ast.Name):
             return None
         if stmt.value is None:
             return None
-        value = stmt.value
-    else:
-        return None
-    if not isinstance(value, ast.Constant):
-        return None
-    if not isinstance(value.value, str):
-        return None
-    return value, value.value
+        return _as_str_literal(stmt.value)
+    return None
 
 
 def _check_module_string_constants(tree: ast.Module) -> Iterator[StringEnumError]:

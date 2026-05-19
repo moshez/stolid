@@ -68,19 +68,10 @@ def _statement_annotations(stmt: ast.stmt) -> Iterator[ast.expr]:
     elif isinstance(stmt, ast.ClassDef):
         if _is_private_name(stmt.name):
             return
-        yield from _class_member_annotations(stmt)
+        for child in stmt.body:
+            yield from _statement_annotations(child)
     elif isinstance(stmt, ast.AnnAssign):
         yield from _ann_assign_annotation(stmt)
-
-
-def _class_member_annotations(node: ast.ClassDef) -> Iterator[ast.expr]:
-    for child in node.body:
-        yield from _statement_annotations(child)
-
-
-def _top_level_annotations(tree: ast.Module) -> Iterator[ast.expr]:
-    for stmt in tree.body:
-        yield from _statement_annotations(stmt)
 
 
 def iter_public_annotations(tree: ast.Module, filename: str) -> Iterator[ast.expr]:
@@ -91,4 +82,5 @@ def iter_public_annotations(tree: ast.Module, filename: str) -> Iterator[ast.exp
     """
     if not is_public_module(filename):
         return
-    yield from _top_level_annotations(tree)
+    for stmt in tree.body:
+        yield from _statement_annotations(stmt)
