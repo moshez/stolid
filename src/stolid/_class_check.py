@@ -1,7 +1,8 @@
 # Class-shaped checks: ABC/abstractmethod imports, class-body decorators,
 # class bases, dataclass flags, method naming, method state access, and
 # class method counts. Owns SLD2xx (ABC), SLD3xx (methods), SLD401
-# (inheritance), SLD5xx (dataclass flags), and SLD603 (class size).
+# (inheritance), SLD5xx (dataclass flags), SLD603 (class size), and
+# SLD608 (dataclass field count).
 
 from __future__ import annotations
 
@@ -18,7 +19,7 @@ from ._ast_inspection import (
     is_dataclass_decorator,
     is_name_among,
 )
-from ._constants import ALLOWED_BASES, MAX_CLASS_METHODS
+from ._constants import ALLOWED_BASES, MAX_CLASS_METHODS, MAX_DATACLASS_FIELDS
 
 SLD201 = "SLD201 Import of ABC is prohibited (use Protocol instead)"
 SLD202 = "SLD202 Use of @abstractmethod is prohibited (use Protocol instead)"
@@ -38,6 +39,7 @@ SLD501 = "SLD501 Dataclass '{}' missing frozen=True"
 SLD502 = "SLD502 Dataclass '{}' missing slots=True"
 SLD503 = "SLD503 Dataclass '{}' missing kw_only=True"
 SLD603 = "SLD603 Class '{}' has {} methods (limit: {})"
+SLD608 = "SLD608 Dataclass '{}' has {} fields (limit: {})"
 
 _CM_SM = ("classmethod", "staticmethod")
 _PROPERTY_SUFFIXES = ("setter", "getter", "deleter")
@@ -49,7 +51,7 @@ class ClassError:
     """A class-rule violation.
 
     ``lineno`` and ``col_offset`` locate the offending node; ``message``
-    is the formatted SLD2xx/SLD3xx/SLD4xx/SLD5xx/SLD603 diagnostic.
+    is the formatted SLD2xx/SLD3xx/SLD4xx/SLD5xx/SLD603/SLD608 diagnostic.
     """
 
     lineno: int
@@ -77,6 +79,15 @@ def _get_class_method_count(node: ast.ClassDef) -> int:
     for child in node.body:
         if isinstance(child, FUNCTION_DEF_NODES):
             if not _is_dunder(child.name):
+                count += 1
+    return count
+
+
+def _get_dataclass_field_count(node: ast.ClassDef) -> int:
+    count = 0
+    for child in node.body:
+        if isinstance(child, ast.AnnAssign):
+            if get_base_name(child.annotation) != "ClassVar":
                 count += 1
     return count
 
@@ -230,7 +241,7 @@ def _dataclass_flags(node: ast.ClassDef) -> dict[str, bool] | None:
 def check_class(
     node: ast.ClassDef, abstractmethod_names: set[str]
 ) -> Iterator[ClassError]:
-    """Yield SLD3xx/SLD4xx/SLD5xx/SLD603/SLD701 violations for class ``node``.
+    """Yield SLD3xx/SLD4xx/SLD5xx/SLD603/SLD608/SLD701 violations for class ``node``.
 
     ``abstractmethod_names`` is the set of module-local bindings that
     refer to ``abstractmethod`` (used by the SLD202 decorator check).
@@ -244,6 +255,11 @@ def check_class(
     flags = _dataclass_flags(node)
     if flags is not None:
         yield from _check_dataclass_flags(node, flags)
+        field_count = _get_dataclass_field_count(node)
+        if field_count > MAX_DATACLASS_FIELDS:
+            yield _error(
+                node, SLD608.format(node.name, field_count, MAX_DATACLASS_FIELDS)
+            )
     method_count = _get_class_method_count(node)
     if method_count > MAX_CLASS_METHODS:
         yield _error(node, SLD603.format(node.name, method_count, MAX_CLASS_METHODS))
