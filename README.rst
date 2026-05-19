@@ -568,6 +568,38 @@ alone. ``else`` and ``finally`` clauses are not handled by
     with suppress(KeyError):
         config.remove(key)
 
+**SLD608**: Dataclasses limited to 10 fields (excludes ``ClassVar``
+annotations, which are class attributes rather than instance fields).
+A dataclass that needs more than ten fields is usually two ideas
+crammed into one — split it, or group related fields into a nested
+dataclass.
+
+.. code-block:: python
+
+    # Bad
+    @dataclass(frozen=True, slots=True, kw_only=True)
+    class Order:
+        id: int
+        customer_name: str
+        customer_email: str
+        customer_phone: str
+        billing_street: str
+        billing_city: str
+        billing_zip: str
+        shipping_street: str
+        shipping_city: str
+        shipping_zip: str
+        total: int
+
+    # Good (group related fields into nested dataclasses)
+    @dataclass(frozen=True, slots=True, kw_only=True)
+    class Order:
+        id: int
+        customer: Customer
+        billing: Address
+        shipping: Address
+        total: int
+
 SLD7xx - Naming
 ~~~~~~~~~~~~~~~
 

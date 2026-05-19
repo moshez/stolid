@@ -151,6 +151,41 @@ _SLD604_ABSENT: list[tuple[str, str]] = [
 ]
 
 
+def _dataclass_with_fields(n: int) -> str:
+    lines = [
+        "from dataclasses import dataclass",
+        "",
+        "@dataclass(frozen=True, slots=True, kw_only=True)",
+        "class Big:",
+    ]
+    lines.extend(f"    f{i}: int" for i in range(n))
+    return "\n".join(lines) + "\n"
+
+
+_SLD608_PRESENT: list[tuple[str, str]] = [
+    ("dataclass_exceeds_limit", _dataclass_with_fields(11)),
+]
+
+
+_SLD608_ABSENT: list[tuple[str, str]] = [
+    ("dataclass_within_limit", _dataclass_with_fields(10)),
+    (
+        "classvar_not_counted",
+        "from dataclasses import dataclass\n"
+        "from typing import ClassVar\n\n"
+        "@dataclass(frozen=True, slots=True, kw_only=True)\n"
+        "class Mixed:\n"
+        + "\n".join(f"    f{i}: int" for i in range(10))
+        + "\n    counter: ClassVar[int] = 0\n"
+        + "    flag: ClassVar[bool] = False\n",
+    ),
+    (
+        "non_dataclass_unrestricted",
+        "class Plain:\n" + "\n".join(f"    f{i}: int" for i in range(20)) + "\n",
+    ),
+]
+
+
 class TestSLD601FunctionLineLimit(unittest.TestCase):
     """Tests for SLD601: Function exceeds weighted line budget."""
 
@@ -212,6 +247,26 @@ class TestSLD604ModuleLineLimit(unittest.TestCase):
         errors = check_code(_long_module(450))
         messages = [msg for _, _, msg in errors if "SLD604" in msg]
         for expected in ("450", "400"):
+            with self.subTest(expected=expected):
+                assert_that(messages[0], contains_string(expected))
+
+
+class TestSLD608DataclassFieldLimit(unittest.TestCase):
+    """Tests for SLD608: Dataclass exceeds field limit."""
+
+    def test_present(self) -> None:
+        """Verify present."""
+        assert_present(self, _SLD608_PRESENT, "SLD608")
+
+    def test_absent(self) -> None:
+        """Verify absent."""
+        assert_absent(self, _SLD608_ABSENT, "SLD608")
+
+    def test_error_message_includes_field_count(self) -> None:
+        """Verify error message includes field count and limit."""
+        errors = check_code(_dataclass_with_fields(12))
+        messages = [msg for _, _, msg in errors if "SLD608" in msg]
+        for expected in ("12", "10", "Big"):
             with self.subTest(expected=expected):
                 assert_that(messages[0], contains_string(expected))
 
