@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import unittest
+from typing import Sequence
 
 from hamcrest import assert_that, equal_to, has_item
 
@@ -21,18 +22,18 @@ def files(**code: str) -> dict[str, str]:
 
 
 def just_801(
-    result: list[tuple[str, int, int, str]],
-) -> list[tuple[str, int, int, str]]:
+    result: Sequence[tuple[str, int, int, str]],
+) -> Sequence[tuple[str, int, int, str]]:
     """Return the entries of ``result`` whose message mentions SLD801."""
     return [item for item in result if "SLD801" in item[3]]
 
 
-def _pair_codes(first: str, second: str) -> list[str]:
+def _pair_codes(first: str, second: str) -> Sequence[str]:
     return multifile_codes(files(**{"a.py": first, "b.py": second}))
 
 
 def assert_pair_positive(
-    test_case: unittest.TestCase, cases: list[tuple[str, str, str]]
+    test_case: unittest.TestCase, cases: Sequence[tuple[str, str, str]]
 ) -> None:
     """Assert SLD801 is reported for each ``(name, a, b)`` in ``cases``.
 
@@ -44,7 +45,7 @@ def assert_pair_positive(
 
 
 def assert_pair_negative(
-    test_case: unittest.TestCase, cases: list[tuple[str, str, str]]
+    test_case: unittest.TestCase, cases: Sequence[tuple[str, str, str]]
 ) -> None:
     """Assert SLD801 is NOT reported for each ``(name, a, b)`` in ``cases``.
 

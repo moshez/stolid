@@ -5,26 +5,12 @@ from __future__ import annotations
 import ast
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Iterator, Protocol
-
-import pathspec
 
 from ._constants import MIN_CLONE_NODES, MIN_CLONE_SCORE
 from ._duplicate_fingerprint import Occurrence, fingerprint
 from ._duplicate_scope import ScopeStack
 from ._duplicate_score import subtree_score
-
-
-class FileSystem(Protocol):
-    """Filesystem operations the scanner depends on."""
-
-    def walk(self, root: str) -> Iterator[str]:  # noqa: E704
-        """Yield every file path beneath ``root``."""
-        ...
-
-    def read(self, path: str) -> str:  # noqa: E704
-        """Return the text contents of the file at ``path``."""
-        ...
+from ._workspace_walk import FileSystem, iter_python_files
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -164,22 +150,6 @@ def _drop_dominated(clones: list[CloneGroup]) -> list[CloneGroup]:
     return kept
 
 
-def _read_gitignore(fs: FileSystem, root: str) -> pathspec.PathSpec:
-    try:
-        text = fs.read(_join(root, ".gitignore"))
-    except FileNotFoundError:
-        text = ""
-    return pathspec.PathSpec.from_lines("gitignore", text.splitlines())
-
-
-def _join(root: str, name: str) -> str:
-    if root in ("", "."):  # noqa: SLD304
-        return name
-    if root.endswith("/"):
-        return root + name
-    return f"{root}/{name}"
-
-
 def _scan_one_file(
     fs: FileSystem,
     path: str,
@@ -204,12 +174,7 @@ def _scan_root(
     entries: list[_PathOccurrence],
     syntax_errors: list[str],
 ) -> None:
-    spec = _read_gitignore(fs, root)
-    for path in fs.walk(root):
-        if not path.endswith(".py"):
-            continue
-        if spec.match_file(path):
-            continue
+    for path in iter_python_files(fs, root):
         _scan_one_file(fs, path, entries, syntax_errors)
 
 

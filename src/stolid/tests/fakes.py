@@ -3,14 +3,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Iterator
+from typing import Iterable, Iterator, Mapping, MutableSequence, Sequence
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class InMemoryFileSystem:
     """A virtual filesystem keyed by path string."""
 
-    _files: dict[str, str]
+    _files: Mapping[str, str]
 
     def walk(self, root: str) -> Iterator[str]:
         """Yield every stored path beneath ``root``."""
@@ -34,9 +34,9 @@ class FixedRunner:
     """
 
     _exit_code: int
-    calls: list[list[str]] = field(default_factory=list)
+    calls: MutableSequence[Sequence[str]] = field(default_factory=list)
 
-    def run(self, argv: list[str]) -> int:
+    def run(self, argv: Iterable[str]) -> int:
         """Record ``argv`` in ``self.calls`` and return the preset exit code."""
         self.calls.append(list(argv))
         return self._exit_code
@@ -49,8 +49,8 @@ class CapturedSink:
     Field ``out`` collects stdout lines; ``err`` collects stderr lines.
     """
 
-    out: list[str] = field(default_factory=list)
-    err: list[str] = field(default_factory=list)
+    out: MutableSequence[str] = field(default_factory=list)
+    err: MutableSequence[str] = field(default_factory=list)
 
     def stdout(self, line: str) -> None:  # noqa: SLD303
         """Append ``line`` to ``self.out``."""

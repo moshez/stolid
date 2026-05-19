@@ -669,6 +669,94 @@ are intentionally allowed.
     SLD304 = "..."
     SLD305 = "..."
 
+SLD80x - Cross-File Public Contracts
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+SLD80x are **cross-file** checks: they require a workspace-wide view and
+therefore do not run as part of the flake8 plugin. They are emitted by the
+``python -m stolid`` runner, which scans every ``.py`` file under the
+given paths (honoring ``.gitignore``) and then re-walks each file to
+classify every public annotation against the workspace symbol table.
+
+A public annotation may only name a contract (``Protocol``, ``ABC``,
+``TypedDict``, ``NamedTuple``, ``Enum``), a primitive (``int``, ``str``,
+``bool``, ...), or compose those through an abstract container from
+``collections.abc`` / ``typing`` (``Mapping``, ``Sequence``, ``Iterable``,
+...) or a union. Naming an open concrete class commits callers to that
+exact type; the rule rejects it so that implementations stay swappable
+behind their contracts.
+
+"Public" surface here means: top-level functions and methods of public
+classes in modules whose filename does not start with ``_``
+(``__init__.py`` is treated as public). Private modules, private
+top-level classes, and private members of public classes are skipped.
+
+Diagnostics honor per-line ``# noqa`` markers exactly like SLD801.
+
+**SLD802**: Public annotation references a workspace-defined concrete
+class. A concrete class is any ``class X:`` that is not a Protocol, ABC,
+TypedDict, NamedTuple, or Enum subclass. Names that are not defined
+anywhere in the scanned workspace are treated as out-of-scope
+third-party references and are silently allowed.
+
+.. code-block:: python
+
+    # Bad: backend.py
+    from dataclasses import dataclass
+
+    @dataclass(frozen=True, slots=True, kw_only=True)
+    class RealBackend:
+        name: str
+
+    # api.py
+    from .backend import RealBackend
+
+    def run(b: RealBackend) -> None: ...
+
+    # Good: backend.py
+    from typing import Protocol
+
+    class Backend(Protocol):
+        def fetch(self, key: str) -> bytes: ...
+
+    # api.py
+    from .backend import Backend
+
+    def run(b: Backend) -> None: ...
+
+**SLD803**: Public annotation uses a concrete builtin container
+(``list``, ``dict``, ``set``, ``frozenset``). Use ``Mapping``,
+``Sequence``, ``AbstractSet``, ``Iterable``, or another abstract from
+``collections.abc`` / ``typing`` -- callers should commit to the
+operations they need, not to the concrete container that produces them.
+
+.. code-block:: python
+
+    # Bad
+    def collect(items: list[str], counts: dict[str, int]) -> set[str]: ...
+
+    # Good
+    from typing import Iterable, Mapping, AbstractSet
+
+    def collect(
+        items: Iterable[str], counts: Mapping[str, int]
+    ) -> AbstractSet[str]: ...
+
+**SLD804**: Public annotation uses a variadic tuple (``tuple[X, ...]``).
+A variadic tuple is a homogeneous, indefinitely-long sequence; express
+that with ``Sequence[X]`` or ``Iterable[X]``. Fixed-arity tuples
+(``tuple[int, str]``) are fine -- they describe a precise structure.
+
+.. code-block:: python
+
+    # Bad
+    def pack(xs: tuple[int, ...]) -> None: ...
+
+    # Good
+    from typing import Sequence
+
+    def pack(xs: Sequence[int]) -> None: ...
+
 SLD81x / SLD82x - Documentation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

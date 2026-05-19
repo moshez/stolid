@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import ast
 import unittest
+from typing import AbstractSet
 
 from hamcrest import assert_that, contains_string, equal_to, has_item
 
@@ -289,7 +290,7 @@ class TestErrorMessages(unittest.TestCase):
                 assert_that(messages[0], contains_string(expected))
 
 
-def kinds_for(source: str) -> set[PrivacyKind]:
+def kinds_for(source: str) -> AbstractSet[PrivacyKind]:
     """Return the set of violation kinds emitted by the visitor for ``source``."""
     return {err.kind for err in check_private_access(ast.parse(source))}
 
