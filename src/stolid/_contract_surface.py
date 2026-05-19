@@ -20,13 +20,13 @@ import ast
 import os
 from typing import Iterator
 
-from ._ast_inspection import FUNCTION_DEF_NODES, FunctionType, is_dunder_method
+from ._ast_inspection import FUNCTION_DEF_NODES, FunctionType, is_dunder_name
 
 
 def _is_private_name(name: str) -> bool:
     if not name.startswith("_"):
         return False
-    return not is_dunder_method(name)
+    return not is_dunder_name(name)
 
 
 def is_public_module(filename: str) -> bool:

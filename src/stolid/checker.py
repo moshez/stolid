@@ -3,11 +3,15 @@
 from __future__ import annotations
 
 import ast
-import os
 from dataclasses import dataclass
 from typing import Iterator
 
-from ._ast_inspection import bad_name_errors, is_attribute_attr, is_name_id
+from ._ast_inspection import (
+    bad_name_errors,
+    is_attribute_attr,
+    is_name_id,
+    module_name_from_filename,
+)
 from ._check_runner import (
     CheckContext,
     ErrorLike,
@@ -145,18 +149,11 @@ def _check_with(node: ast.With, patch_names: set[str]) -> Iterator[Error]:
         yield _error(node, SLD605)
 
 
-def _get_module_name_from_filename(filename: str) -> str | None:
-    # Extract module name from filename for bad name checking.
-    if not filename:
+def _module_name_for_bad_name_check(filename: str) -> str | None:
+    name = module_name_from_filename(filename)
+    if name is None or name.startswith("__"):
         return None
-    basename = os.path.basename(filename)
-    if basename.endswith(".py"):
-        module_name = basename[:-3]
-        # Skip __init__ and other special files
-        if module_name.startswith("__"):
-            return None
-        return module_name
-    return None
+    return name
 
 
 def _module_level_errors(lines: list[str], filename: str) -> Iterator[ErrorLike]:
@@ -167,7 +164,7 @@ def _module_level_errors(lines: list[str], filename: str) -> Iterator[ErrorLike]
             col_offset=0,
             message=SLD604.format(len(lines), MAX_MODULE_LINES),
         )
-    module_name = _get_module_name_from_filename(filename)
+    module_name = _module_name_for_bad_name_check(filename)
     if module_name is not None:
         yield from bad_name_errors(module_name, 1, 0)
 

@@ -24,7 +24,7 @@ from ._ast_inspection import (
     FUNCTION_DEF_NODES,
     FunctionType,
     is_attribute_in,
-    is_dunder_method,
+    is_dunder_name,
     is_name_id,
 )
 
@@ -119,7 +119,7 @@ class _State:
 
 def _is_private(name: str) -> bool:
     # True for a single- or double-underscore name that is not a dunder.
-    return name.startswith("_") and not is_dunder_method(name)
+    return name.startswith("_") and not is_dunder_name(name)
 
 
 def _has_private_segment(dotted: str) -> bool:
