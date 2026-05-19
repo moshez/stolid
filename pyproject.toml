@@ -11,7 +11,7 @@ dynamic = ["version"]
 description = "Linter enforcing the conventions of the Python standard template"
 readme = "README.rst"
 authors = [{name = "Moshe Zadka", email = "moshez@zadka.club"}]
-dependencies = ["pathspec"]
+dependencies = ["pathspec", "networkx"]
 
 [project.optional-dependencies]
 tests = ["virtue", "pyhamcrest", "coverage"]

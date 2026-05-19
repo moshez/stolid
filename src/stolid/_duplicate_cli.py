@@ -7,6 +7,7 @@ from typing import Protocol
 from ._contract_scan import scan_paths as contract_scan_paths
 from ._duplicate_report import ReportLine, format_line, report_lines
 from ._duplicate_scan import FileSystem, ScanResult, scan_paths
+from ._import_graph_scan import scan_paths as import_graph_scan_paths
 
 
 class CommandRunner(Protocol):
@@ -61,6 +62,18 @@ def run_contract_scan(fs: FileSystem, sink: OutputSink, paths: list[str]) -> int
     return 1 if rows else 0
 
 
+def run_import_graph_scan(fs: FileSystem, sink: OutputSink, paths: list[str]) -> int:
+    """Scan ``paths`` for SLD83x violations; emit reports to ``sink``; return exit code.
+
+    Uses ``fs`` to read every ``.py`` file under each path and computes
+    architectural metrics over the workspace import graph.
+    """
+    rows = import_graph_scan_paths(fs, paths)
+    for line in rows:
+        sink.stdout(format_line(line))
+    return 1 if rows else 0
+
+
 def run_stolid(
     runner: CommandRunner,
     fs: FileSystem,
@@ -70,13 +83,14 @@ def run_stolid(
     """Run flake8 via ``runner`` then the cross-file scanners over ``paths``.
 
     Uses ``fs`` to read files and ``sink`` to emit diagnostics. Returns the
-    merged exit code (the maximum across flake8, duplicate scan, and
-    contract scan).
+    merged exit code (the maximum across flake8, duplicate scan, contract
+    scan, and import-graph scan).
     """
     flake8_exit = runner.run(_flake8_argv(paths))
     duplicate_exit = run_duplicate_scan(fs, sink, paths)
     contract_exit = run_contract_scan(fs, sink, paths)
-    return max(flake8_exit, duplicate_exit, contract_exit)
+    import_graph_exit = run_import_graph_scan(fs, sink, paths)
+    return max(flake8_exit, duplicate_exit, contract_exit, import_graph_exit)
 
 
 def resolve_paths(argv: list[str]) -> list[str]:
