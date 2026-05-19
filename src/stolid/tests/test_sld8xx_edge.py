@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import unittest
+from typing import AbstractSet, Sequence
 
 from hamcrest import assert_that, equal_to, has_length
 
@@ -41,7 +42,7 @@ _POSITIVE_PAIRS: list[tuple[str, str, str]] = [
 ]
 
 
-def _node_counts(result: list[tuple[str, int, int, str]]) -> set[int]:
+def _node_counts(result: Sequence[tuple[str, int, int, str]]) -> AbstractSet[int]:
     return {int(msg.split("(")[1].split(" ")[0]) for _, _, _, msg in result}
 
 

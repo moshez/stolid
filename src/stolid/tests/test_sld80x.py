@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 import unittest
+from typing import Sequence
 
 from hamcrest import assert_that, empty, equal_to, has_item, is_not
 
 from .code_parser import check_multifile, multifile_codes
 
 
-def _just(codes: list[str], prefix: str) -> list[str]:
+def _just(codes: Sequence[str], prefix: str) -> Sequence[str]:
     return [code for code in codes if code.startswith(prefix)]
 
 

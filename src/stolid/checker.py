@@ -198,7 +198,7 @@ class Checker:  # noqa: SLD501 SLD503
     version = "0.1.0"
 
     tree: ast.Module
-    lines: list[str]
+    lines: list[str]  # noqa: SLD803 -- flake8 plugin protocol field
     filename: str = ""
 
     def run(self) -> Iterator[tuple[int, int, str, type]]:  # noqa: SLD303
