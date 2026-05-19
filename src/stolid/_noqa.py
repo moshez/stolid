@@ -15,8 +15,8 @@ def is_suppressed(line_text: str, code: str) -> bool:
     match = _NOQA_RE.search(line_text)
     if match is None:
         return False
-    codes = match.group(1)
-    if codes is None:
+    listed = match.group(1)
+    if listed is None:
         return True
-    parsed = frozenset(part.strip().upper() for part in codes.split(","))
+    parsed = frozenset(part.strip().upper() for part in listed.split(","))
     return code in parsed

@@ -140,8 +140,8 @@ def build_symbol_table(state: _ScanState) -> SymbolTable:
 def scan_paths(fs: FileSystem, roots: list[str]) -> list[ReportLine]:
     """Scan ``roots`` via ``fs`` and return one report line per violation."""
     state = _ScanState()
-    for root in roots:
-        _walk_root(fs, root, state)
+    for path in roots:
+        _walk_root(fs, path, state)
     symbols = build_symbol_table(state)
     output: list[ReportLine] = []
     for parsed in state.parsed:

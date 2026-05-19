@@ -51,11 +51,14 @@ def run_duplicate_scan(fs: FileSystem, sink: OutputSink, paths: list[str]) -> in
 
 
 def run_contract_scan(fs: FileSystem, sink: OutputSink, paths: list[str]) -> int:
-    """Scan ``paths`` for SLD80x public-contract violations; return the exit code."""
-    lines = contract_scan_paths(fs, paths)
-    for line in lines:
+    """Scan ``paths`` for SLD80x violations; emit reports to ``sink``; return exit code.
+
+    Uses ``fs`` to read every ``.py`` file under each path.
+    """
+    rows = contract_scan_paths(fs, paths)
+    for line in rows:
         sink.stdout(format_line(line))
-    return 1 if lines else 0
+    return 1 if rows else 0
 
 
 def run_stolid(

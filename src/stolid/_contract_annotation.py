@@ -144,22 +144,22 @@ def _classify_tuple_subscript(
         )
         yield from classify_annotation(elements[0], concrete_names)
         return
-    for element in elements:
-        yield from classify_annotation(element, concrete_names)
+    for child in elements:
+        yield from classify_annotation(child, concrete_names)
 
 
 def _classify_callable_subscript(
     node: ast.Subscript, concrete_names: frozenset[str]
 ) -> Iterator[ContractError]:
     elements = _slice_elements(node.slice)
-    for element in elements:
-        if isinstance(element, ast.List):
-            for inner in element.elts:
+    for child in elements:
+        if isinstance(child, ast.List):
+            for inner in child.elts:
                 yield from classify_annotation(inner, concrete_names)
             continue
-        if _is_ellipsis(element):
+        if _is_ellipsis(child):
             continue
-        yield from classify_annotation(element, concrete_names)
+        yield from classify_annotation(child, concrete_names)
 
 
 def _classify_annotated_subscript(
@@ -174,8 +174,8 @@ def _classify_annotated_subscript(
 def _classify_slice(
     node: ast.Subscript, concrete_names: frozenset[str]
 ) -> Iterator[ContractError]:
-    for element in _slice_elements(node.slice):
-        yield from classify_annotation(element, concrete_names)
+    for child in _slice_elements(node.slice):
+        yield from classify_annotation(child, concrete_names)
 
 
 def _classify_subscript(

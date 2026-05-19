@@ -39,16 +39,16 @@ def is_public_module(filename: str) -> bool:
 
 def _function_annotations(node: FunctionType) -> Iterator[ast.expr]:
     args = node.args
-    every_arg = (
+    parameters = (
         args.posonlyargs
         + args.args
         + args.kwonlyargs
         + ([args.vararg] if args.vararg is not None else [])
         + ([args.kwarg] if args.kwarg is not None else [])
     )
-    for arg in every_arg:
-        if arg.annotation is not None:
-            yield arg.annotation
+    for entry in parameters:
+        if entry.annotation is not None:
+            yield entry.annotation
     if node.returns is not None:
         yield node.returns
 

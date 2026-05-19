@@ -36,7 +36,10 @@ def _read_gitignore(fs: FileSystem, root: str) -> pathspec.PathSpec:
 
 
 def iter_python_files(fs: FileSystem, root: str) -> Iterator[str]:
-    """Yield ``.py`` file paths under ``root`` not matched by its ``.gitignore``."""
+    """Yield ``.py`` file paths under ``root`` not matched by its ``.gitignore``.
+
+    Uses ``fs`` to walk the tree and read any ``.gitignore`` it finds.
+    """
     spec = _read_gitignore(fs, root)
     for path in fs.walk(root):
         if not path.endswith(".py"):
