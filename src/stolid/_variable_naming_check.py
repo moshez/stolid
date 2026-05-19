@@ -15,7 +15,8 @@ from ._ast_inspection import (
     COMPREHENSION_NODES,
     LAMBDA_FUNCTION_NODES,
     NAMED_DEF_NODES,
-    TUPLE_LIST_NODES,
+    iter_args,
+    iter_name_targets,
 )
 
 SLD703 = (
@@ -48,8 +49,7 @@ class _Binding:
 _NESTED_SCOPES = LAMBDA_FUNCTION_NODES + (ast.ClassDef,) + COMPREHENSION_NODES
 
 
-def _bind(target: ast.expr, is_loop: bool) -> _Binding:
-    assert isinstance(target, ast.Name)
+def _bind(target: ast.Name, is_loop: bool) -> _Binding:
     return _Binding(
         name=target.id,
         lineno=target.lineno,
@@ -59,13 +59,8 @@ def _bind(target: ast.expr, is_loop: bool) -> _Binding:
 
 
 def _targets(target: ast.expr, is_loop: bool) -> Iterator[_Binding]:
-    if isinstance(target, ast.Name):
-        yield _bind(target, is_loop)
-    elif isinstance(target, TUPLE_LIST_NODES):
-        for elt in target.elts:
-            yield from _targets(elt, is_loop)
-    elif isinstance(target, ast.Starred):
-        yield from _targets(target.value, is_loop)
+    for name in iter_name_targets(target):
+        yield _bind(name, is_loop)
 
 
 def _import_bindings(node: ast.Import | ast.ImportFrom) -> Iterator[_Binding]:
@@ -112,7 +107,7 @@ def _statement_bindings(node: ast.AST) -> Iterator[_Binding]:
         yield from _assign_bindings(node)
     elif isinstance(node, ast.AnnAssign):
         yield from _targets(node.target, False)
-    elif isinstance(node, (ast.For, ast.AsyncFor)):
+    elif isinstance(node, (ast.For, ast.AsyncFor)):  # noqa: SLD801
         yield from _targets(node.target, True)
     elif isinstance(node, ast.NamedExpr):
         yield _bind(node.target, False)
@@ -126,19 +121,14 @@ def _statement_bindings(node: ast.AST) -> Iterator[_Binding]:
         yield from _import_bindings(node)
 
 
-def _to_binding(arg: ast.arg) -> _Binding:
-    return _Binding(
-        name=arg.arg, lineno=arg.lineno, col_offset=arg.col_offset, is_loop=False
-    )
-
-
 def _arg_bindings(arguments: ast.arguments) -> Iterator[_Binding]:
-    for arg in arguments.posonlyargs + arguments.args + arguments.kwonlyargs:
-        yield _to_binding(arg)
-    if arguments.vararg is not None:
-        yield _to_binding(arguments.vararg)
-    if arguments.kwarg is not None:
-        yield _to_binding(arguments.kwarg)
+    for arg in iter_args(arguments):
+        yield _Binding(
+            name=arg.arg,
+            lineno=arg.lineno,
+            col_offset=arg.col_offset,
+            is_loop=False,
+        )
 
 
 def _walk_local(parent: ast.AST) -> Iterator[ast.AST]:

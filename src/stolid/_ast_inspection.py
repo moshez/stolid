@@ -18,6 +18,32 @@ SCOPE_NODES = NAMED_DEF_NODES + (ast.Lambda,)
 COMPREHENSION_NODES = (ast.ListComp, ast.SetComp, ast.DictComp, ast.GeneratorExp)
 
 
+def iter_name_targets(target: ast.expr) -> Iterator[ast.Name]:
+    """Yield every ``ast.Name`` reachable from assignment ``target``.
+
+    Recurses through tuple/list targets and ``Starred`` wrappers; other
+    expression shapes (attribute, subscript) yield nothing.
+    """
+    if isinstance(target, ast.Name):
+        yield target
+    elif isinstance(target, TUPLE_LIST_NODES):
+        for elt in target.elts:
+            yield from iter_name_targets(elt)
+    elif isinstance(target, ast.Starred):
+        yield from iter_name_targets(target.value)
+
+
+def iter_args(arguments: ast.arguments) -> Iterator[ast.arg]:
+    """Yield every ``ast.arg`` in ``arguments`` (positional, kw-only, *args, **kwargs)."""
+    yield from arguments.posonlyargs
+    yield from arguments.args
+    yield from arguments.kwonlyargs
+    if arguments.vararg is not None:
+        yield arguments.vararg
+    if arguments.kwarg is not None:
+        yield arguments.kwarg
+
+
 def is_name_id(node: ast.AST, name: str) -> bool:
     """Return True iff ``node`` is ``ast.Name`` with id ``name``."""
     return isinstance(node, ast.Name) and node.id == name
