@@ -6,7 +6,7 @@ import nox
 nox.options.envdir = "build/nox"
 nox.options.sessions = ["lint", "tests", "mypy", "docs", "dry_release"]
 
-VERSIONS = ["3.11", "3.12"]
+VERSIONS = ["3.12", "3.13", "3.14"]
 
 
 @nox.session(python=VERSIONS)
