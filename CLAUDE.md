@@ -6,6 +6,22 @@ Always update `README.rst` when adding a new SLD error code. Each code
 needs a short description and (where helpful) a bad/good example, placed
 under the appropriate `SLDNxx` section heading.
 
+## Adopting a New Rule
+
+When you finish implementing a new SLD rule and it catches violations in
+stolid's own source, follow this two-step adoption sequence:
+
+1. **Commit and push the rule first.** The implementation, tests,
+   coverage, and README update are one self-contained change; ship that
+   commit on its own so the rule's history isn't entangled with the
+   cleanup it forces.
+2. **Then fix the violations the rule found in stolid itself**, as one
+   or more follow-up commits, and push. Stolid practices what it
+   preaches: every rule it ships must hold on its own codebase.
+
+This applies whether the new rule runs as a flake8 plugin check or as a
+cross-file scanner under `python -m stolid`.
+
 ## Running Tests and Linting
 
 Use `nox` to run all checks. If nox is not installed:
