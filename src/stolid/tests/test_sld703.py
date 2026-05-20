@@ -4,9 +4,14 @@ from __future__ import annotations
 
 import unittest
 
-from hamcrest import assert_that, contains_string, equal_to
+from hamcrest import assert_that, equal_to
 
-from .code_parser import assert_absent, assert_present, check_code
+from .code_parser import (
+    assert_absent,
+    assert_message_contains_all,
+    assert_present,
+    check_code,
+)
 
 _PRESENT: list[tuple[str, str]] = [
     (
@@ -160,10 +165,9 @@ class TestSLD703(unittest.TestCase):
 
     def test_message_includes_both_names(self) -> None:
         """Verify message includes both names."""
-        errors = check_code("alpha = 1\nalphas = 2\n")
-        messages = [msg for _, _, msg in errors if "SLD703" in msg]
-        assert_that(messages[0], contains_string("alpha"))
-        assert_that(messages[0], contains_string("alphas"))
+        assert_message_contains_all(
+            self, "alpha = 1\nalphas = 2\n", "SLD703", ("alpha", "alphas")
+        )
 
     def test_reports_on_later_binding(self) -> None:
         """Verify reports on later binding."""

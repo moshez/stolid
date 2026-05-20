@@ -15,11 +15,9 @@ from ._ast_inspection import (
     FunctionType,
     bad_name_errors_as,
     get_base_name,
-    is_attribute_attr,
     is_dataclass_decorator,
     is_dunder_name,
     is_name_among,
-    is_name_id,
 )
 from ._constants import ALLOWED_BASES, MAX_CLASS_METHODS, MAX_DATACLASS_FIELDS
 
@@ -118,7 +116,7 @@ def _is_classmethod_or_staticmethod(node: FunctionType) -> bool:
 
 def _is_property_method(node: FunctionType) -> bool:
     for decorator in node.decorator_list:
-        if is_name_id(decorator, "property"):
+        if isinstance(decorator, ast.Name) and decorator.id == "property":
             return True
         if (
             isinstance(decorator, ast.Attribute)
@@ -131,7 +129,8 @@ def _is_property_method(node: FunctionType) -> bool:
 def _method_accesses_private_state(node: FunctionType) -> bool:
     for child in ast.walk(node):
         if isinstance(child, ast.Attribute):
-            if is_name_id(child.value, "self"):
+            value = child.value
+            if isinstance(value, ast.Name) and value.id == "self":
                 if child.attr.startswith("_"):
                     return True
     return False
@@ -166,7 +165,7 @@ def check_abstract_decorators(
     """
     yield from _name_decorator_errors(decoration_list, names, SLD202)
     for decorator in decoration_list:
-        if is_attribute_attr(decorator, "abstractmethod"):
+        if isinstance(decorator, ast.Attribute) and decorator.attr == "abstractmethod":
             yield _error(decorator, SLD202)
 
 

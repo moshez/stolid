@@ -6,8 +6,12 @@ import unittest
 
 from hamcrest import assert_that, empty, equal_to, has_item, is_not
 
-from ._sld80x_shared import CONCRETE_DEF, matching_prefix
-from .code_parser import check_multifile, multifile_codes
+from ._sld80x_shared import (
+    CONCRETE_DEF,
+    assert_multifile_message_contains,
+    matching_prefix,
+)
+from .code_parser import multifile_codes
 
 
 class TestComposition(unittest.TestCase):
@@ -259,21 +263,19 @@ class TestSyntaxErrorAndReporting(unittest.TestCase):
 
     def test_message_includes_class_name(self) -> None:
         """Verify the SLD802 diagnostic message mentions the offending class."""
-        result = check_multifile(
+        assert_multifile_message_contains(
             {
                 "a.py": CONCRETE_DEF,
                 "b.py": "from .a import Backend\ndef run(b: Backend) -> None: ...\n",
-            }
+            },
+            "SLD802",
+            "Backend",
         )
-        sld802 = [item for item in result if "SLD802" in item[3]]
-        assert_that(sld802, is_not(empty()))
-        for _, _, _, message in sld802:
-            assert_that("Backend" in message, equal_to(True))
 
     def test_message_includes_container_name(self) -> None:
         """Verify the SLD803 diagnostic message mentions the offending container."""
-        result = check_multifile({"b.py": "def f(xs: list[int]) -> None: ...\n"})
-        sld803 = [item for item in result if "SLD803" in item[3]]
-        assert_that(sld803, is_not(empty()))
-        for _, _, _, message in sld803:
-            assert_that("list" in message, equal_to(True))
+        assert_multifile_message_contains(
+            {"b.py": "def f(xs: list[int]) -> None: ...\n"},
+            "SLD803",
+            "list",
+        )

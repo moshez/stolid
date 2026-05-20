@@ -4,15 +4,11 @@ from __future__ import annotations
 
 import unittest
 
-from hamcrest import assert_that, equal_to, has_item
-
-from .code_parser import assert_absent, assert_present, check_code, get_error_codes
-
-
-def _module_codes(code: str, filename: str) -> list[str]:
-    # Return the error codes produced by checking ``code`` under ``filename``.
-    return [msg.split()[0] for _, _, msg in check_code(code, filename=filename)]
-
+from .code_parser import (
+    assert_absent,
+    assert_present,
+    assert_source_absent,
+)
 
 _SLD811_PRESENT: list[tuple[str, str]] = [
     ("public_module_no_docstring", "x = 1\n"),
@@ -230,35 +226,27 @@ class TestSLD811PublicModuleDocstring(unittest.TestCase):
 
     def test_present(self) -> None:
         """Verify SLD811 fires for public modules without a module docstring."""
-        for name, code in _SLD811_PRESENT:
-            with self.subTest(name=name):
-                assert_that(_module_codes(code, "public.py"), has_item("SLD811"))
+        assert_present(self, _SLD811_PRESENT, "SLD811", filename="public.py")
 
     def test_absent_when_docstring_present(self) -> None:
         """Verify SLD811 stays silent when the module has a docstring."""
-        for name, source in _SLD811_ABSENT:
-            with self.subTest(name=name):
-                codes = _module_codes(source, "public.py")
-                assert_that("SLD811" in codes, equal_to(False))
+        assert_absent(self, _SLD811_ABSENT, "SLD811", filename="public.py")
 
     def test_private_modules_skipped(self) -> None:
         """Verify SLD811 is silent for filenames starting with a single underscore."""
         for filename, source in _PRIVATE_MODULES:
             with self.subTest(filename=filename):
-                codes = _module_codes(source, filename)
-                assert_that("SLD811" in codes, equal_to(False))
+                assert_absent(self, [(filename, source)], "SLD811", filename=filename)
 
     def test_dunder_module_still_checked(self) -> None:
         """Verify SLD811 fires for ``__init__.py`` lacking a module docstring."""
         for filename, source in _DUNDER_MODULE_NEEDS_DOC:
             with self.subTest(filename=filename):
-                codes = _module_codes(source, filename)
-                assert_that(codes, has_item("SLD811"))
+                assert_present(self, [(filename, source)], "SLD811", filename=filename)
 
     def test_unknown_filename_skipped(self) -> None:
         """Verify SLD811 is silent when the filename is empty."""
-        codes = _module_codes("x = 1\n", "")
-        assert_that("SLD811" in codes, equal_to(False))
+        assert_source_absent("x = 1\n", "SLD811")
 
 
 class TestSLD812PublicClassDocstring(unittest.TestCase):
@@ -333,8 +321,7 @@ class TestSLD816EdgeCases(unittest.TestCase):
             "    obj: int = 0\n"
             "    obj.attr: int = 1\n"
         )
-        codes = get_error_codes(source)
-        assert_that("SLD816" in codes, equal_to(False))
+        assert_source_absent(source, "SLD816")
 
 
 class TestSLD813InnerFunctionExempt(unittest.TestCase):
@@ -348,11 +335,9 @@ class TestSLD813InnerFunctionExempt(unittest.TestCase):
             "    def inner():\n"
             "        pass\n"
         )
-        codes = get_error_codes(source)
-        assert_that("SLD813" in codes, equal_to(False))
+        assert_source_absent(source, "SLD813")
 
     def test_method_in_class_not_inner(self) -> None:
         """Verify methods of a class are not treated as inner functions."""
         source = "class A:\n" '    """A."""\n' "    def m(self):\n" "        pass\n"
-        codes = get_error_codes(source)
-        assert_that(codes, has_item("SLD813"))
+        assert_present(self, [("method", source)], "SLD813")

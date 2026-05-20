@@ -5,9 +5,9 @@ from __future__ import annotations
 import unittest
 from typing import Iterable, Mapping, Sequence
 
-from hamcrest import assert_that, empty, has_item
+from hamcrest import assert_that, empty, equal_to, has_item, is_not
 
-from .code_parser import multifile_codes
+from .code_parser import check_multifile, multifile_codes
 
 CONCRETE_DEF = (
     "from dataclasses import dataclass\n"
@@ -54,3 +54,14 @@ def assert_absent(
     for name, files in cases:
         with test.subTest(name=name):
             assert_that(matching_prefix(multifile_codes(files), sld_code), empty())
+
+
+def assert_multifile_message_contains(
+    files: Mapping[str, str], sld_code: str, expected: str
+) -> None:
+    """Assert every ``sld_code`` message from ``files`` contains ``expected``."""
+    result = check_multifile(files)
+    matching = [item for item in result if sld_code in item[3]]
+    assert_that(matching, is_not(empty()))
+    for _, _, _, message in matching:
+        assert_that(expected in message, equal_to(True))

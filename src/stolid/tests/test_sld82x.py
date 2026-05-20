@@ -4,15 +4,10 @@ from __future__ import annotations
 
 import unittest
 
-from hamcrest import assert_that, equal_to, has_item
-
-from .code_parser import assert_absent, assert_present, check_code
-
-
-def _module_codes(code: str, filename: str) -> list[str]:
-    # Return the error codes produced by checking ``code`` under ``filename``.
-    return [msg.split()[0] for _, _, msg in check_code(code, filename=filename)]
-
+from .code_parser import (
+    assert_absent,
+    assert_present,
+)
 
 _SLD821_PRESENT: list[tuple[str, str]] = [
     ("private_module_with_docstring", '"""Internals."""\nx = 1\n'),
@@ -86,21 +81,20 @@ class TestSLD821PrivateModuleDocstring(unittest.TestCase):
 
     def test_present(self) -> None:
         """Verify SLD821 fires for a ``_foo.py`` module that has a docstring."""
-        for name, code in _SLD821_PRESENT:
-            with self.subTest(name=name):
-                assert_that(_module_codes(code, "_foo.py"), has_item("SLD821"))
+        assert_present(self, _SLD821_PRESENT, "SLD821", filename="_foo.py")
 
     def test_absent(self) -> None:
         """Verify SLD821 is silent when a private module has no docstring."""
-        for name, source in _SLD821_ABSENT:
-            with self.subTest(name=name):
-                codes = _module_codes(source, "_foo.py")
-                assert_that("SLD821" in codes, equal_to(False))
+        assert_absent(self, _SLD821_ABSENT, "SLD821", filename="_foo.py")
 
     def test_public_module_with_docstring_not_flagged(self) -> None:
         """Verify SLD821 does not fire for a public module with a docstring."""
-        codes = _module_codes('"""Hello."""\nx = 1\n', "public.py")
-        assert_that("SLD821" in codes, equal_to(False))
+        assert_absent(
+            self,
+            [("public_with_doc", '"""Hello."""\nx = 1\n')],
+            "SLD821",
+            filename="public.py",
+        )
 
 
 class TestSLD822PrivateClassDocstring(unittest.TestCase):

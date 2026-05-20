@@ -6,7 +6,7 @@ import ast
 import os
 import re
 from dataclasses import dataclass
-from typing import Callable, Iterable, Iterator, TypeVar
+from typing import Callable, Iterable, Iterator, TypeGuard, TypeVar
 
 from ._constants import BAD_NAME_WORDS, COMPLEXITY_FACTOR, INDENT_WIDTH
 
@@ -35,7 +35,11 @@ def iter_name_targets(target: ast.expr) -> Iterator[ast.Name]:
 
 
 def iter_args(arguments: ast.arguments) -> Iterator[ast.arg]:
-    """Yield every ``ast.arg`` in ``arguments`` (positional, kw-only, *args, **kwargs)."""
+    """Yield every ``ast.arg`` in ``arguments``.
+
+    Visits ``posonlyargs``, ``args``, ``kwonlyargs``, then ``vararg`` and
+    ``kwarg`` if present.
+    """
     yield from arguments.posonlyargs
     yield from arguments.args
     yield from arguments.kwonlyargs
@@ -45,7 +49,7 @@ def iter_args(arguments: ast.arguments) -> Iterator[ast.arg]:
         yield arguments.kwarg
 
 
-def is_name_id(node: ast.AST, name: str) -> bool:
+def is_name_id(node: ast.AST, name: str) -> TypeGuard[ast.Name]:
     """Return True iff ``node`` is ``ast.Name`` with id ``name``."""
     return isinstance(node, ast.Name) and node.id == name
 
