@@ -615,6 +615,61 @@ dataclass.
         shipping: Address
         total: int
 
+**SLD609**: Flags a function parameter whose only role inside the
+body is to select a branch -- it is tested in an ``if``, ``while``,
+ternary, ``assert``, or ``match`` and nothing else flows from its
+value. A function that branches on a parameter is doing two jobs
+under one name; lift the choice out of the parameter and up into
+which function the caller calls.
+
+The analysis is intraprocedural by design. A parameter that is passed
+onward to a callee counts as a data use, so a pure forwarder is not
+flagged -- the callee gets flagged on its own once it has a branching
+parameter, and the next run flags the forwarder once it has to choose
+which split to call. Attribute access (``p.x``), indexing (``p[0]``),
+and arithmetic (``p + 1``) all count as data uses too: the parameter
+is being consumed for its value, not directly tested. ``self`` /
+``cls`` and ``*args`` / ``**kwargs`` are never reported. Parameters
+used only inside a nested function or lambda are conservatively
+uncounted (they look like closure captures, not branch tests).
+
+.. code-block:: python
+
+    # Bad
+    def fetch_user(user_id, mark_seen):
+        user = db.get(user_id)
+        if mark_seen:
+            user.touch()
+        return user
+
+    def render(data, fmt):
+        if fmt == "json":
+            return to_json(data)
+        return to_xml(data)
+
+    # Good (split the function)
+    def fetch_user(user_id):
+        return db.get(user_id)
+
+    def fetch_user_and_mark(user_id):
+        user = fetch_user(user_id)
+        user.touch()
+        return user
+
+    # Good (parameter flows into data, not just a branch)
+    def set_enabled(widget, enabled):
+        widget.enabled = enabled
+
+    # Good (parameter is passed onward -- forwarder)
+    def forward(x, flag):
+        return helper(x, flag)
+
+    # Good (``None``-default idiom: control AND data use of ``opts``)
+    def parse(text, opts=None):
+        if opts is None:
+            opts = default_opts()
+        return run(text, opts)
+
 SLD7xx - Naming
 ~~~~~~~~~~~~~~~
 

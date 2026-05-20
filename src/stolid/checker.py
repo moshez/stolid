@@ -22,6 +22,7 @@ from ._check_runner import (
 from ._class_check import check_abc_import, check_class
 from ._constants import DANGEROUS_BUILTINS, MAX_MODULE_LINES
 from ._docstring_check import check_docstrings
+from ._flag_parameter_check import check_flag_parameters
 from ._function_check import check_function
 from ._global_names_check import check_global_names
 from ._module_overuse_check import check_module_overuse
@@ -177,6 +178,7 @@ def _all_errors(
     yield from import_placement_errors(tree)
     yield from check_string_enum(tree)
     yield from check_docstrings(tree, filename)
+    yield from check_flag_parameters(tree)
     yield from check_module_overuse(tree)
     yield from check_not_implemented(tree)
     yield from check_try(tree)
