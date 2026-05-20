@@ -81,16 +81,21 @@ def _all_handlers_pass(handlers: list[ast.ExceptHandler]) -> bool:
     return all(_is_pass_only(h.body) for h in handlers)
 
 
-def _check_try(node: ast.Try, in_contextmanager: bool) -> Iterator[TryError]:
-    if node.finalbody and not in_contextmanager:
+def _check_try_finally(node: ast.Try) -> Iterator[TryError]:
+    if node.finalbody:
         yield _emit(node, SLD606)
+
+
+def _check_try_pass(node: ast.Try) -> Iterator[TryError]:
     if not node.finalbody and not node.orelse and _all_handlers_pass(node.handlers):
         yield _emit(node, SLD607)
 
 
 def _walk(node: ast.AST, in_contextmanager: bool) -> Iterator[TryError]:
     if isinstance(node, ast.Try):
-        yield from _check_try(node, in_contextmanager)
+        if not in_contextmanager:
+            yield from _check_try_finally(node)
+        yield from _check_try_pass(node)
     if isinstance(node, FUNCTION_DEF_NODES):
         in_contextmanager = _is_contextmanager(node)
     for child in ast.iter_child_nodes(node):

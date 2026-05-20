@@ -136,9 +136,7 @@ def _has_staticmethod(node: FunctionType) -> bool:
     return False
 
 
-def _privileged_arg(node: FunctionType, in_class: bool) -> str | None:
-    if not in_class:
-        return None
+def _privileged_arg(node: FunctionType) -> str | None:
     if _has_staticmethod(node):
         return None
     if not node.args.args:
@@ -158,7 +156,8 @@ def _visit_class(node: ast.ClassDef, state: _State) -> None:
 
 
 def _visit_function(node: FunctionType, state: _State) -> None:
-    state.enter_function(_privileged_arg(node, state.in_class()))
+    privileged = _privileged_arg(node) if state.in_class() else None
+    state.enter_function(privileged)
     _visit_children(node, state)
     state.exit_function()
 
