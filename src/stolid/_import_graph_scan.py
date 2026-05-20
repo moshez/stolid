@@ -8,7 +8,6 @@ from typing import Iterator
 
 import networkx as nx
 
-from ._duplicate_report import ReportLine
 from ._import_graph_extract import (
     ModuleEdges,
     anchor_for_prefix,
@@ -16,10 +15,12 @@ from ._import_graph_extract import (
 )
 from ._import_graph_score import (
     LevelScore,
+    build_graph,
     max_module_depth,
     reach_density,
     score_level,
 )
+from ._report_line import ReportLine
 from ._workspace_walk import FileSystem
 
 SLD831 = "SLD831 cyclic dependency cluster contains {} modules: {}"
@@ -48,13 +49,11 @@ class _Context:
 
 
 def _build_digraph(edges_list: list[ModuleEdges]) -> nx.DiGraph:
-    graph: nx.DiGraph = nx.DiGraph()
-    for entry in edges_list:
-        graph.add_node(entry.importer, size=1)
-    for entry in edges_list:
-        for target in entry.targets:
-            graph.add_edge(entry.importer, target)
-    return graph
+    nodes = [entry.importer for entry in edges_list]
+    edges = [
+        (entry.importer, target) for entry in edges_list for target in entry.targets
+    ]
+    return build_graph(nodes, edges)
 
 
 def _format_members(members: tuple[str, ...]) -> str:

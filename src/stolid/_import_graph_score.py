@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Iterable
 
 import networkx as nx
 
@@ -38,6 +39,20 @@ def _quotient_node(name: str, level: int) -> str:
     return ".".join(parts[:level])
 
 
+def _bump_node(graph: nx.DiGraph, name: str) -> None:
+    if graph.has_node(name):
+        graph.nodes[name]["size"] += 1
+    else:
+        graph.add_node(name, size=1)
+
+
+def _accept_edge(graph: nx.DiGraph, source: str, target: str) -> None:
+    if source == target:
+        return
+    if graph.has_node(source) and graph.has_node(target):
+        graph.add_edge(source, target)
+
+
 def quotient_at_level(graph: nx.DiGraph, level: int) -> nx.DiGraph:
     """Return the level-``level`` quotient of ``graph`` with node-weight sizes.
 
@@ -47,15 +62,10 @@ def quotient_at_level(graph: nx.DiGraph, level: int) -> nx.DiGraph:
     the leaf count covered by each prefix. Self-loops introduced by
     collapsing are dropped.
     """
-    quotient: nx.DiGraph = nx.DiGraph()
-    mapping: dict[str, str] = {}
-    for node in graph.nodes():
-        prefix = _quotient_node(node, level)
-        mapping[node] = prefix
-        if quotient.has_node(prefix):
-            quotient.nodes[prefix]["size"] += 1
-        else:
-            quotient.add_node(prefix, size=1)
+    mapping: dict[str, str] = {
+        node: _quotient_node(node, level) for node in graph.nodes()
+    }
+    quotient = _init_with_nodes(mapping.values())
     for u, v in graph.edges():
         head, tail = mapping[u], mapping[v]
         if head == tail:
@@ -139,17 +149,19 @@ def reach_density(graph: nx.DiGraph) -> float:
     return reach_score(graph) / (n * (n - 1))
 
 
+def _init_with_nodes(names: Iterable[str]) -> nx.DiGraph:
+    graph: nx.DiGraph = nx.DiGraph()
+    for n in names:
+        _bump_node(graph, n)
+    return graph
+
+
 def build_graph(nodes: list[str], edges: list[tuple[str, str]]) -> nx.DiGraph:
     """Return a NetworkX ``DiGraph`` with the given ``nodes`` and ``edges``.
 
     Each node gets a ``size`` attribute of 1. Self-loops are dropped.
     """
-    graph: nx.DiGraph = nx.DiGraph()
-    for name in nodes:
-        graph.add_node(name, size=1)
+    graph = _init_with_nodes(nodes)
     for u, v in edges:
-        if u == v:
-            continue
-        if graph.has_node(u) and graph.has_node(v):
-            graph.add_edge(u, v)
+        _accept_edge(graph, u, v)
     return graph

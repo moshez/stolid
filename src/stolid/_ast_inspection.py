@@ -8,7 +8,26 @@ import re
 from dataclasses import dataclass
 from typing import Callable, Iterable, Iterator, TypeGuard, TypeVar
 
-from ._constants import BAD_NAME_WORDS, COMPLEXITY_FACTOR, INDENT_WIDTH
+BAD_NAME_WORDS: frozenset[str] = frozenset(
+    {"help", "helper", "helpers", "util", "utils", "manage", "manager", "managers"}
+)
+
+# SLD601 counts a *weighted* line budget, not raw lines. Each line's weight is
+# COMPLEXITY_FACTOR ** (indent_depth + max(0, bracket_depth - 1)), where
+# indent_depth is the line's indent past the function body's baseline (one
+# step = INDENT_WIDTH spaces), and bracket_depth is the deepest stack of
+# brackets opened on the line itself. Blank lines weigh 0; comment-only
+# lines weigh 1 unweighted. A flat function still costs ~1 per line, so
+# the budget reads roughly like a line count for unnested code.
+#
+# Factor 1.3 was chosen for symmetry with the spirit of cyclomatic
+# complexity while staying tolerable: depth-4 code costs ~2.86x per line,
+# so a budget of 30 fits ~10 lines of consistently 4-deep code -- enough
+# room for typical guard/branch nesting, harsh enough to push staircase
+# code toward extraction or early returns. INDENT_WIDTH is hardcoded to 4
+# in line with PEP 8 and stolid's opinionated stance on style.
+COMPLEXITY_FACTOR = 1.3
+INDENT_WIDTH = 4
 
 FUNCTION_DEF_NODES = (ast.FunctionDef, ast.AsyncFunctionDef)
 FunctionType = ast.FunctionDef | ast.AsyncFunctionDef
@@ -68,6 +87,46 @@ def is_attribute_attr(node: ast.AST, attr: str) -> bool:
 def is_attribute_in(node: ast.AST, attrs: Iterable[str]) -> bool:
     """Return True iff ``node`` is ``ast.Attribute`` whose attr is in ``attrs``."""
     return isinstance(node, ast.Attribute) and node.attr in attrs
+
+
+def safe_parse(source: str, filename: str) -> ast.Module | None:
+    """Return ``ast.parse(source, filename=filename)`` or ``None`` on ``SyntaxError``.
+
+    Cross-file scanners use this to skip un-parseable files rather than abort
+    the whole scan.
+    """
+    try:
+        return ast.parse(source, filename=filename)
+    except SyntaxError:
+        return None
+
+
+def is_type_checking_test(node: ast.expr) -> bool:
+    """Return True iff ``node`` is the test of an ``if TYPE_CHECKING:`` guard.
+
+    Matches ``TYPE_CHECKING``, ``typing.TYPE_CHECKING``, ``t.TYPE_CHECKING``
+    (and any other ``foo.TYPE_CHECKING`` alias) syntactically.
+    """
+    if isinstance(node, ast.Name):
+        return node.id == "TYPE_CHECKING"
+    if isinstance(node, ast.Attribute):
+        return node.attr == "TYPE_CHECKING"
+    return False
+
+
+def iter_runtime_nodes(node: ast.AST) -> Iterator[ast.AST]:
+    """Yield descendants of ``node``, skipping bodies of ``if TYPE_CHECKING:``.
+
+    The ``else:`` branch of a ``TYPE_CHECKING`` guard still executes at
+    runtime and is visited.
+    """
+    if isinstance(node, ast.If) and is_type_checking_test(node.test):
+        for stmt in node.orelse:
+            yield from iter_runtime_nodes(stmt)
+        return
+    yield node
+    for child in ast.iter_child_nodes(node):
+        yield from iter_runtime_nodes(child)
 
 
 def get_base_name(node: ast.expr) -> str | None:

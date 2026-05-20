@@ -18,6 +18,7 @@ import ast
 from dataclasses import dataclass, field
 from typing import Iterator
 
+from ._ast_inspection import iter_runtime_nodes
 from ._constants import MAX_MODULE_REFERENCES
 
 SLD205 = (
@@ -53,25 +54,6 @@ class _State:
     attrs: dict[str, set[str]] = field(default_factory=dict)
 
 
-def _is_type_checking_test(node: ast.expr) -> bool:
-    if isinstance(node, ast.Name):
-        return node.id == "TYPE_CHECKING"
-    if isinstance(node, ast.Attribute):
-        return node.attr == "TYPE_CHECKING"
-    return False
-
-
-def _iter_runtime(node: ast.AST) -> Iterator[ast.AST]:
-    # Yield descendants of ``node``, skipping bodies of ``if TYPE_CHECKING:``.
-    if isinstance(node, ast.If) and _is_type_checking_test(node.test):
-        for stmt in node.orelse:
-            yield from _iter_runtime(stmt)
-        return
-    yield node
-    for child in ast.iter_child_nodes(node):
-        yield from _iter_runtime(child)
-
-
 def _record_from(stmt: ast.ImportFrom, state: _State) -> None:
     module = stmt.module
     if module is None or module in _ALLOWED_MODULES:
@@ -101,7 +83,7 @@ def _record_attribute(node: ast.Attribute, state: _State) -> None:
 
 def _collect(tree: ast.Module) -> _State:
     state = _State()
-    for node in _iter_runtime(tree):
+    for node in iter_runtime_nodes(tree):
         if isinstance(node, ast.ImportFrom):
             _record_from(node, state)
         elif isinstance(node, ast.Import):

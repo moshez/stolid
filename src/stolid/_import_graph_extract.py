@@ -13,6 +13,7 @@ import ast
 from dataclasses import dataclass, field
 from typing import Iterator
 
+from ._ast_inspection import iter_runtime_nodes, safe_parse
 from ._workspace_walk import FileSystem, iter_python_files
 
 
@@ -69,24 +70,6 @@ def _module_name_for(path: str, fs: FileSystem) -> tuple[str, bool]:
     return ".".join(name_parts), False
 
 
-def _is_type_checking_test(node: ast.expr) -> bool:
-    if isinstance(node, ast.Name):
-        return node.id == "TYPE_CHECKING"
-    if isinstance(node, ast.Attribute):
-        return node.attr == "TYPE_CHECKING"
-    return False
-
-
-def _iter_runtime(node: ast.AST) -> Iterator[ast.AST]:
-    if isinstance(node, ast.If) and _is_type_checking_test(node.test):
-        for stmt in node.orelse:
-            yield from _iter_runtime(stmt)
-        return
-    yield node
-    for child in ast.iter_child_nodes(node):
-        yield from _iter_runtime(child)
-
-
 def _current_package_parts(parsed: _Parsed) -> list[str]:
     parts = parsed.module.split(".")
     return parts if parsed.is_init else parts[:-1]
@@ -129,25 +112,27 @@ def _resolve_import(stmt: ast.Import, modules: frozenset[str]) -> Iterator[str]:
             yield alias.name
 
 
+def _iter_resolved(
+    parsed: _Parsed, node: ast.AST, modules: frozenset[str]
+) -> Iterator[str]:
+    if isinstance(node, ast.ImportFrom):
+        yield from _resolve_from(parsed, node, modules)
+    elif isinstance(node, ast.Import):
+        yield from _resolve_import(node, modules)
+
+
 def _collect_imports(parsed: _Parsed, modules: frozenset[str]) -> frozenset[str]:
     found: set[str] = set()
-    for node in _iter_runtime(parsed.tree):
-        if isinstance(node, ast.ImportFrom):
-            for resolved in _resolve_from(parsed, node, modules):
-                if resolved != parsed.module:
-                    found.add(resolved)
-        elif isinstance(node, ast.Import):
-            for resolved in _resolve_import(node, modules):
-                if resolved != parsed.module:
-                    found.add(resolved)
+    for node in iter_runtime_nodes(parsed.tree):
+        for resolved in _iter_resolved(parsed, node, modules):
+            if resolved != parsed.module:
+                found.add(resolved)
     return frozenset(found)
 
 
 def _parse_one(fs: FileSystem, path: str, state: _ScanState) -> None:
-    source = fs.read(path)
-    try:
-        tree = ast.parse(source, filename=path)
-    except SyntaxError:
+    tree = safe_parse(fs.read(path), path)
+    if tree is None:
         return
     module, is_init = _module_name_for(path, fs)
     if not module:

@@ -25,15 +25,14 @@ class TestBuildGraph(unittest.TestCase):
         for node in graph.nodes():
             assert_that(graph.nodes[node]["size"], equal_to(1))
 
-    def test_self_loops_dropped(self) -> None:
-        """Verify ``build_graph`` strips edges where source equals target."""
-        graph = build_graph(["a"], [("a", "a")])
-        assert_that(graph.number_of_edges(), equal_to(0))
-
-    def test_edges_to_unknown_nodes_skipped(self) -> None:
-        """Verify edges referencing missing endpoints are not added."""
-        graph = build_graph(["a"], [("a", "ghost")])
-        assert_that(graph.number_of_edges(), equal_to(0))
+    def test_invalid_edges_dropped(self) -> None:
+        """Verify self-loops and edges to unknown nodes are silently dropped."""
+        for name, edges in [
+            ("self_loop", [("a", "a")]),
+            ("unknown_target", [("a", "ghost")]),
+        ]:
+            with self.subTest(name=name):
+                assert_that(build_graph(["a"], edges).number_of_edges(), equal_to(0))
 
 
 class TestReachScore(unittest.TestCase):

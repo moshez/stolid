@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Protocol
 
 from ._duplicate_scan import CloneGroup, CloneOccurrence, ScanResult
 from ._noqa import is_suppressed
+from ._report_line import ReportLine, format_line
+
+__all__ = ["ReportLine", "SourceReader", "format_line", "report_lines"]
 
 SLD801 = "SLD801 duplicated structure ({} nodes); also at {}"
 
@@ -17,25 +19,6 @@ class SourceReader(Protocol):
     def read(self, path: str) -> str:  # noqa: E704
         """Return the text contents of the file at ``path``."""
         ...
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class ReportLine:
-    """A single flake8-format diagnostic line.
-
-    Fields ``path``, ``line``, and ``col`` locate the diagnostic; ``message``
-    is the human-readable text.
-    """
-
-    path: str
-    line: int
-    col: int
-    message: str
-
-
-def format_line(line: ReportLine) -> str:
-    """Render report ``line`` as ``path:line:col: message`` and return the string."""
-    return f"{line.path}:{line.line}:{line.col}: {line.message}"
 
 
 def _format_others(occurrence: CloneOccurrence, group: CloneGroup) -> str:

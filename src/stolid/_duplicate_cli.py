@@ -5,9 +5,10 @@ from __future__ import annotations
 from typing import Protocol
 
 from ._contract_scan import scan_paths as contract_scan_paths
-from ._duplicate_report import ReportLine, format_line, report_lines
+from ._duplicate_report import report_lines
 from ._duplicate_scan import FileSystem, ScanResult, scan_paths
 from ._import_graph_scan import scan_paths as import_graph_scan_paths
+from ._report_line import ReportLine, format_line
 
 
 class CommandRunner(Protocol):
@@ -51,15 +52,18 @@ def run_duplicate_scan(fs: FileSystem, sink: OutputSink, paths: list[str]) -> in
     return _emit_results(result, lines, sink)
 
 
+def _emit_rows(sink: OutputSink, rows: list[ReportLine]) -> int:
+    for line in rows:
+        sink.stdout(format_line(line))
+    return 1 if rows else 0
+
+
 def run_contract_scan(fs: FileSystem, sink: OutputSink, paths: list[str]) -> int:
     """Scan ``paths`` for SLD80x violations; emit reports to ``sink``; return exit code.
 
     Uses ``fs`` to read every ``.py`` file under each path.
     """
-    rows = contract_scan_paths(fs, paths)
-    for line in rows:
-        sink.stdout(format_line(line))
-    return 1 if rows else 0
+    return _emit_rows(sink, contract_scan_paths(fs, paths))
 
 
 def run_import_graph_scan(fs: FileSystem, sink: OutputSink, paths: list[str]) -> int:
@@ -68,10 +72,7 @@ def run_import_graph_scan(fs: FileSystem, sink: OutputSink, paths: list[str]) ->
     Uses ``fs`` to read every ``.py`` file under each path and computes
     architectural metrics over the workspace import graph.
     """
-    rows = import_graph_scan_paths(fs, paths)
-    for line in rows:
-        sink.stdout(format_line(line))
-    return 1 if rows else 0
+    return _emit_rows(sink, import_graph_scan_paths(fs, paths))
 
 
 def run_stolid(

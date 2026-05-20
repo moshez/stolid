@@ -8,7 +8,7 @@ from __future__ import annotations
 import ast
 import builtins
 
-from ._duplicate_binders import COMPREHENSION_NODES
+from ._ast_inspection import COMPREHENSION_NODES
 
 _BUILTIN_NAMES: frozenset[str] = frozenset(dir(builtins))
 

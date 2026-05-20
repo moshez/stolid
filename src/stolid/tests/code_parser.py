@@ -31,7 +31,8 @@ def get_error_codes(code: str, filename: str = "") -> Sequence[str]:
     return [msg.split()[0] for _, _, msg in errors]
 
 
-def _dedent_files(files: Mapping[str, str]) -> Mapping[str, str]:
+def dedent_files(files: Mapping[str, str]) -> Mapping[str, str]:
+    """Return ``files`` with each source dedented and the leading newline stripped."""
     return {
         path: textwrap.dedent(source).lstrip("\n") for path, source in files.items()
     }
@@ -44,7 +45,7 @@ def check_multifile(
 
     Returns a list of report entries from the duplicate and contract scanners.
     """
-    sources = _dedent_files(files)
+    sources = dedent_files(files)
     fs = InMemoryFileSystem(_files=sources)
     targets = list(roots) if roots is not None else ["."]
     duplicate_lines = report_lines(fs, scan_paths(fs, targets))

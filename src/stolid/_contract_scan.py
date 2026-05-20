@@ -21,11 +21,12 @@ import ast
 from dataclasses import dataclass, field
 from typing import Iterator
 
+from ._ast_inspection import safe_parse
 from ._contract_annotation import ContractError, ContractViolation, classify_annotation
 from ._contract_classify import ClassKind, classify_class
 from ._contract_surface import iter_public_annotations
-from ._duplicate_report import ReportLine
 from ._noqa import is_suppressed
+from ._report_line import ReportLine
 from ._workspace_walk import FileSystem, iter_python_files
 
 SLD802 = (
@@ -93,9 +94,8 @@ def _classify_top_level(tree: ast.Module, state: _ScanState) -> None:
 
 def _parse_one_file(fs: FileSystem, path: str, state: _ScanState) -> None:
     source = fs.read(path)
-    try:
-        tree = ast.parse(source, filename=path)
-    except SyntaxError:
+    tree = safe_parse(source, path)
+    if tree is None:
         return
     state.parsed.append(_ParsedFile(path=path, tree=tree, source=source))
     _classify_top_level(tree, state)
