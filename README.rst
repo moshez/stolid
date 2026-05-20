@@ -940,6 +940,66 @@ comment instead.
     def _normalize(text):
         return text.strip().lower()
 
+SLD83x - Import Graph Architecture
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+SLD83x are **workspace-wide architectural checks**: they require a global
+view of every ``.py`` file and therefore run via ``python -m stolid``,
+not as flake8 plugin rules. They analyze the runtime import graph,
+collapsing each level of the package hierarchy into a *quotient* graph
+and applying graph-theoretic primitives (strongly connected components,
+condensation depth, reach density) at each level.
+
+Imports under ``if TYPE_CHECKING:`` (and ``typing.TYPE_CHECKING`` /
+``t.TYPE_CHECKING`` aliases) are excluded — they do not execute at
+runtime and are a legitimate way to break otherwise-unavoidable cycles.
+The rules measure runtime architectural structure, not the strictly
+larger graph of conceptual coupling.
+
+Per-line ``# noqa`` markers are not honored for SLD83x: these are
+workspace-wide claims, not per-line, and silencing one ``__init__.py``
+would be a poor expression of "this whole architecture is fine."
+
+**SLD831**: Cyclic dependency cluster contains more than 15 modules.
+Small cycles (``requests`` has 8, ``click`` 11, ``flask`` 14) remain
+comprehensible; clusters past ~15 modules begin to function as
+undifferentiated mud where every module can reach every other and
+refactors propagate unpredictably.
+
+**SLD832**: Cross-package cyclic dependency at any level ≥ 2 whose
+constituent subpackages cover more than 10 modules total. This is the
+rule that catches the architectural failure where individual modules
+are arranged hierarchically but subpackages reach across each other
+circularly. The threshold is on per-SCC module weight: a cycle between
+two 100-module subpackages is much worse than a cycle between two
+3-module subpackages even though both involve 2 nodes at the quotient
+level.
+
+**SLD833**: Condensation depth exceeds 8 at any level with at least
+10 nodes. The condensation depth is the smallest number of layers any
+valid ``import-linter`` layered contract would need; eight is generous
+— most well-organized architectures have three to five. The 10-node
+minimum prevents the rule from firing on tiny levels where depth is
+mechanically constrained by node count anyway. Fires once per level
+that exceeds the threshold; level 4 and level 5 both firing yields
+two diagnostics because each level represents an independent
+architectural slice.
+
+**SLD834**: At any level ≥ 2 with at least 10 nodes, the largest SCC
+contains more than 60% of the level's total module weight. This rule
+names the architecture where the majority of code lives in one
+mutually-reachable cluster of subpackages — not a layered
+architecture, just a directory hierarchy stretched over a single
+component.
+
+**SLD835**: Module-level reach density exceeds 0.6, where density is
+the count of ordered transitively-reachable pairs plus an SCC bonus,
+normalized by ``n * (n - 1)``. A fully-reachable chain scores 0.5;
+fully-mutually-reachable modules score above 1.0. This rule catches
+the small-package failure mode: most modules importing most modules
+transitively, just without the structure being large enough to
+trigger SLD831 or to have a meaningful level ≥ 2 for SLD832/SLD834.
+
 SLD9xx - Privacy
 ~~~~~~~~~~~~~~~~
 
