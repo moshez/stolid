@@ -4,13 +4,11 @@ from __future__ import annotations
 
 import unittest
 
-from hamcrest import assert_that, contains_string, equal_to
-
 from .code_parser import (
     assert_absent,
+    assert_count,
+    assert_message_contains,
     assert_present,
-    check_code,
-    get_error_codes,
 )
 
 _SLD606_PRESENT: list[tuple[str, str]] = [
@@ -184,19 +182,15 @@ class TestSLD606TryFinally(unittest.TestCase):
 
     def test_count(self) -> None:
         """Verify count."""
-        for name, code, count in _SLD606_COUNT:
-            with self.subTest(name=name):
-                assert_that(
-                    get_error_codes(code).count("SLD606"),
-                    equal_to(count),
-                )
+        assert_count(self, _SLD606_COUNT, "SLD606")
 
     def test_message_describes_replacement(self) -> None:
         """Verify the SLD606 message points at the replacement."""
-        code = "try:\n    do()\nfinally:\n    cleanup()\n"
-        errors = check_code(code)
-        messages = [msg for _, _, msg in errors if "SLD606" in msg]
-        assert_that(messages[0], contains_string("contextlib.contextmanager"))
+        assert_message_contains(
+            "try:\n    do()\nfinally:\n    cleanup()\n",
+            "SLD606",
+            "contextlib.contextmanager",
+        )
 
 
 class TestSLD607TryExceptPass(unittest.TestCase):
@@ -212,7 +206,8 @@ class TestSLD607TryExceptPass(unittest.TestCase):
 
     def test_message_mentions_suppress(self) -> None:
         """Verify the SLD607 message points at contextlib.suppress."""
-        code = "try:\n    do()\nexcept ValueError:\n    pass\n"
-        errors = check_code(code)
-        messages = [msg for _, _, msg in errors if "SLD607" in msg]
-        assert_that(messages[0], contains_string("suppress"))
+        assert_message_contains(
+            "try:\n    do()\nexcept ValueError:\n    pass\n",
+            "SLD607",
+            "suppress",
+        )

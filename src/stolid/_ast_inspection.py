@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import ast
+import os
 import re
 from dataclasses import dataclass
-from typing import Iterable, Iterator
+from typing import Callable, Iterable, Iterator, TypeGuard, TypeVar
 
 from ._constants import BAD_NAME_WORDS, COMPLEXITY_FACTOR, INDENT_WIDTH
 
@@ -13,9 +14,43 @@ FUNCTION_DEF_NODES = (ast.FunctionDef, ast.AsyncFunctionDef)
 FunctionType = ast.FunctionDef | ast.AsyncFunctionDef
 NAMED_DEF_NODES = FUNCTION_DEF_NODES + (ast.ClassDef,)
 TUPLE_LIST_NODES = (ast.Tuple, ast.List)
+LAMBDA_FUNCTION_NODES = FUNCTION_DEF_NODES + (ast.Lambda,)
+SCOPE_NODES = NAMED_DEF_NODES + (ast.Lambda,)
+COMPREHENSION_NODES = (ast.ListComp, ast.SetComp, ast.DictComp, ast.GeneratorExp)
+FOR_LOOP_NODES = (ast.For, ast.AsyncFor)
 
 
-def is_name_id(node: ast.AST, name: str) -> bool:
+def iter_name_targets(target: ast.expr) -> Iterator[ast.Name]:
+    """Yield every ``ast.Name`` reachable from assignment ``target``.
+
+    Recurses through tuple/list targets and ``Starred`` wrappers; other
+    expression shapes (attribute, subscript) yield nothing.
+    """
+    if isinstance(target, ast.Name):
+        yield target
+    elif isinstance(target, TUPLE_LIST_NODES):
+        for elt in target.elts:
+            yield from iter_name_targets(elt)
+    elif isinstance(target, ast.Starred):
+        yield from iter_name_targets(target.value)
+
+
+def iter_args(arguments: ast.arguments) -> Iterator[ast.arg]:
+    """Yield every ``ast.arg`` in ``arguments``.
+
+    Visits ``posonlyargs``, ``args``, ``kwonlyargs``, then ``vararg`` and
+    ``kwarg`` if present.
+    """
+    yield from arguments.posonlyargs
+    yield from arguments.args
+    yield from arguments.kwonlyargs
+    if arguments.vararg is not None:
+        yield arguments.vararg
+    if arguments.kwarg is not None:
+        yield arguments.kwarg
+
+
+def is_name_id(node: ast.AST, name: str) -> TypeGuard[ast.Name]:
     """Return True iff ``node`` is ``ast.Name`` with id ``name``."""
     return isinstance(node, ast.Name) and node.id == name
 
@@ -57,9 +92,23 @@ def is_dataclass_decorator(node: ast.expr) -> bool:
     return False
 
 
-def is_dunder_method(name: str) -> bool:
+def is_dunder_name(name: str) -> bool:
     """Return True iff ``name`` is a dunder identifier (``__xxx__``)."""
     return name.startswith("__") and name.endswith("__")
+
+
+def module_name_from_filename(filename: str) -> str | None:
+    """Return the module basename of ``filename`` (no ``.py``), or ``None``.
+
+    Returns ``None`` if ``filename`` is empty or does not end in ``.py``.
+    Does not filter dunder modules; callers that care apply that check.
+    """
+    if not filename:
+        return None
+    base = os.path.basename(filename)
+    if not base.endswith(".py"):
+        return None
+    return base[:-3]
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -235,3 +284,19 @@ def bad_name_errors(name: str, lineno: int, col_offset: int) -> Iterator[BadName
         yield BadNameError(
             lineno=lineno, col_offset=col_offset, message=SLD701.format(name, bad_word)
         )
+
+
+_E = TypeVar("_E")
+
+
+def bad_name_errors_as(
+    name: str, lineno: int, col_offset: int, factory: Callable[..., _E]
+) -> Iterator[_E]:
+    """Yield ``factory(...)``-wrapped SLD701 errors for ``name``.
+
+    ``factory`` is called with ``lineno``, ``col_offset``, and ``message``
+    keyword arguments; use it to lift the shared ``BadNameError`` into
+    each module's local error dataclass.
+    """
+    for err in bad_name_errors(name, lineno, col_offset):
+        yield factory(lineno=err.lineno, col_offset=err.col_offset, message=err.message)

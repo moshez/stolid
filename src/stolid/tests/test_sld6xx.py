@@ -4,13 +4,12 @@ from __future__ import annotations
 
 import unittest
 
-from hamcrest import assert_that, contains_string, equal_to, has_item
-
 from .code_parser import (
     assert_absent,
+    assert_count,
+    assert_message_contains,
+    assert_message_contains_all,
     assert_present,
-    check_code,
-    get_error_codes,
 )
 
 
@@ -151,15 +150,16 @@ _SLD604_ABSENT: list[tuple[str, str]] = [
 ]
 
 
+def _int_field_lines(n: int) -> str:
+    return "\n".join(f"    f{i}: int" for i in range(n))
+
+
 def _dataclass_with_fields(n: int) -> str:
-    lines = [
-        "from dataclasses import dataclass",
-        "",
-        "@dataclass(frozen=True, slots=True, kw_only=True)",
-        "class Big:",
-    ]
-    lines.extend(f"    f{i}: int" for i in range(n))
-    return "\n".join(lines) + "\n"
+    return (
+        "from dataclasses import dataclass\n\n"
+        "@dataclass(frozen=True, slots=True, kw_only=True)\n"
+        "class Big:\n" + _int_field_lines(n) + "\n"
+    )
 
 
 _SLD608_PRESENT: list[tuple[str, str]] = [
@@ -175,13 +175,13 @@ _SLD608_ABSENT: list[tuple[str, str]] = [
         "from typing import ClassVar\n\n"
         "@dataclass(frozen=True, slots=True, kw_only=True)\n"
         "class Mixed:\n"
-        + "\n".join(f"    f{i}: int" for i in range(10))
+        + _int_field_lines(10)
         + "\n    counter: ClassVar[int] = 0\n"
         + "    flag: ClassVar[bool] = False\n",
     ),
     (
         "non_dataclass_unrestricted",
-        "class Plain:\n" + "\n".join(f"    f{i}: int" for i in range(20)) + "\n",
+        "class Plain:\n" + _int_field_lines(20) + "\n",
     ),
 ]
 
@@ -199,12 +199,12 @@ class TestSLD601FunctionLineLimit(unittest.TestCase):
 
     def test_message_reports_heaviest_line(self) -> None:
         """Verify the SLD601 message names the heaviest line and its breakdown."""
-        code = _nested_function(depth=4, body_lines=10)
-        errors = check_code(code)
-        messages = [msg for _, _, msg in errors if "SLD601" in msg]
-        assert_that(messages[0], contains_string("complexity"))
-        assert_that(messages[0], contains_string("heaviest line"))
-        assert_that(messages[0], contains_string("indent depth"))
+        assert_message_contains_all(
+            self,
+            _nested_function(depth=4, body_lines=10),
+            "SLD601",
+            ("complexity", "heaviest line", "indent depth"),
+        )
 
 
 class TestSLD602ArgumentLimit(unittest.TestCase):
@@ -224,7 +224,7 @@ class TestSLD603ClassMethodLimit(unittest.TestCase):
 
     def test_class_exceeds_limit(self) -> None:
         """Verify class exceeds limit."""
-        assert_that(get_error_codes(_big_class()), has_item("SLD603"))
+        assert_present(self, [("big_class", _big_class())], "SLD603")
 
     def test_absent(self) -> None:
         """Verify absent."""
@@ -236,7 +236,7 @@ class TestSLD604ModuleLineLimit(unittest.TestCase):
 
     def test_module_exceeds_limit(self) -> None:
         """Verify module exceeds limit."""
-        assert_that(get_error_codes(_long_module(450)), has_item("SLD604"))
+        assert_present(self, [("long_module", _long_module(450))], "SLD604")
 
     def test_absent(self) -> None:
         """Verify absent."""
@@ -244,11 +244,7 @@ class TestSLD604ModuleLineLimit(unittest.TestCase):
 
     def test_error_message_includes_line_count(self) -> None:
         """Verify error message includes line count."""
-        errors = check_code(_long_module(450))
-        messages = [msg for _, _, msg in errors if "SLD604" in msg]
-        for expected in ("450", "400"):
-            with self.subTest(expected=expected):
-                assert_that(messages[0], contains_string(expected))
+        assert_message_contains_all(self, _long_module(450), "SLD604", ("450", "400"))
 
 
 class TestSLD608DataclassFieldLimit(unittest.TestCase):
@@ -264,11 +260,9 @@ class TestSLD608DataclassFieldLimit(unittest.TestCase):
 
     def test_error_message_includes_field_count(self) -> None:
         """Verify error message includes field count and limit."""
-        errors = check_code(_dataclass_with_fields(12))
-        messages = [msg for _, _, msg in errors if "SLD608" in msg]
-        for expected in ("12", "10", "Big"):
-            with self.subTest(expected=expected):
-                assert_that(messages[0], contains_string(expected))
+        assert_message_contains_all(
+            self, _dataclass_with_fields(12), "SLD608", ("12", "10", "Big")
+        )
 
 
 _SLD605_PRESENT: list[tuple[str, str]] = [
@@ -364,16 +358,12 @@ class TestSLD605NestedWith(unittest.TestCase):
 
     def test_count(self) -> None:
         """Verify count."""
-        for name, code, count in _SLD605_COUNT:
-            with self.subTest(name=name):
-                assert_that(
-                    get_error_codes(code).count("SLD605"),
-                    equal_to(count),
-                )
+        assert_count(self, _SLD605_COUNT, "SLD605")
 
     def test_message_mentions_exitstack(self) -> None:
         """Verify the SLD605 message points at contextlib.ExitStack."""
-        code = "with a() as x:\n" "    with b(x) as y:\n" "        do(y)\n"
-        errors = check_code(code)
-        messages = [msg for _, _, msg in errors if "SLD605" in msg]
-        assert_that(messages[0], contains_string("ExitStack"))
+        assert_message_contains(
+            "with a() as x:\n" "    with b(x) as y:\n" "        do(y)\n",
+            "SLD605",
+            "ExitStack",
+        )

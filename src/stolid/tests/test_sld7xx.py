@@ -4,12 +4,10 @@ from __future__ import annotations
 
 import unittest
 
-from hamcrest import assert_that, contains_string, equal_to, has_item
-
 from .code_parser import (
     assert_absent,
+    assert_message_contains_all,
     assert_present,
-    check_code,
 )
 
 _CLASS_PRESENT: list[tuple[str, str]] = [
@@ -77,8 +75,7 @@ _MODULE_NAME_ABSENT: list[tuple[str, str]] = [
 ]
 
 
-def _module_codes(filename: str) -> list[str]:
-    return [msg.split()[0] for _, _, msg in check_code("x = 1", filename=filename)]
+_TRIVIAL_SOURCE = "x = 1"
 
 
 class TestSLD701ClassNames(unittest.TestCase):
@@ -111,14 +108,12 @@ class TestSLD701ModuleNames(unittest.TestCase):
     def test_present(self) -> None:
         """Verify present."""
         for name, filename in _MODULE_NAME_PRESENT:
-            with self.subTest(name=name):
-                assert_that(_module_codes(filename), has_item("SLD701"))
+            assert_present(self, [(name, _TRIVIAL_SOURCE)], "SLD701", filename=filename)
 
     def test_absent(self) -> None:
         """Verify absent."""
         for name, filename in _MODULE_NAME_ABSENT:
-            with self.subTest(name=name):
-                assert_that("SLD701" in _module_codes(filename), equal_to(False))
+            assert_absent(self, [(name, _TRIVIAL_SOURCE)], "SLD701", filename=filename)
 
 
 class TestSLD701ErrorMessage(unittest.TestCase):
@@ -126,9 +121,9 @@ class TestSLD701ErrorMessage(unittest.TestCase):
 
     def test_message_includes_name_and_word(self) -> None:
         """Verify message includes name and word."""
-        code = "class ConnectionManager:\n    pass\n"
-        errors = check_code(code)
-        messages = [msg for _, _, msg in errors if "SLD701" in msg]
-        for expected in ("ConnectionManager", "manager"):
-            with self.subTest(expected=expected):
-                assert_that(messages[0], contains_string(expected))
+        assert_message_contains_all(
+            self,
+            "class ConnectionManager:\n    pass\n",
+            "SLD701",
+            ("ConnectionManager", "manager"),
+        )

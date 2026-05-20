@@ -13,10 +13,10 @@ from typing import Iterator
 from ._ast_inspection import (
     FUNCTION_DEF_NODES,
     FunctionType,
-    bad_name_errors,
+    bad_name_errors_as,
     get_base_name,
-    is_attribute_attr,
     is_dataclass_decorator,
+    is_dunder_name,
     is_name_among,
 )
 from ._constants import ALLOWED_BASES, MAX_CLASS_METHODS, MAX_DATACLASS_FIELDS
@@ -63,10 +63,6 @@ def _error(node: ast.stmt | ast.expr, message: str) -> ClassError:
     return ClassError(lineno=node.lineno, col_offset=node.col_offset, message=message)
 
 
-def _is_dunder(name: str) -> bool:
-    return name.startswith("__") and name.endswith("__")
-
-
 def _class_inherits_from(node: ast.ClassDef, base_name: str) -> bool:
     for base in node.bases:
         if get_base_name(base) == base_name:
@@ -78,7 +74,7 @@ def _get_class_method_count(node: ast.ClassDef) -> int:
     count = 0
     for child in node.body:
         if isinstance(child, FUNCTION_DEF_NODES):
-            if not _is_dunder(child.name):
+            if not is_dunder_name(child.name):
                 count += 1
     return count
 
@@ -169,7 +165,7 @@ def check_abstract_decorators(
     """
     yield from _name_decorator_errors(decoration_list, names, SLD202)
     for decorator in decoration_list:
-        if is_attribute_attr(decorator, "abstractmethod"):
+        if isinstance(decorator, ast.Attribute) and decorator.attr == "abstractmethod":
             yield _error(decorator, SLD202)
 
 
@@ -191,7 +187,7 @@ def _check_dataclass_flags(
 def _check_method_naming(node: FunctionType) -> Iterator[ClassError]:
     if node.name in ("__init__", "__post_init__"):  # noqa: SLD304
         yield _error(node, SLD301.format(node.name))
-    if node.name.startswith("_") and not _is_dunder(node.name):
+    if node.name.startswith("_") and not is_dunder_name(node.name):
         yield _error(node, SLD302.format(node.name))
 
 
@@ -205,7 +201,7 @@ def _check_method_in_class(
     if not _is_method(node) or _is_classmethod_or_staticmethod(node):
         return
     yield from _check_method_naming(node)
-    if _is_dunder(node.name) or _is_property_method(node):
+    if is_dunder_name(node.name) or _is_property_method(node):
         return
     if is_protocol:
         return
@@ -246,10 +242,7 @@ def check_class(
     ``abstractmethod_names`` is the set of module-local bindings that
     refer to ``abstractmethod`` (used by the SLD202 decorator check).
     """
-    for err in bad_name_errors(node.name, node.lineno, node.col_offset):
-        yield ClassError(
-            lineno=err.lineno, col_offset=err.col_offset, message=err.message
-        )
+    yield from bad_name_errors_as(node.name, node.lineno, node.col_offset, ClassError)
     yield from check_abstract_decorators(node.decorator_list, abstractmethod_names)
     yield from _check_class_bases(node)
     flags = _dataclass_flags(node)

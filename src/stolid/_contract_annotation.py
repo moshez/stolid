@@ -20,6 +20,8 @@ from dataclasses import dataclass
 from enum import Enum, auto
 from typing import Iterator
 
+from ._ast_inspection import get_base_name
+
 
 class ContractViolation(Enum):
     """The three kinds of contract violation reported on a public annotation."""
@@ -93,14 +95,6 @@ _TYPE_NAMES: frozenset[str] = frozenset({"type", "Type"})
 
 def _is_ellipsis(node: ast.expr) -> bool:
     return isinstance(node, ast.Constant) and node.value is Ellipsis
-
-
-def _name_id(node: ast.expr) -> str | None:
-    if isinstance(node, ast.Name):
-        return node.id
-    if isinstance(node, ast.Attribute):
-        return node.attr
-    return None  # pragma: no cover
 
 
 def _slice_elements(node: ast.expr) -> list[ast.expr]:
@@ -181,7 +175,7 @@ def _classify_slice(
 def _classify_subscript(
     node: ast.Subscript, concrete_names: frozenset[str]
 ) -> Iterator[ContractError]:
-    head = _name_id(node.value)
+    head = get_base_name(node.value)
     if head in _LITERAL_NAMES:
         return
     if head in _ANNOTATED_NAMES:

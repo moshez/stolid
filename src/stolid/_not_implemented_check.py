@@ -60,21 +60,21 @@ def _walk_no_function(node: ast.AST) -> Iterator[ast.AST]:
 def _refs_in_scope(body: list[ast.stmt]) -> Iterator[ast.Name]:
     for stmt in body:
         for node in _walk_no_function(stmt):
-            if isinstance(node, ast.Name) and node.id == "NotImplementedError":
+            if is_name_id(node, "NotImplementedError"):
                 yield node
 
 
-def _emit(name: ast.Name) -> NotImplementedUseError:
-    return NotImplementedUseError(
-        lineno=name.lineno, col_offset=name.col_offset, message=SLD206
-    )
+def _emit_refs(body: list[ast.stmt]) -> Iterator[NotImplementedUseError]:
+    for name in _refs_in_scope(body):
+        yield NotImplementedUseError(
+            lineno=name.lineno, col_offset=name.col_offset, message=SLD206
+        )
 
 
 def _check_function(func: FunctionType) -> Iterator[NotImplementedUseError]:
     if _has_singledispatch_decorator(func):
         return
-    for name in _refs_in_scope(func.body):
-        yield _emit(name)
+    yield from _emit_refs(func.body)
 
 
 def check_not_implemented(tree: ast.Module) -> Iterator[NotImplementedUseError]:
@@ -83,8 +83,7 @@ def check_not_implemented(tree: ast.Module) -> Iterator[NotImplementedUseError]:
     Each reference is reported unless its enclosing function is directly
     decorated with ``functools.singledispatch``.
     """
-    for name in _refs_in_scope(tree.body):
-        yield _emit(name)
+    yield from _emit_refs(tree.body)
     for node in ast.walk(tree):
         if isinstance(node, FUNCTION_DEF_NODES):
             yield from _check_function(node)

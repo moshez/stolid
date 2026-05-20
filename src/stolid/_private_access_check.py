@@ -24,7 +24,7 @@ from ._ast_inspection import (
     FUNCTION_DEF_NODES,
     FunctionType,
     is_attribute_in,
-    is_dunder_method,
+    is_dunder_name,
     is_name_id,
 )
 
@@ -119,7 +119,7 @@ class _State:
 
 def _is_private(name: str) -> bool:
     # True for a single- or double-underscore name that is not a dunder.
-    return name.startswith("_") and not is_dunder_method(name)
+    return name.startswith("_") and not is_dunder_name(name)
 
 
 def _has_private_segment(dotted: str) -> bool:
@@ -197,14 +197,11 @@ def _visit_import(node: ast.Import, state: _State) -> None:
 
 
 def _visit_import_from(node: ast.ImportFrom, state: _State) -> None:
-    if node.level > 0:
-        for alias in node.names:
-            state.bind_import(alias.asname or alias.name)
-        return
-    if node.module is not None and _has_private_segment(node.module):
+    absolute = node.level == 0
+    if absolute and node.module is not None and _has_private_segment(node.module):
         state.record(node, PrivacyKind.PRIVATE_SUBMODULE_IMPORT, node.module)
     for alias in node.names:
-        if _is_private(alias.name):
+        if absolute and _is_private(alias.name):
             state.record(node, PrivacyKind.ABSOLUTE_PRIVATE_IMPORT, alias.name)
         state.bind_import(alias.asname or alias.name)
 

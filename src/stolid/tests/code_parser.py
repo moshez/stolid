@@ -7,7 +7,7 @@ import textwrap
 import unittest
 from typing import Iterable, Mapping, Sequence
 
-from hamcrest import assert_that, equal_to, has_item
+from hamcrest import assert_that, contains_string, equal_to, has_item
 
 from .._contract_scan import scan_paths as contract_scan_paths
 from .._duplicate_report import report_lines
@@ -25,9 +25,9 @@ def check_code(code: str, filename: str = "") -> Sequence[tuple[int, int, str]]:
     return [(line, col, msg) for line, col, msg, _ in checker.run()]
 
 
-def get_error_codes(code: str) -> Sequence[str]:
-    """Parse ``code`` and return the list of error codes only."""
-    errors = check_code(code)
+def get_error_codes(code: str, filename: str = "") -> Sequence[str]:
+    """Parse ``code`` (under ``filename``) and return the list of error codes only."""
+    errors = check_code(code, filename=filename)
     return [msg.split()[0] for _, _, msg in errors]
 
 
@@ -64,28 +64,34 @@ def assert_present(
     test_case: unittest.TestCase,
     cases: Iterable[tuple[str, str]],
     sld_code: str,
+    *,
+    filename: str = "",
 ) -> None:
     """Assert ``sld_code`` is present for each ``(name, code)`` in ``cases``.
 
-    Subtests run on ``test_case``.
+    Each entry is checked under ``filename`` (default ``""``); subtests
+    run on ``test_case``.
     """
     for name, code in cases:
         with test_case.subTest(name=name):
-            assert_that(get_error_codes(code), has_item(sld_code))
+            assert_that(get_error_codes(code, filename), has_item(sld_code))
 
 
 def assert_absent(
     test_case: unittest.TestCase,
     cases: Iterable[tuple[str, str]],
     sld_code: str,
+    *,
+    filename: str = "",
 ) -> None:
     """Assert ``sld_code`` is absent for each ``(name, code)`` in ``cases``.
 
-    Subtests run on ``test_case``.
+    Each entry is checked under ``filename`` (default ``""``); subtests
+    run on ``test_case``.
     """
     for name, code in cases:
         with test_case.subTest(name=name):
-            assert_that(sld_code in get_error_codes(code), equal_to(False))
+            assert_that(sld_code in get_error_codes(code, filename), equal_to(False))
 
 
 def assert_count(
@@ -100,3 +106,37 @@ def assert_count(
     for name, code, count in cases:
         with test_case.subTest(name=name):
             assert_that(get_error_codes(code).count(sld_code), equal_to(count))
+
+
+def assert_source_absent(source: str, sld_code: str) -> None:
+    """Assert ``sld_code`` is not produced when checking ``source``.
+
+    For one-off edge cases that don't fit the table-driven helpers above.
+    """
+    assert_that(sld_code in get_error_codes(source), equal_to(False))
+
+
+def _matching_messages(code: str, sld_code: str) -> list[str]:
+    return [msg for _, _, msg in check_code(code) if sld_code in msg]
+
+
+def assert_message_contains(code: str, sld_code: str, expected: str) -> None:
+    """Assert the first ``sld_code`` message from ``code`` contains ``expected``."""
+    messages = _matching_messages(code, sld_code)
+    assert_that(messages[0], contains_string(expected))
+
+
+def assert_message_contains_all(
+    test_case: unittest.TestCase,
+    code: str,
+    sld_code: str,
+    wanted: Iterable[str],
+) -> None:
+    """Assert the first ``sld_code`` message from ``code`` contains every ``wanted``.
+
+    Each wanted substring runs in its own subtest on ``test_case``.
+    """
+    messages = _matching_messages(code, sld_code)
+    for one in wanted:
+        with test_case.subTest(want=one):
+            assert_that(messages[0], contains_string(one))

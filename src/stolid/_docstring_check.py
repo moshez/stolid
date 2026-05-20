@@ -14,7 +14,6 @@
 from __future__ import annotations
 
 import ast
-import os
 import re
 from dataclasses import dataclass
 from typing import Iterator
@@ -22,7 +21,11 @@ from typing import Iterator
 from ._ast_inspection import (
     FUNCTION_DEF_NODES,
     FunctionType,
+    is_attribute_attr,
     is_dataclass_decorator,
+    is_dunder_name,
+    is_name_id,
+    module_name_from_filename,
 )
 
 SLD811 = "SLD811 Public module '{}' missing docstring"
@@ -71,23 +74,10 @@ class DocstringError:
     message: str
 
 
-def _is_dunder(name: str) -> bool:
-    return name.startswith("__") and name.endswith("__")
-
-
 def _is_public(name: str) -> bool:
     if not name.startswith("_"):
         return True
-    return _is_dunder(name)
-
-
-def _module_basename(filename: str) -> str | None:
-    if not filename:
-        return None
-    base = os.path.basename(filename)
-    if not base.endswith(".py"):
-        return None
-    return base[:-3]
+    return is_dunder_name(name)
 
 
 def _mentions_return(docstring: str) -> bool:
@@ -138,7 +128,7 @@ def _check_function_docstring(
 
 
 def _check_function(node: FunctionType) -> Iterator[DocstringError]:
-    if _is_dunder(node.name):
+    if is_dunder_name(node.name):
         return
     docstring = ast.get_docstring(node)
     if _is_public(node.name):
@@ -155,10 +145,7 @@ def _dataclass_field_has_doc(value: ast.expr | None) -> bool:
     if not isinstance(value, ast.Call):
         return False
     func = value.func
-    is_field = (isinstance(func, ast.Name) and func.id == "field") or (
-        isinstance(func, ast.Attribute) and func.attr == "field"
-    )
-    if not is_field:
+    if not is_name_id(func, "field") and not is_attribute_attr(func, "field"):
         return False
     return any(kw.arg == "doc" for kw in value.keywords)
 
@@ -219,7 +206,7 @@ def _walk_scope(body: list[ast.stmt]) -> Iterator[DocstringError]:
 def _check_module_docstring(
     tree: ast.Module, filename: str
 ) -> Iterator[DocstringError]:
-    name = _module_basename(filename)
+    name = module_name_from_filename(filename)
     if name is None:
         return
     has_docstring = ast.get_docstring(tree) is not None

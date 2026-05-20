@@ -9,7 +9,7 @@ from typing import Iterator
 
 from ._ast_inspection import (
     FunctionType,
-    bad_name_errors,
+    bad_name_errors_as,
     get_function_arg_count,
     get_function_complexity,
 )
@@ -47,10 +47,9 @@ def check_function(
     each line number to its deepest opened bracket stack; both feed the
     SLD601 complexity computation.
     """
-    for err in bad_name_errors(node.name, node.lineno, node.col_offset):
-        yield FunctionError(
-            lineno=err.lineno, col_offset=err.col_offset, message=err.message
-        )
+    yield from bad_name_errors_as(
+        node.name, node.lineno, node.col_offset, FunctionError
+    )
     complexity = get_function_complexity(node, lines, bracket_depths)
     if complexity.weight > MAX_FUNCTION_LINES:
         yield _error(node, format_sld601(node.name, complexity))

@@ -6,7 +6,7 @@ import ast
 from dataclasses import dataclass
 from typing import Iterator
 
-from ._ast_inspection import get_base_name
+from ._ast_inspection import FUNCTION_DEF_NODES, SCOPE_NODES, get_base_name
 
 SLD304 = (
     "SLD304 Expression '{}' compared against multiple distinct string literals "
@@ -35,13 +35,6 @@ _ENUM_BASES = frozenset({"Enum", "IntEnum", "StrEnum", "Flag", "IntFlag"})
 
 _TRACKABLE_NAMELIKE = (ast.Name, ast.Attribute, ast.Subscript)
 _COLLECTION_NODES = (ast.Tuple, ast.List, ast.Set)
-_SCOPE_BOUNDARY_NODES = (
-    ast.FunctionDef,
-    ast.AsyncFunctionDef,
-    ast.ClassDef,
-    ast.Lambda,
-)
-_FUNCTION_NODES = (ast.FunctionDef, ast.AsyncFunctionDef)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -57,7 +50,10 @@ class StringEnumError:
     message: str
 
 
-def _as_str_literal(node: ast.AST) -> tuple[ast.Constant, str] | None:
+_StrLiteral = tuple[ast.Constant, str] | None
+
+
+def _as_str_literal(node: ast.AST) -> _StrLiteral:
     # Return (node, value) when node is a string-literal Constant.
     if isinstance(node, ast.Constant) and isinstance(node.value, str):
         return node, node.value
@@ -92,7 +88,7 @@ def _iter_scope_nodes(body: list[ast.stmt]) -> Iterator[ast.AST]:
 
 def _walk_no_scope(node: ast.AST) -> Iterator[ast.AST]:
     yield node
-    if isinstance(node, _SCOPE_BOUNDARY_NODES):
+    if isinstance(node, SCOPE_NODES):
         return
     for child in ast.iter_child_nodes(node):
         yield from _walk_no_scope(child)
@@ -180,7 +176,7 @@ def _check_scope_compares(stmts: list[ast.stmt]) -> Iterator[StringEnumError]:
 def _check_multi_compare(tree: ast.Module) -> Iterator[StringEnumError]:
     yield from _check_scope_compares(tree.body)
     for node in ast.walk(tree):
-        if isinstance(node, _FUNCTION_NODES):
+        if isinstance(node, FUNCTION_DEF_NODES):
             yield from _check_scope_compares(node.body)
 
 
@@ -285,7 +281,7 @@ def _check_literal_annotations(tree: ast.Module) -> Iterator[StringEnumError]:
             )
 
 
-def _assignment_string_value(stmt: ast.stmt) -> tuple[ast.Constant, str] | None:
+def _assignment_string_value(stmt: ast.stmt) -> _StrLiteral:
     # If ``stmt`` is a single-target ``NAME = "literal"`` (with or without an
     # annotation), return ``(Constant, value)``; else return ``None``.
     if isinstance(stmt, ast.Assign):
@@ -293,20 +289,14 @@ def _assignment_string_value(stmt: ast.stmt) -> tuple[ast.Constant, str] | None:
             return None
         if not isinstance(stmt.targets[0], ast.Name):
             return None
-        value: ast.expr = stmt.value
-    elif isinstance(stmt, ast.AnnAssign):
+        return _as_str_literal(stmt.value)
+    if isinstance(stmt, ast.AnnAssign):
         if not isinstance(stmt.target, ast.Name):
             return None
         if stmt.value is None:
             return None
-        value = stmt.value
-    else:
-        return None
-    if not isinstance(value, ast.Constant):
-        return None
-    if not isinstance(value.value, str):
-        return None
-    return value, value.value
+        return _as_str_literal(stmt.value)
+    return None
 
 
 def _check_module_string_constants(tree: ast.Module) -> Iterator[StringEnumError]:
