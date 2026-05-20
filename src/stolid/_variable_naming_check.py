@@ -13,6 +13,7 @@ from typing import Iterator
 
 from ._ast_inspection import (
     COMPREHENSION_NODES,
+    FOR_LOOP_NODES,
     LAMBDA_FUNCTION_NODES,
     NAMED_DEF_NODES,
     iter_args,
@@ -107,7 +108,7 @@ def _statement_bindings(node: ast.AST) -> Iterator[_Binding]:
         yield from _assign_bindings(node)
     elif isinstance(node, ast.AnnAssign):
         yield from _targets(node.target, False)
-    elif isinstance(node, (ast.For, ast.AsyncFor)):  # noqa: SLD801
+    elif isinstance(node, FOR_LOOP_NODES):
         yield from _targets(node.target, True)
     elif isinstance(node, ast.NamedExpr):
         yield _bind(node.target, False)

@@ -11,6 +11,7 @@ from typing import Iterator
 
 from ._ast_inspection import (
     COMPREHENSION_NODES,
+    FOR_LOOP_NODES,
     FunctionType,
     NAMED_DEF_NODES,
     SCOPE_NODES,
@@ -30,7 +31,7 @@ def _statement_binders(node: ast.AST) -> Iterator[str]:
             yield from _target_names(target)
     elif isinstance(node, ast.AnnAssign):
         yield from _target_names(node.target)
-    elif isinstance(node, (ast.For, ast.AsyncFor)):  # noqa: SLD801
+    elif isinstance(node, FOR_LOOP_NODES):
         yield from _target_names(node.target)
     elif isinstance(node, ast.NamedExpr):
         yield node.target.id
