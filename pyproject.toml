@@ -15,7 +15,7 @@ dependencies = ["pathspec", "networkx"]
 
 [project.optional-dependencies]
 tests = ["virtue", "pyhamcrest", "coverage"]
-mypy = ["mypy"]
+mypy = ["mypy", "types-networkx"]
 lint = ["flake8", "black"]
 docs = ["sphinx"]
 

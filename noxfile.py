@@ -65,11 +65,12 @@ def lint(session):
 @nox.session(python=VERSIONS[-1])
 def mypy(session):
     session.install("-r", "requirements-mypy.txt")
+    session.install("-r", "requirements-tests.txt")
     session.install("-e", ".")
     session.run(
         "mypy",
-        "--warn-unused-ignores",
-        "--ignore-missing-imports",
+        "--strict",
+        "--disallow-any-explicit",
         "src/",
     )
 

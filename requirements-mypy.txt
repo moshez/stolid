@@ -12,9 +12,13 @@ mypy-extensions==1.1.0
     # via mypy
 networkx==3.6.1
     # via stolid (pyproject.toml)
+numpy==2.4.6
+    # via types-networkx
 pathspec==1.0.3
     # via
     #   mypy
     #   stolid (pyproject.toml)
+types-networkx==3.6.1.20260518
+    # via stolid (pyproject.toml)
 typing-extensions==4.15.0
     # via mypy
