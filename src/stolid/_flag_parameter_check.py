@@ -64,15 +64,12 @@ def _empty_counts(names: list[str]) -> _Counts:
     )
 
 
-def _visit_name(node: ast.Name, in_condition: bool, counts: _Counts) -> None:
+def _record_name(node: ast.Name, slot: dict[str, int]) -> None:
     if not isinstance(node.ctx, ast.Load):
         return
-    if node.id not in counts.control:
+    if node.id not in slot:
         return
-    if in_condition:
-        counts.control[node.id] += 1
-    else:
-        counts.data[node.id] += 1
+    slot[node.id] += 1
 
 
 def _visit_if_like(node: ast.If | ast.While, counts: _Counts) -> None:
@@ -150,7 +147,8 @@ _NESTED_SCOPES = FUNCTION_DEF_NODES + (ast.Lambda,)
 
 def _visit(node: ast.AST, in_condition: bool, counts: _Counts) -> None:
     if isinstance(node, ast.Name):
-        _visit_name(node, in_condition, counts)
+        slot = counts.control if in_condition else counts.data
+        _record_name(node, slot)
         return
     if isinstance(node, _NESTED_SCOPES):
         return

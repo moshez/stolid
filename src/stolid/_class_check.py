@@ -191,21 +191,10 @@ def _check_method_naming(node: FunctionType) -> Iterator[ClassError]:
         yield _error(node, SLD302.format(node.name))
 
 
-def _check_method_in_class(
-    node: FunctionType,
-    abstractmethod_names: set[str],
-    is_testcase: bool,
-    is_protocol: bool,
-) -> Iterator[ClassError]:
-    yield from check_abstract_decorators(node.decorator_list, abstractmethod_names)
-    if not _is_method(node) or _is_classmethod_or_staticmethod(node):
-        return
-    yield from _check_method_naming(node)
+def _check_sld303_for_method(node: FunctionType) -> Iterator[ClassError]:
+    # Emit SLD303 if ``node`` -- already a regular method that is neither
+    # a dunder nor a property -- touches no private state.
     if is_dunder_name(node.name) or _is_property_method(node):
-        return
-    if is_protocol:
-        return
-    if is_testcase and node.name.startswith("test_"):
         return
     if not _method_accesses_private_state(node):
         yield _error(node, SLD303.format(node.name))
@@ -214,16 +203,20 @@ def _check_method_in_class(
 def _check_class_method_bodies(
     node: ast.ClassDef, abstractmethod_names: set[str]
 ) -> Iterator[ClassError]:
-    is_testcase = _class_inherits_from(node, "TestCase")
     is_protocol = _class_inherits_from(node, "Protocol")
+    is_testcase = _class_inherits_from(node, "TestCase")
     for child in node.body:
-        if isinstance(child, FUNCTION_DEF_NODES):
-            yield from _check_method_in_class(
-                child,
-                abstractmethod_names,
-                is_testcase=is_testcase,
-                is_protocol=is_protocol,
-            )
+        if not isinstance(child, FUNCTION_DEF_NODES):
+            continue
+        yield from check_abstract_decorators(child.decorator_list, abstractmethod_names)
+        if not _is_method(child) or _is_classmethod_or_staticmethod(child):
+            continue
+        yield from _check_method_naming(child)
+        if is_protocol:
+            continue
+        if is_testcase and child.name.startswith("test_"):
+            continue
+        yield from _check_sld303_for_method(child)
 
 
 def _dataclass_flags(node: ast.ClassDef) -> dict[str, bool] | None:
