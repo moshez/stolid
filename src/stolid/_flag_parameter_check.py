@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import ast
 from dataclasses import dataclass
-from typing import Callable, Iterator
+from typing import Iterator
 
 from ._ast_inspection import FUNCTION_DEF_NODES, FunctionType
 
@@ -129,20 +129,42 @@ def _visit_binop(node: ast.BinOp, counts: _Counts) -> None:
     _visit(node.right, False, counts)
 
 
-_DISPATCH: dict[type, Callable[..., None]] = {
-    ast.If: _visit_if_like,
-    ast.While: _visit_if_like,
-    ast.IfExp: _visit_ifexp,
-    ast.Assert: _visit_assert,
-    ast.Match: _visit_match,
-    ast.comprehension: _visit_comprehension,
-    ast.Call: _visit_call,
-    ast.Attribute: _visit_attribute,
-    ast.Subscript: _visit_subscript,
-    ast.BinOp: _visit_binop,
-}
-
 _NESTED_SCOPES = FUNCTION_DEF_NODES + (ast.Lambda,)
+
+
+def _dispatch_control(node: ast.AST, counts: _Counts) -> bool:
+    if isinstance(node, (ast.If, ast.While)):
+        _visit_if_like(node, counts)
+        return True
+    if isinstance(node, ast.IfExp):
+        _visit_ifexp(node, counts)
+        return True
+    if isinstance(node, ast.Assert):
+        _visit_assert(node, counts)
+        return True
+    if isinstance(node, ast.Match):
+        _visit_match(node, counts)
+        return True
+    if isinstance(node, ast.comprehension):
+        _visit_comprehension(node, counts)
+        return True
+    return False
+
+
+def _dispatch_expr(node: ast.AST, counts: _Counts) -> bool:
+    if isinstance(node, ast.Call):
+        _visit_call(node, counts)
+        return True
+    if isinstance(node, ast.Attribute):
+        _visit_attribute(node, counts)
+        return True
+    if isinstance(node, ast.Subscript):
+        _visit_subscript(node, counts)
+        return True
+    if isinstance(node, ast.BinOp):
+        _visit_binop(node, counts)
+        return True
+    return False
 
 
 def _visit(node: ast.AST, in_condition: bool, counts: _Counts) -> None:
@@ -155,12 +177,10 @@ def _visit(node: ast.AST, in_condition: bool, counts: _Counts) -> None:
     if isinstance(node, ast.Compare):
         _visit_compare(node, in_condition, counts)
         return
-    handler = _DISPATCH.get(type(node))
-    if handler is None:
-        for child in ast.iter_child_nodes(node):
-            _visit(child, in_condition, counts)
+    if _dispatch_control(node, counts) or _dispatch_expr(node, counts):
         return
-    handler(node, counts)
+    for child in ast.iter_child_nodes(node):
+        _visit(child, in_condition, counts)
 
 
 def _visit_compare(node: ast.Compare, in_condition: bool, counts: _Counts) -> None:

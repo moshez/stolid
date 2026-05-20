@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Iterator, Protocol
 
 import pathspec
+from pathspec.patterns.gitignore.basic import GitIgnoreBasicPattern
 
 
 class FileSystem(Protocol):
@@ -27,7 +28,9 @@ def _join(root: str, name: str) -> str:
     return f"{root}/{name}"
 
 
-def _read_gitignore(fs: FileSystem, root: str) -> pathspec.PathSpec:
+def _read_gitignore(
+    fs: FileSystem, root: str
+) -> pathspec.PathSpec[GitIgnoreBasicPattern]:
     try:
         text = fs.read(_join(root, ".gitignore"))
     except FileNotFoundError:

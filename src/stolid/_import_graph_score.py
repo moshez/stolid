@@ -9,9 +9,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Iterable
+from typing import Iterable, TypeAlias
 
 import networkx as nx
+
+ImportGraph: TypeAlias = "nx.DiGraph[str, dict[str, int], dict[str, int]]"
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -39,21 +41,21 @@ def _quotient_node(name: str, level: int) -> str:
     return ".".join(parts[:level])
 
 
-def _bump_node(graph: nx.DiGraph, name: str) -> None:
+def _bump_node(graph: ImportGraph, name: str) -> None:
     if graph.has_node(name):
         graph.nodes[name]["size"] += 1
     else:
         graph.add_node(name, size=1)
 
 
-def _accept_edge(graph: nx.DiGraph, source: str, target: str) -> None:
+def _accept_edge(graph: ImportGraph, source: str, target: str) -> None:
     if source == target:
         return
     if graph.has_node(source) and graph.has_node(target):
         graph.add_edge(source, target)
 
 
-def quotient_at_level(graph: nx.DiGraph, level: int) -> nx.DiGraph:
+def quotient_at_level(graph: ImportGraph, level: int) -> ImportGraph:
     """Return the level-``level`` quotient of ``graph`` with node-weight sizes.
 
     Each leaf module collapses to the prefix of its dotted name of length
@@ -74,7 +76,9 @@ def quotient_at_level(graph: nx.DiGraph, level: int) -> nx.DiGraph:
     return quotient
 
 
-def _condensation_longest_path(graph: nx.DiGraph) -> int:
+def _condensation_longest_path(
+    graph: ImportGraph,
+) -> int:
     condensed = nx.condensation(graph)
     if condensed.number_of_nodes() == 0:
         return 0
@@ -82,7 +86,7 @@ def _condensation_longest_path(graph: nx.DiGraph) -> int:
 
 
 def _non_trivial_sccs(
-    graph: nx.DiGraph,
+    graph: ImportGraph,
 ) -> list[tuple[tuple[str, ...], int]]:
     result: list[tuple[tuple[str, ...], int]] = []
     for scc in nx.strongly_connected_components(graph):
@@ -94,7 +98,7 @@ def _non_trivial_sccs(
     return result
 
 
-def score_level(graph: nx.DiGraph, level: int) -> LevelScore:
+def score_level(graph: ImportGraph, level: int) -> LevelScore:
     """Score ``graph`` at quotient ``level`` and return the aggregated metrics."""
     quotient = quotient_at_level(graph, level)
     sccs = _non_trivial_sccs(quotient)
@@ -111,14 +115,14 @@ def score_level(graph: nx.DiGraph, level: int) -> LevelScore:
     )
 
 
-def max_module_depth(graph: nx.DiGraph) -> int:
+def max_module_depth(graph: ImportGraph) -> int:
     """Return the deepest dotted-name segment count across nodes in ``graph``."""
     if graph.number_of_nodes() == 0:
         return 0
     return max(node.count(".") + 1 for node in graph.nodes())
 
 
-def reach_score(graph: nx.DiGraph) -> int:
+def reach_score(graph: ImportGraph) -> int:
     """Return ``graph``'s reach score: ordered reachable pairs plus an SCC bonus.
 
     For every ordered pair ``(u, v)`` with ``u != v`` and ``v`` reachable from
@@ -138,7 +142,7 @@ def reach_score(graph: nx.DiGraph) -> int:
     return ordered + scc_bonus
 
 
-def reach_density(graph: nx.DiGraph) -> float:
+def reach_density(graph: ImportGraph) -> float:
     """Return ``reach_score(graph)`` normalized by ``n * (n - 1)``.
 
     Returns 0.0 when the graph has fewer than two nodes.
@@ -149,14 +153,16 @@ def reach_density(graph: nx.DiGraph) -> float:
     return reach_score(graph) / (n * (n - 1))
 
 
-def _init_with_nodes(names: Iterable[str]) -> nx.DiGraph:
-    graph: nx.DiGraph = nx.DiGraph()
+def _init_with_nodes(
+    names: Iterable[str],
+) -> ImportGraph:
+    graph: ImportGraph = nx.DiGraph()
     for n in names:
         _bump_node(graph, n)
     return graph
 
 
-def build_graph(nodes: list[str], edges: list[tuple[str, str]]) -> nx.DiGraph:
+def build_graph(nodes: list[str], edges: list[tuple[str, str]]) -> ImportGraph:
     """Return a NetworkX ``DiGraph`` with the given ``nodes`` and ``edges``.
 
     Each node gets a ``size`` attribute of 1. Self-loops are dropped.

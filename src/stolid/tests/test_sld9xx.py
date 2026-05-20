@@ -310,7 +310,7 @@ class TestKindAndAttrEmission(unittest.TestCase):
         ]
         for source, expected in cases:
             with self.subTest(kind=expected):
-                assert_that(kinds_for(source), has_item(expected))
+                assert_that(tuple(kinds_for(source)), has_item(expected))
 
     def test_relative_import_emits_nothing(self) -> None:
         """Verify relative import emits nothing."""
