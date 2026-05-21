@@ -799,6 +799,47 @@ are intentionally allowed.
     SLD304 = "..."
     SLD305 = "..."
 
+**SLD704**: Flags any function or method whose name starts with ``is_``
+(optionally prefixed with leading underscores, e.g. ``_is_ready``) but
+whose return annotation is not ``bool`` (or ``TypeGuard[...]`` /
+``TypeIs[...]``, which are bool-valued by definition). The ``is_``
+prefix is a strong convention for boolean predicates -- naming a
+function ``is_open`` and then returning a string, an integer, or
+``None`` lies to every caller and breaks idioms like
+``if is_open(x):``.
+
+Functions with no return annotation are not flagged: with no claim
+about the return type there is no claim to contradict. To force the
+issue, add an explicit annotation. Names that merely happen to start
+with the letters ``is`` (``isolate``, ``island``, ``issue``) are not
+matched -- only the ``is_`` prefix triggers the rule.
+
+.. code-block:: python
+
+    # Bad
+    def is_ready() -> str:
+        return "yes"
+
+    def is_count() -> int:
+        return 0
+
+    class Job:
+        def is_open(self) -> str | None:
+            ...
+
+    # Good
+    def is_ready() -> bool:
+        return True
+
+    from typing import TypeGuard
+
+    def is_str(x: object) -> TypeGuard[str]:
+        return isinstance(x, str)
+
+    # Good (no annotation -- nothing to contradict)
+    def is_ready():
+        return True
+
 SLD80x - Cross-File Public Contracts
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
