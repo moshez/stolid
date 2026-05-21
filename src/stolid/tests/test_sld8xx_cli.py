@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import unittest
 
-from hamcrest import assert_that, empty, equal_to, has_length, is_not
+from hamcrest import assert_that, equal_to, greater_than, has_length
 
 from ._sld8xx_shared import TAKE_BODY
 from .._duplicate_cli import resolve_paths, run_stolid
@@ -77,11 +77,13 @@ class TestCLIIntegration(unittest.TestCase):
     def test_syntax_error_produces_stderr(self) -> None:
         """Verify syntax error produces stderr."""
         result, sink, _ = _run_with({"a.py": "def f(\n"}, 0)
-        assert_that(sink.err, is_not(empty()))
+        assert_that(len(sink.err), greater_than(0))
         assert_that(result, equal_to(1))
 
     def test_contract_violation_emitted_on_stdout(self) -> None:
         """Verify SLD80x diagnostics flow through ``sink.stdout`` with exit 1."""
         result, sink, _ = _run_with({"a.py": "def f(xs: list[int]) -> None: ...\n"}, 0)
-        assert_that([line for line in sink.out if "SLD803" in line], is_not(empty()))
+        assert_that(
+            len([line for line in sink.out if "SLD803" in line]), greater_than(0)
+        )
         assert_that(result, equal_to(1))

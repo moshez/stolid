@@ -6,9 +6,10 @@ from typing import Protocol
 
 from ._contract_scan import scan_paths as contract_scan_paths
 from ._duplicate_report import report_lines
-from ._duplicate_scan import FileSystem, ScanResult, scan_paths
+from ._duplicate_scan import ScanResult, scan_paths
 from ._import_graph_scan import scan_paths as import_graph_scan_paths
 from ._report_line import ReportLine, format_line
+from ._workspace_walk import FileSystem
 
 
 class CommandRunner(Protocol):

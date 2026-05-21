@@ -6,7 +6,7 @@ import ast
 import os
 import re
 from dataclasses import dataclass
-from typing import Callable, Iterable, Iterator, TypeGuard, TypeVar
+from typing import Iterable, Iterator, Protocol, TypeGuard, TypeVar
 
 BAD_NAME_WORDS: frozenset[str] = frozenset(
     {"help", "helper", "helpers", "util", "utils", "manage", "manager", "managers"}
@@ -345,11 +345,17 @@ def bad_name_errors(name: str, lineno: int, col_offset: int) -> Iterator[BadName
         )
 
 
-_E = TypeVar("_E")
+_E = TypeVar("_E", covariant=True)
+
+
+class _BadNameErrorFactory(Protocol[_E]):
+    def __call__(  # noqa: E704
+        self, *, lineno: int, col_offset: int, message: str
+    ) -> _E: ...
 
 
 def bad_name_errors_as(
-    name: str, lineno: int, col_offset: int, factory: Callable[..., _E]
+    name: str, lineno: int, col_offset: int, factory: _BadNameErrorFactory[_E]
 ) -> Iterator[_E]:
     """Yield ``factory(...)``-wrapped SLD701 errors for ``name``.
 

@@ -5,7 +5,7 @@ from __future__ import annotations
 import unittest
 from typing import Iterable, Mapping, Sequence
 
-from hamcrest import assert_that, empty, equal_to, has_item, is_not
+from hamcrest import assert_that, empty, equal_to, greater_than, has_item
 
 from .code_parser import check_multifile, multifile_codes
 
@@ -65,6 +65,6 @@ def assert_multifile_message_contains(
     # cannot distinguish the two.
     result = check_multifile(files)
     matching = [item for item in result if sld_code in item[3]]
-    assert_that(matching, is_not(empty()))
+    assert_that(len(matching), greater_than(0))
     for _, _, _, message in matching:
         assert_that(expected in message, equal_to(True))

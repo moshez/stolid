@@ -6,14 +6,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Iterator
 
-import networkx as nx
-
 from ._import_graph_extract import (
     ModuleEdges,
     anchor_for_prefix,
     extract_graph,
 )
 from ._import_graph_score import (
+    ImportGraph,
     LevelScore,
     build_graph,
     max_module_depth,
@@ -45,10 +44,12 @@ _PREVIEW = 5
 @dataclass(frozen=True, slots=True, kw_only=True)
 class _Context:
     edges_list: list[ModuleEdges]
-    graph: nx.DiGraph
+    graph: ImportGraph
 
 
-def _build_digraph(edges_list: list[ModuleEdges]) -> nx.DiGraph:
+def _build_digraph(
+    edges_list: list[ModuleEdges],
+) -> ImportGraph:
     nodes = [entry.importer for entry in edges_list]
     edges = [
         (entry.importer, target) for entry in edges_list for target in entry.targets

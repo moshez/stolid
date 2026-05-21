@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import unittest
 
-from hamcrest import assert_that, empty, equal_to, has_item, is_not
+from hamcrest import assert_that, empty, equal_to, greater_than, has_item
 
 from ._sld80x_shared import (
     CONCRETE_DEF,
@@ -81,7 +81,7 @@ class TestComposition(unittest.TestCase):
             ),
         }
         codes = multifile_codes(files)
-        assert_that(matching_prefix(codes, "SLD802"), is_not(empty()))
+        assert_that(len(matching_prefix(codes, "SLD802")), greater_than(0))
         assert_that(len(matching_prefix(codes, "SLD802")), equal_to(2))
 
     def test_optional_concrete_flags(self) -> None:
