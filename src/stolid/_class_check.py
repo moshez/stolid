@@ -43,7 +43,9 @@ SLD603 = "SLD603 Class '{}' has {} methods (limit: {})"
 SLD608 = "SLD608 Dataclass '{}' has {} fields (limit: {})"
 
 _CM_SM = ("classmethod", "staticmethod")
+_PROPERTY_NAMES = ("property",)
 _PROPERTY_SUFFIXES = ("setter", "getter", "deleter")
+_OVERRIDE_NAMES = ("override",)
 _DATACLASS_FLAGS = (("frozen", SLD501), ("slots", SLD502), ("kw_only", SLD503))
 
 
@@ -106,25 +108,27 @@ def _is_method(node: FunctionType) -> bool:
     return node.args.args[0].arg == "self"
 
 
-def _is_classmethod_or_staticmethod(node: FunctionType) -> bool:
+def _has_decorator(
+    node: FunctionType, names: tuple[str, ...], attrs: tuple[str, ...]
+) -> bool:
     for decorator in node.decorator_list:
-        if is_name_among(decorator, _CM_SM):
+        if is_name_among(decorator, names):
             return True
-        if isinstance(decorator, ast.Attribute) and decorator.attr in _CM_SM:
+        if isinstance(decorator, ast.Attribute) and decorator.attr in attrs:
             return True
     return False
+
+
+def _is_classmethod_or_staticmethod(node: FunctionType) -> bool:
+    return _has_decorator(node, _CM_SM, _CM_SM)
 
 
 def _is_property_method(node: FunctionType) -> bool:
-    for decorator in node.decorator_list:
-        if isinstance(decorator, ast.Name) and decorator.id == "property":
-            return True
-        if (
-            isinstance(decorator, ast.Attribute)
-            and decorator.attr in _PROPERTY_SUFFIXES
-        ):
-            return True
-    return False
+    return _has_decorator(node, _PROPERTY_NAMES, _PROPERTY_SUFFIXES)
+
+
+def _is_override_method(node: FunctionType) -> bool:
+    return _has_decorator(node, _OVERRIDE_NAMES, _OVERRIDE_NAMES)
 
 
 def _method_accesses_private_state(node: FunctionType) -> bool:
@@ -194,8 +198,11 @@ def _check_method_naming(node: FunctionType) -> Iterator[ClassError]:
 
 def _check_sld303_for_method(node: FunctionType) -> Iterator[ClassError]:
     # Emit SLD303 if ``node`` -- already a regular method that is neither
-    # a dunder nor a property -- touches no private state.
+    # a dunder, a property, nor explicitly @override -- touches no private
+    # state. @override signals the author chose method-form deliberately.
     if is_dunder_name(node.name) or _is_property_method(node):
+        return
+    if _is_override_method(node):
         return
     if not _method_accesses_private_state(node):
         yield _error(node, SLD303.format(node.name))
