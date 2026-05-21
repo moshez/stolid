@@ -1,8 +1,11 @@
-# Check for "module X overuses module Y": broad coupling to a single dep.
+# Check for broad coupling to a single dependency. Two independent
+# patterns are scored:
 #
-# Two patterns are scored:
-#   - ``from Y import a, b, c, ...`` (aggregated across all such statements)
-#   - ``import Y [as A]`` plus attribute accesses ``Y.x`` / ``A.x``
+#   - SLD205: ``from Y import a, b, c, ...`` aggregated across every
+#     ``from Y import ...`` statement in the module.
+#   - SLD207: ``import Y [as A]`` plus distinct attribute names accessed
+#     via ``Y.x`` / ``A.x``.
+#
 # Each pattern fires when the distinct-reference count exceeds the limit.
 #
 # ``typing`` and ``ast`` are allowlisted: both are broad-API stdlib
@@ -22,8 +25,12 @@ from ._ast_inspection import iter_runtime_nodes
 from ._constants import MAX_MODULE_REFERENCES
 
 SLD205 = (
-    "SLD205 Module '{}' is overused: {} references (limit: {}); "
-    "split the dependency or wrap it behind a narrower API"
+    "SLD205 Module '{}' is over-imported: {} distinct names imported "
+    "(limit: {}); split the dependency or narrow the imports"
+)
+SLD207 = (
+    "SLD207 Module '{}' is overused: {} distinct attributes accessed "
+    "(limit: {}); split the dependency or wrap it behind a narrower API"
 )
 
 _ALLOWED_MODULES: frozenset[str] = frozenset({"typing", "ast"})
@@ -34,7 +41,7 @@ class ModuleOveruseError:
     """A module-overuse violation.
 
     ``lineno`` and ``col_offset`` locate the offending import statement;
-    ``message`` is the formatted SLD205 diagnostic.
+    ``message`` is the formatted SLD205 or SLD207 diagnostic.
     """
 
     lineno: int
@@ -113,12 +120,12 @@ def _import_errors(state: _State) -> Iterator[ModuleOveruseError]:
         yield ModuleOveruseError(
             lineno=stmt.lineno,
             col_offset=stmt.col_offset,
-            message=SLD205.format(module, len(attrs), MAX_MODULE_REFERENCES),
+            message=SLD207.format(module, len(attrs), MAX_MODULE_REFERENCES),
         )
 
 
 def check_module_overuse(tree: ast.Module) -> Iterator[ModuleOveruseError]:
-    """Yield errors in ``tree`` for modules whose reference count exceeds the limit."""
+    """Yield SLD205/SLD207 errors when ``tree``'s reference counts exceed the limit."""
     state = _collect(tree)
     yield from _from_errors(state)
     yield from _import_errors(state)

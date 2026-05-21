@@ -125,35 +125,25 @@ Use ``typing.Protocol`` for interfaces instead:
         def get(self, url: str) -> Response:
             ...
 
-**SLD205**: Flags broad coupling to a single module. Heavy reliance on
-one dependency is a refactoring liability: changes to that module
-ripple through every importer, and the wide surface area is hard to
-test, replace, or summarize at the boundary.
+**SLD205**: Flags too many distinct names imported from a single module
+via ``from Y import ...``. Heavy reliance on one dependency is a
+refactoring liability: changes to that module ripple through every
+importer, and the wide surface area is hard to test, replace, or
+summarize at the boundary.
 
-The limit is **7 distinct references per module**, tracked
-independently for the two import patterns:
-
-- ``from Y import a, b, c, ...`` — distinct names imported from
-  ``Y``, aggregated across every ``from Y import ...`` statement in
-  the module. A name imported in two statements counts once. The
-  diagnostic is reported on the first such statement.
-- ``import Y`` (or ``import Y as A``) — distinct attribute names
-  accessed via ``Y.x`` / ``A.x``. Repeated accesses to the same
-  attribute count once. The diagnostic is reported on the ``import``
-  statement.
-
-The two budgets are independent: mixing ``from somelib import ...``
-with ``import somelib; somelib.x`` does not compound. Each pattern
-must exceed 7 on its own to fire.
+The limit is **7 distinct names per module**, aggregated across every
+``from Y import ...`` statement in the module. A name imported in two
+statements counts once. The diagnostic is reported on the first such
+statement.
 
 Exemptions:
 
 - ``typing`` and ``ast`` are allowlisted: both are broad-API stdlib
   namespaces where reaching for many members is structural rather
   than coupling.
-- Imports and uses inside ``if TYPE_CHECKING:`` blocks are ignored
-  entirely (the ``else:`` branch of such an ``if`` still runs at
-  runtime and is checked).
+- Imports inside ``if TYPE_CHECKING:`` blocks are ignored entirely
+  (the ``else:`` branch of such an ``if`` still runs at runtime and
+  is checked).
 - ``from . import ...`` (relative import with no module name) is
   skipped — the package boundary is already drawn by the dot.
 
@@ -171,11 +161,6 @@ this code actually uses.
     # Bad (split statements still aggregate per module)
     from somelib import a, b, c, d
     from somelib import e, f, g, h
-
-    # Bad (8 distinct attribute accesses on one module)
-    import somelib
-    use(somelib.a, somelib.b, somelib.c, somelib.d,
-        somelib.e, somelib.f, somelib.g, somelib.h)
 
     # Good (allowlisted)
     from typing import Any, Iterable, Iterator, List, Mapping, Optional, Protocol
@@ -228,6 +213,54 @@ either handle the case or not be registered.
     @serialize.register
     def _(obj: User) -> bytes:
         return json.dumps({"name": obj.name}).encode()
+
+**SLD207**: Flags too many distinct attribute accesses on a single
+module bound by ``import Y`` (or ``import Y as A``). Like SLD205, this
+is a coupling smell: the importer touches a wide swath of one
+module's public surface, so any change there ripples through every
+caller.
+
+The limit is **7 distinct attribute names per bound module**.
+Repeated accesses to the same attribute count once. The diagnostic
+is reported on the ``import`` statement.
+
+SLD205 and SLD207 are independent budgets: mixing ``from somelib
+import ...`` with ``import somelib; somelib.x`` does not compound.
+Each pattern must exceed 7 on its own to fire.
+
+Exemptions:
+
+- ``typing`` and ``ast`` are allowlisted: both are broad-API stdlib
+  namespaces where reaching for many members is structural rather
+  than coupling.
+- Attribute accesses inside ``if TYPE_CHECKING:`` blocks are ignored
+  entirely (the ``else:`` branch of such an ``if`` still runs at
+  runtime and is checked).
+
+To fix, either split the dependency across more focused call sites
+or wrap the wide API behind a narrower local abstraction.
+
+.. code-block:: python
+
+    # Bad (8 distinct attribute accesses on one module)
+    import somelib
+    use(somelib.a, somelib.b, somelib.c, somelib.d,
+        somelib.e, somelib.f, somelib.g, somelib.h)
+
+    # Bad (alias does not help)
+    import somelib as sl
+    use(sl.a, sl.b, sl.c, sl.d, sl.e, sl.f, sl.g, sl.h)
+
+    # Good (allowlisted)
+    import typing
+    x: typing.Any = ...
+
+    # Good (typing-only block ignored)
+    from typing import TYPE_CHECKING
+    import somelib
+    if TYPE_CHECKING:
+        use(somelib.A, somelib.B, somelib.C, somelib.D,
+            somelib.E, somelib.F, somelib.G, somelib.H)
 
 SLD3xx - Object-Oriented Design
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
