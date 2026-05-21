@@ -193,6 +193,114 @@ class TestEnumAndTypedDict(unittest.TestCase):
         assert_that(matching_prefix(codes, "SLD802"), empty())
 
 
+class TestDataRecordDataclass(unittest.TestCase):
+    """Tests for data-only dataclasses as an allowed contract kind."""
+
+    def test_public_field_dataclass_is_allowed(self) -> None:
+        """Verify a dataclass with only public fields does not trip SLD802."""
+        codes = multifile_codes(
+            {
+                "a.py": (
+                    "from dataclasses import dataclass\n"
+                    "@dataclass(frozen=True, slots=True, kw_only=True)\n"
+                    "class Row:\n"
+                    "    name: str\n"
+                    "    count: int\n"
+                ),
+                "b.py": "from .a import Row\ndef take(r: Row) -> None: ...\n",
+            }
+        )
+        assert_that(matching_prefix(codes, "SLD802"), empty())
+
+    def test_bare_dataclass_decorator_is_allowed(self) -> None:
+        """Verify a ``@dataclass`` (no call) with only public fields is allowed."""
+        codes = multifile_codes(
+            {
+                "a.py": (
+                    "from dataclasses import dataclass\n"
+                    "@dataclass\n"
+                    "class Row:\n"
+                    "    name: str\n"
+                ),
+                "b.py": "from .a import Row\ndef take(r: Row) -> None: ...\n",
+            }
+        )
+        assert_that(matching_prefix(codes, "SLD802"), empty())
+
+    def test_qualified_dataclass_decorator_is_allowed(self) -> None:
+        """Verify ``@dataclasses.dataclass`` with only public fields is allowed."""
+        codes = multifile_codes(
+            {
+                "a.py": (
+                    "import dataclasses\n"
+                    "@dataclasses.dataclass(frozen=True)\n"
+                    "class Row:\n"
+                    "    name: str\n"
+                ),
+                "b.py": "from .a import Row\ndef take(r: Row) -> None: ...\n",
+            }
+        )
+        assert_that(matching_prefix(codes, "SLD802"), empty())
+
+    def test_docstring_in_dataclass_body_is_allowed(self) -> None:
+        """Verify a dataclass docstring does not disqualify the data-record."""
+        codes = multifile_codes(
+            {
+                "a.py": (
+                    "from dataclasses import dataclass\n"
+                    "@dataclass(frozen=True, slots=True, kw_only=True)\n"
+                    "class Row:\n"
+                    '    """A row of data."""\n'
+                    "    name: str\n"
+                ),
+                "b.py": "from .a import Row\ndef take(r: Row) -> None: ...\n",
+            }
+        )
+        assert_that(matching_prefix(codes, "SLD802"), empty())
+
+    def test_dataclass_with_method_is_concrete(self) -> None:
+        """Verify a dataclass with any method is still flagged as concrete."""
+        codes = multifile_codes(
+            {
+                "a.py": (
+                    "from dataclasses import dataclass\n"
+                    "@dataclass(frozen=True, slots=True, kw_only=True)\n"
+                    "class Row:\n"
+                    "    name: str\n"
+                    "    def render(self) -> str: ...\n"
+                ),
+                "b.py": "from .a import Row\ndef take(r: Row) -> None: ...\n",
+            }
+        )
+        assert_that(codes, has_item("SLD802"))
+
+    def test_dataclass_with_private_field_is_concrete(self) -> None:
+        """Verify a dataclass with a private field is still flagged as concrete."""
+        codes = multifile_codes(
+            {
+                "a.py": (
+                    "from dataclasses import dataclass\n"
+                    "@dataclass(frozen=True, slots=True, kw_only=True)\n"
+                    "class Row:\n"
+                    "    name: str\n"
+                    "    _secret: int\n"
+                ),
+                "b.py": "from .a import Row\ndef take(r: Row) -> None: ...\n",
+            }
+        )
+        assert_that(codes, has_item("SLD802"))
+
+    def test_undecorated_class_with_only_fields_is_concrete(self) -> None:
+        """Verify a plain class without ``@dataclass`` stays concrete."""
+        codes = multifile_codes(
+            {
+                "a.py": ("class Row:\n" "    name: str\n"),
+                "b.py": "from .a import Row\ndef take(r: Row) -> None: ...\n",
+            }
+        )
+        assert_that(codes, has_item("SLD802"))
+
+
 class TestAnnotationForms(unittest.TestCase):
     """Tests for less-common annotation expression forms."""
 

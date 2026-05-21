@@ -749,12 +749,18 @@ given paths (honoring ``.gitignore``) and then re-walks each file to
 classify every public annotation against the workspace symbol table.
 
 A public annotation may only name a contract (``Protocol``, ``ABC``,
-``TypedDict``, ``NamedTuple``, ``Enum``), a primitive (``int``, ``str``,
-``bool``, ...), or compose those through an abstract container from
-``collections.abc`` / ``typing`` (``Mapping``, ``Sequence``, ``Iterable``,
-...) or a union. Naming an open concrete class commits callers to that
-exact type; the rule rejects it so that implementations stay swappable
-behind their contracts.
+``TypedDict``, ``NamedTuple``, ``Enum``, or a data-only ``@dataclass``),
+a primitive (``int``, ``str``, ``bool``, ...), or compose those through
+an abstract container from ``collections.abc`` / ``typing`` (``Mapping``,
+``Sequence``, ``Iterable``, ...) or a union. Naming an open concrete
+class commits callers to that exact type; the rule rejects it so that
+implementations stay swappable behind their contracts.
+
+A "data-only ``@dataclass``" is a ``@dataclass``-decorated class whose
+body declares only public annotated fields (optionally with a
+docstring): no methods, no private (``_``-prefixed) fields. Such a class
+is a pure record -- its annotations *are* its contract -- so callers may
+safely depend on it, assuming the field types are themselves allowed.
 
 "Public" surface here means: top-level functions and methods of public
 classes in modules whose filename does not start with ``_``
@@ -765,9 +771,9 @@ Diagnostics honor per-line ``# noqa`` markers exactly like SLD801.
 
 **SLD802**: Public annotation references a workspace-defined concrete
 class. A concrete class is any ``class X:`` that is not a Protocol, ABC,
-TypedDict, NamedTuple, or Enum subclass. Names that are not defined
-anywhere in the scanned workspace are treated as out-of-scope
-third-party references and are silently allowed.
+TypedDict, NamedTuple, Enum, or data-only ``@dataclass``. Names that are
+not defined anywhere in the scanned workspace are treated as
+out-of-scope third-party references and are silently allowed.
 
 .. code-block:: python
 
@@ -777,6 +783,8 @@ third-party references and are silently allowed.
     @dataclass(frozen=True, slots=True, kw_only=True)
     class RealBackend:
         name: str
+
+        def fetch(self, key: str) -> bytes: ...
 
     # api.py
     from .backend import RealBackend
