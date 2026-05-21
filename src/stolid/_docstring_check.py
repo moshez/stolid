@@ -21,8 +21,8 @@ from typing import Iterator
 from ._ast_inspection import (
     FUNCTION_DEF_NODES,
     FunctionType,
+    has_dataclass_decorator,
     is_attribute_attr,
-    is_dataclass_decorator,
     is_dunder_name,
     is_name_id,
     module_name_from_filename,
@@ -166,10 +166,6 @@ def _class_field_names(node: ast.ClassDef) -> list[str]:
     return names
 
 
-def _is_dataclass_class(node: ast.ClassDef) -> bool:
-    return any(is_dataclass_decorator(d) for d in node.decorator_list)
-
-
 def _check_dataclass_fields(
     node: ast.ClassDef, docstring: str
 ) -> Iterator[DocstringError]:
@@ -184,7 +180,7 @@ def _check_class(node: ast.ClassDef) -> Iterator[DocstringError]:
         if docstring is None:
             yield _error(node, SLD812.format(node.name))
             return
-        if _is_dataclass_class(node):
+        if has_dataclass_decorator(node):
             yield from _check_dataclass_fields(node, docstring)
         return
     if docstring is not None:

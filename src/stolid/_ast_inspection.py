@@ -151,6 +151,11 @@ def is_dataclass_decorator(node: ast.expr) -> bool:
     return False
 
 
+def has_dataclass_decorator(node: ast.ClassDef) -> bool:
+    """Return True iff ``node`` carries a ``@dataclass`` decorator."""
+    return any(is_dataclass_decorator(d) for d in node.decorator_list)
+
+
 def is_dunder_name(name: str) -> bool:
     """Return True iff ``name`` is a dunder identifier (``__xxx__``)."""
     return name.startswith("__") and name.endswith("__")

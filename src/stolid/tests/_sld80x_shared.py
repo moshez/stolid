@@ -14,6 +14,7 @@ CONCRETE_DEF = (
     "@dataclass(frozen=True, slots=True, kw_only=True)\n"
     "class Backend:\n"
     "    name: str\n"
+    "    def fetch(self, key: str) -> bytes: ...\n"
 )
 
 PROTOCOL_DEF = (
