@@ -183,8 +183,6 @@ _TYPE_CHECKING_ELSE = (
 _SLD205_PRESENT: list[tuple[str, str]] = [
     ("from_import_eight_names", _BIG_FROM),
     ("from_import_aggregated_across_statements", _BIG_FROM_SPLIT),
-    ("import_plus_eight_attribute_accesses", _BIG_IMPORT),
-    ("import_with_alias_plus_attribute_accesses", _BIG_IMPORT_ALIAS),
     ("type_checking_else_branch_runs_at_runtime", _TYPE_CHECKING_ELSE),
 ]
 
@@ -195,15 +193,50 @@ _SLD205_ABSENT: list[tuple[str, str]] = [
         "from somelib import a1, a2, a3, a4, a5, a6, a7\n",
     ),
     (
+        "typing_overuse_is_allowed",
+        "from typing import (Any, Iterable, Iterator, List, Mapping, "
+        "Optional, Protocol, Sequence)\n",
+    ),
+    ("import_plus_eight_attribute_accesses_is_not_sld205", _BIG_IMPORT),
+    ("import_with_alias_plus_attribute_accesses_is_not_sld205", _BIG_IMPORT_ALIAS),
+    ("from_import_inside_type_checking_block", _TYPE_CHECKING_GUARD),
+    (
+        "qualified_typing_module_test",
+        "import typing\n"
+        "if typing.TYPE_CHECKING:\n"
+        "    from somelib import a1, a2, a3, a4, a5, a6, a7, a8\n",
+    ),
+    (
+        "from_import_with_relative_module_skipped",
+        "from . import a1, a2, a3, a4, a5, a6, a7, a8\n",
+    ),
+]
+
+
+_SLD205_COUNT: list[tuple[str, str, int]] = [
+    ("from_import_eight_names_one_error", _BIG_FROM, 1),
+    ("split_from_imports_one_error", _BIG_FROM_SPLIT, 1),
+    (
+        "two_modules_two_errors",
+        "from libA import a1, a2, a3, a4, a5, a6, a7, a8\n"
+        "from libB import b1, b2, b3, b4, b5, b6, b7, b8\n",
+        2,
+    ),
+]
+
+
+_SLD207_PRESENT: list[tuple[str, str]] = [
+    ("import_plus_eight_attribute_accesses", _BIG_IMPORT),
+    ("import_with_alias_plus_attribute_accesses", _BIG_IMPORT_ALIAS),
+]
+
+
+_SLD207_ABSENT: list[tuple[str, str]] = [
+    (
         "import_plus_seven_attribute_accesses",
         "import somelib\n"
         "x = (somelib.a1, somelib.a2, somelib.a3, somelib.a4,\n"
         "     somelib.a5, somelib.a6, somelib.a7)\n",
-    ),
-    (
-        "typing_overuse_is_allowed",
-        "from typing import (Any, Iterable, Iterator, List, Mapping, "
-        "Optional, Protocol, Sequence)\n",
     ),
     (
         "import_typing_attribute_uses_allowed",
@@ -219,33 +252,25 @@ _SLD205_ABSENT: list[tuple[str, str]] = [
         "x = (somelib.a1, somelib.a1, somelib.a1, somelib.a1,\n"
         "     somelib.a1, somelib.a1, somelib.a1, somelib.a1)\n",
     ),
-    ("from_import_inside_type_checking_block", _TYPE_CHECKING_GUARD),
     ("attribute_uses_inside_type_checking_block", _TYPE_CHECKING_USES),
-    (
-        "qualified_typing_module_test",
-        "import typing\n"
-        "if typing.TYPE_CHECKING:\n"
-        "    from somelib import a1, a2, a3, a4, a5, a6, a7, a8\n",
-    ),
     (
         "attribute_on_non_imported_name_ignored",
         "obj.a1\nobj.a2\nobj.a3\nobj.a4\nobj.a5\nobj.a6\nobj.a7\nobj.a8\n",
     ),
-    (
-        "from_import_with_relative_module_skipped",
-        "from . import a1, a2, a3, a4, a5, a6, a7, a8\n",
-    ),
+    ("from_import_eight_names_is_not_sld207", _BIG_FROM),
+    ("from_import_aggregated_is_not_sld207", _BIG_FROM_SPLIT),
 ]
 
 
-_SLD205_COUNT: list[tuple[str, str, int]] = [
-    ("from_import_eight_names_one_error", _BIG_FROM, 1),
-    ("split_from_imports_one_error", _BIG_FROM_SPLIT, 1),
+_SLD207_COUNT: list[tuple[str, str, int]] = [
     ("import_eight_attrs_one_error", _BIG_IMPORT, 1),
     (
         "two_modules_two_errors",
-        "from libA import a1, a2, a3, a4, a5, a6, a7, a8\n"
-        "from libB import b1, b2, b3, b4, b5, b6, b7, b8\n",
+        "import libA\nimport libB\n"
+        "x = (libA.a1, libA.a2, libA.a3, libA.a4,\n"
+        "     libA.a5, libA.a6, libA.a7, libA.a8)\n"
+        "y = (libB.b1, libB.b2, libB.b3, libB.b4,\n"
+        "     libB.b5, libB.b6, libB.b7, libB.b8)\n",
         2,
     ),
 ]
@@ -338,7 +363,7 @@ class TestSLD204ImportPlacement(unittest.TestCase):
 
 
 class TestSLD205ModuleOveruse(unittest.TestCase):
-    """Tests for SLD205: too many references to a single module."""
+    """Tests for SLD205: too many ``from`` imports from a single module."""
 
     def test_present(self) -> None:
         """Verify present."""
@@ -351,3 +376,19 @@ class TestSLD205ModuleOveruse(unittest.TestCase):
     def test_count(self) -> None:
         """Verify count."""
         assert_count(self, _SLD205_COUNT, "SLD205")
+
+
+class TestSLD207ModuleAttributeOveruse(unittest.TestCase):
+    """Tests for SLD207: too many attribute accesses on a single module."""
+
+    def test_present(self) -> None:
+        """Verify present."""
+        assert_present(self, _SLD207_PRESENT, "SLD207")
+
+    def test_absent(self) -> None:
+        """Verify absent."""
+        assert_absent(self, _SLD207_ABSENT, "SLD207")
+
+    def test_count(self) -> None:
+        """Verify count."""
+        assert_count(self, _SLD207_COUNT, "SLD207")
