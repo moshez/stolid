@@ -38,6 +38,7 @@ SLD401 = "SLD401 Class '{}' inherits from concrete class '{}' (use composition)"
 SLD501 = "SLD501 Dataclass '{}' missing frozen=True"
 SLD502 = "SLD502 Dataclass '{}' missing slots=True"
 SLD503 = "SLD503 Dataclass '{}' missing kw_only=True"
+SLD504 = "SLD504 Class '{}' is not a @dataclass"
 SLD603 = "SLD603 Class '{}' has {} methods (limit: {})"
 SLD608 = "SLD608 Dataclass '{}' has {} fields (limit: {})"
 
@@ -227,6 +228,13 @@ def _dataclass_flags(node: ast.ClassDef) -> dict[str, bool] | None:
     return None
 
 
+def _has_allowed_base(node: ast.ClassDef) -> bool:
+    for base in node.bases:
+        if get_base_name(base) in ALLOWED_BASES:
+            return True
+    return False
+
+
 def check_class(
     node: ast.ClassDef, abstractmethod_names: set[str]
 ) -> Iterator[ClassError]:
@@ -246,6 +254,8 @@ def check_class(
             yield _error(
                 node, SLD608.format(node.name, field_count, MAX_DATACLASS_FIELDS)
             )
+    elif not _has_allowed_base(node):
+        yield _error(node, SLD504.format(node.name))
     method_count = _get_class_method_count(node)
     if method_count > MAX_CLASS_METHODS:
         yield _error(node, SLD603.format(node.name, method_count, MAX_CLASS_METHODS))

@@ -112,17 +112,73 @@ _NO_SLD50X: list[tuple[str, str]] = [
         "class MyClass:\n    x: int\n",
     ),
     (
+        "protocol_base",
+        "from typing import Protocol\n\n"
+        "class MyProto(Protocol):\n    def f(self) -> int: ...\n",
+    ),
+    (
+        "enum_base",
+        "from enum import Enum\n\nclass MyEnum(Enum):\n    A = 1\n",
+    ),
+]
+
+
+_SLD504_PRESENT: list[tuple[str, str]] = [
+    (
+        "plain_class",
+        "class MyClass:\n    x: int\n",
+    ),
+    (
         "random_decorator_call",
         "@some_random_decorator()\nclass MyClass:\n    x: int\n",
     ),
     (
         "subscript_decorator",
-        "decorators = [lambda x: x]\n\n" "@decorators[0]\nclass MyClass:\n    x: int\n",
+        "decorators = [lambda x: x]\n\n@decorators[0]\nclass MyClass:\n    x: int\n",
     ),
     (
         "non_dataclass_decorator",
         "def my_decorator(cls):\n    return cls\n\n"
         "@my_decorator\nclass MyClass:\n    pass\n",
+    ),
+]
+
+
+_SLD504_ABSENT: list[tuple[str, str]] = [
+    (
+        "dataclass",
+        "from dataclasses import dataclass\n\n"
+        "@dataclass(frozen=True, slots=True, kw_only=True)\n"
+        "class MyClass:\n    x: int\n",
+    ),
+    (
+        "dataclasses_prefix",
+        "import dataclasses\n\n"
+        "@dataclasses.dataclass(frozen=True, slots=True, kw_only=True)\n"
+        "class MyClass:\n    x: int\n",
+    ),
+    (
+        "protocol_base",
+        "from typing import Protocol\n\n"
+        "class MyProto(Protocol):\n    def f(self) -> int: ...\n",
+    ),
+    (
+        "generic_base",
+        "from typing import Generic, TypeVar\n\n"
+        "T = TypeVar('T')\n\nclass MyBox(Generic[T]):\n    x: int\n",
+    ),
+    (
+        "enum_base",
+        "from enum import Enum\n\nclass MyEnum(Enum):\n    A = 1\n",
+    ),
+    (
+        "exception_base",
+        "class MyError(Exception):\n    pass\n",
+    ),
+    (
+        "testcase_base",
+        "import unittest\n\n"
+        "class MyTest(unittest.TestCase):\n    def test_x(self) -> None: ...\n",
     ),
 ]
 
@@ -161,6 +217,18 @@ class TestSLD503KwOnlyDataclass(unittest.TestCase):
     def test_absent(self) -> None:
         """Verify absent."""
         assert_absent(self, _SLD503_ABSENT, "SLD503")
+
+
+class TestSLD504MustBeDataclass(unittest.TestCase):
+    """Tests for SLD504: Class is not a @dataclass."""
+
+    def test_present(self) -> None:
+        """Verify present."""
+        assert_present(self, _SLD504_PRESENT, "SLD504")
+
+    def test_absent(self) -> None:
+        """Verify absent."""
+        assert_absent(self, _SLD504_ABSENT, "SLD504")
 
 
 class TestDataclassVariants(unittest.TestCase):
