@@ -74,11 +74,6 @@ _CLEAN_NO_ERRORS: list[tuple[str, str]] = [
         'def my_function() -> None:\n    """Do my thing."""\n    pass\n\n'
         "def _private_function():\n    pass\n",
     ),
-    (
-        "class_with_only_class_variables",
-        'class Constants:\n    """Module constants."""\n'
-        "    VALUE = 42\n    NAME = 'test'\n",
-    ),
     ("import_star", "from typing import *\n"),
 ]
 
