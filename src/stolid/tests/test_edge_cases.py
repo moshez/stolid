@@ -146,6 +146,21 @@ _SLD303_EXEMPT: list[tuple[str, str]] = [
         "class MyClass:\n    @name.deleter\n"
         "    def name(self):\n        del self.first_name\n",
     ),
+    (
+        "override_decorator_bare",
+        "from typing import override\n\nclass MyClass:\n    @override\n"
+        "    def render(self):\n        return self.name\n",
+    ),
+    (
+        "override_decorator_attribute",
+        "import typing\n\nclass MyClass:\n    @typing.override\n"
+        "    def render(self):\n        return self.name\n",
+    ),
+    (
+        "override_decorator_no_self_access",
+        "from typing import override\n\nclass MyClass:\n    @override\n"
+        "    def compute(self):\n        return 42\n",
+    ),
 ]
 
 

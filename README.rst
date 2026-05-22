@@ -322,6 +322,21 @@ Convert to module-level functions or use ``functools.singledispatch``:
     def display_name(user: User) -> str:
         return user.name.title()
 
+Methods decorated with ``@override`` (from ``typing`` or
+``typing_extensions``) are exempt: the decorator is the author's
+declaration that the function lives on the class on purpose, because it
+fulfills a parent class's or Protocol's contract — not because it
+happens to touch private state.
+
+.. code-block:: python
+
+    from typing import override
+
+    class JSONRenderer:
+        @override
+        def render(self, value: object) -> str:
+            return json.dumps(value)
+
 **SLD304**: Flags an expression compared (via ``==``, ``!=``, or ``in`` against
 a tuple/list/set literal) with two or more distinct string literals within a
 single function or module scope. Single ``x == "foo"`` comparisons are fine
