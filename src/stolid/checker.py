@@ -86,7 +86,7 @@ def _check_import_from(node: ast.ImportFrom) -> Iterator[Error]:
     if node.module not in ("unittest.mock", "mock"):  # noqa: SLD304
         return
     for alias in node.names:
-        if alias.name == "patch":  # noqa: SLD304 SLD306
+        if alias.name == "patch":  # noqa: SLD306
             yield _error(node, SLD102)
 
 

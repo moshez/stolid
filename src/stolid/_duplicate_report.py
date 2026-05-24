@@ -16,7 +16,7 @@ SLD801 = "SLD801 duplicated structure ({} nodes); also at {}"
 class SourceReader(Protocol):
     """Reads the textual content of a source file."""
 
-    def read(self, path: str) -> str:  # noqa: E704
+    def read(self, path: str) -> str:
         """Return the text contents of the file at ``path``."""
         ...
 

@@ -11,11 +11,11 @@ from pathspec.patterns.gitignore.basic import GitIgnoreBasicPattern
 class FileSystem(Protocol):
     """Filesystem operations the walker depends on."""
 
-    def walk(self, root: str) -> Iterator[str]:  # noqa: E704
+    def walk(self, root: str) -> Iterator[str]:
         """Yield every file path beneath ``root``."""
         ...
 
-    def read(self, path: str) -> str:  # noqa: E704
+    def read(self, path: str) -> str:
         """Return the text contents of the file at ``path``."""
         ...
 

@@ -15,7 +15,7 @@ from ._workspace_walk import FileSystem
 class CommandRunner(Protocol):
     """Runs an external command and returns its exit code."""
 
-    def run(self, argv: list[str]) -> int:  # noqa: E704
+    def run(self, argv: list[str]) -> int:
         """Run the command described by ``argv`` and return its exit code."""
         ...
 
@@ -23,11 +23,11 @@ class CommandRunner(Protocol):
 class OutputSink(Protocol):
     """Receives stdout and stderr lines from the duplicate CLI."""
 
-    def stdout(self, line: str) -> None:  # noqa: E704
+    def stdout(self, line: str) -> None:
         """Emit ``line`` on the standard-output stream."""
         ...
 
-    def stderr(self, line: str) -> None:  # noqa: E704
+    def stderr(self, line: str) -> None:
         """Emit ``line`` on the standard-error stream."""
         ...
 

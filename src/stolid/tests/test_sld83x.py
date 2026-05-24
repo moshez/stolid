@@ -177,7 +177,7 @@ _RUNTIME_ELSE_BRANCH = {
         "else:\n"
         "    from pkg import b\n"
     ),
-    "pkg/b.py": "from pkg import a\n",  # noqa: SLD306
+    "pkg/b.py": "from pkg import a\n",
 }
 
 _RELATIVE_FROM_DOT_Y = {

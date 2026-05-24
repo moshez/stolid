@@ -66,7 +66,7 @@ def _targets(target: ast.expr, is_loop: bool) -> Iterator[_Binding]:
 
 def _import_bindings(node: ast.Import | ast.ImportFrom) -> Iterator[_Binding]:
     for alias in node.names:
-        if alias.name == "*":  # noqa: SLD304
+        if alias.name == "*":
             continue
         bound = alias.asname or alias.name.split(".")[0]
         yield _Binding(

@@ -49,15 +49,15 @@ class ErrorLike(Protocol):
     """Structural type for any error a check source yields."""
 
     @property
-    def lineno(self) -> int:  # noqa: E704
+    def lineno(self) -> int:
         """Return the line number where the error was detected."""  # pragma: no cover
 
     @property
-    def col_offset(self) -> int:  # noqa: E704
+    def col_offset(self) -> int:
         """Return the column offset of the error on its line."""  # pragma: no cover
 
     @property
-    def message(self) -> str:  # noqa: E704
+    def message(self) -> str:
         """Return the formatted SLDxxx diagnostic message."""  # pragma: no cover
 
 
