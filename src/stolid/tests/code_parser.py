@@ -117,10 +117,7 @@ def assert_source_absent(source: str, sld_code: str) -> None:
     assert_that(sld_code in get_error_codes(source), equal_to(False))
 
 
-def _matching_messages(code: str, sld_code: str) -> list[str]:  # noqa: SLD609
-    # ``sld_code`` is a needle filtered against each message -- a value
-    # argument rather than a branch flag; SLD609's parameter-only AST
-    # analysis cannot distinguish the two.
+def _matching_messages(code: str, sld_code: str) -> list[str]:
     return [msg for _, _, msg in check_code(code) if sld_code in msg]
 
 
