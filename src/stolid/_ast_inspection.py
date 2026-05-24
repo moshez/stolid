@@ -6,7 +6,7 @@ import ast
 import os
 import re
 from dataclasses import dataclass
-from typing import Iterable, Iterator, Protocol, TypeGuard, TypeVar
+from typing import Iterable, Iterator, Protocol, Sequence, TypeGuard, TypeVar
 
 BAD_NAME_WORDS: frozenset[str] = frozenset(
     {"help", "helper", "helpers", "util", "utils", "manage", "manager", "managers"}
@@ -217,7 +217,7 @@ def _line_cost(
 
 
 def _iter_line_costs(
-    node: FunctionType, lines: list[str], bracket_depths: dict[int, int]
+    node: FunctionType, lines: Sequence[str], bracket_depths: dict[int, int]
 ) -> Iterator[_LineCost]:
     first_line = node.body[0].lineno
     last_line = node.body[-1].end_lineno or node.body[-1].lineno
@@ -233,7 +233,7 @@ def _cost_weight(cost: _LineCost) -> float:
 
 
 def get_function_complexity(
-    node: FunctionType, lines: list[str], bracket_depths: dict[int, int]
+    node: FunctionType, lines: Sequence[str], bracket_depths: dict[int, int]
 ) -> FunctionComplexity:
     """Return the weighted-line complexity of function ``node``.
 
