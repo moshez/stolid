@@ -24,6 +24,19 @@ cross-file scanner under `python -m stolid`.
 
 ## Running Tests and Linting
 
+**A missing tool is never an excuse to skip verification.** "nox isn't
+installed", "Python 3.14 isn't on this machine", "sphinx is missing" —
+none of these end the task. You are running as root in a disposable
+environment: install whatever is missing and run the real checks. Use
+`apt-get`/deadsnakes for interpreters (see "Installing Python 3.14"
+below), `pip`/`uv tool install nox` for tooling. Do **not** substitute a
+narrower local check ("I built the docs by hand", "I ran pytest on one
+version") and then declare victory — that is exactly the gap full `nox`
+exists to close. Reaching for "the sandbox can't do this" before you have
+actually tried to install the tool is not acceptable; exhaust the install
+path first, and only report a tool as genuinely unavailable after an
+install attempt has failed with a concrete error.
+
 **Always run `nox` to verify your changes.** Never rely on reasoning,
 type-checks, or partial runs alone — every task must be verified by
 actually running `nox` against the code.
