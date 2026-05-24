@@ -8,4 +8,5 @@ Linter enforcing the conventions of the stolid template
    :maxdepth: 2
 
    quick-start
+   error-codes/index
    api-reference
