@@ -58,12 +58,9 @@ def assert_absent(
 
 
 def assert_multifile_message_contains(
-    files: Mapping[str, str], sld_code: str, expected: str  # noqa: SLD609
+    files: Mapping[str, str], sld_code: str, expected: str
 ) -> None:
     """Assert every ``sld_code`` message from ``files`` contains ``expected``."""
-    # ``sld_code`` is a needle filtered against each message -- a value
-    # argument, not a branch flag; SLD609's parameter-only AST analysis
-    # cannot distinguish the two.
     result = check_multifile(files)
     matching = [item for item in result if sld_code in item[3]]
     assert_that(len(matching), greater_than(0))

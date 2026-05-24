@@ -7,7 +7,7 @@ import io
 import itertools
 import tokenize
 from dataclasses import dataclass
-from typing import Iterable, Iterator, Protocol
+from typing import Iterable, Iterator, Protocol, Sequence
 
 from ._ast_inspection import FunctionComplexity, collect_imports
 from ._constants import MAX_FUNCTION_LINES
@@ -49,15 +49,15 @@ class ErrorLike(Protocol):
     """Structural type for any error a check source yields."""
 
     @property
-    def lineno(self) -> int:  # noqa: E704
+    def lineno(self) -> int:
         """Return the line number where the error was detected."""  # pragma: no cover
 
     @property
-    def col_offset(self) -> int:  # noqa: E704
+    def col_offset(self) -> int:
         """Return the column offset of the error on its line."""  # pragma: no cover
 
     @property
-    def message(self) -> str:  # noqa: E704
+    def message(self) -> str:
         """Return the formatted SLDxxx diagnostic message."""  # pragma: no cover
 
 
@@ -88,7 +88,7 @@ class CheckContext:
     patch_names: set[str]
     abstractmethod_names: set[str]
     cast_names: set[str]
-    lines: list[str]
+    lines: Sequence[str]
     bracket_depths: dict[int, int]
 
 
@@ -149,7 +149,7 @@ def _bracket_depths_by_line(source: str) -> dict[int, int]:
     return {line: _line_max_bracket_depth(toks) for line, toks in groups if line > 0}
 
 
-def build_context(tree: ast.AST, lines: list[str]) -> CheckContext:
+def build_context(tree: ast.AST, lines: Sequence[str]) -> CheckContext:
     """Return per-module state for ``tree`` (source ``lines``) used by node checks."""
     patch_names, abstractmethod_names, cast_names = collect_imports(tree)
     return CheckContext(

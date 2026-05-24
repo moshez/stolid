@@ -20,7 +20,7 @@ import ast
 from dataclasses import dataclass
 from typing import Iterator
 
-from ._ast_inspection import FUNCTION_DEF_NODES, FunctionType
+from ._ast_inspection import COLLECTION_NODES, FUNCTION_DEF_NODES, FunctionType
 
 SLD609 = (
     "SLD609 Parameter '{}' of '{}' is used only as a branch condition "
@@ -184,14 +184,34 @@ def _visit(node: ast.AST, in_condition: bool, counts: _Counts) -> None:
 
 
 def _visit_compare(node: ast.Compare, in_condition: bool, counts: _Counts) -> None:
-    # The left operand is the value being tested -- it preserves the
-    # caller's context (control inside an if-test, data otherwise). The
-    # comparators on the right are the values being compared against,
-    # so they are visited as data: ``name in allowed_set`` treats the
-    # set as data, not as a flag.
-    _visit(node.left, in_condition, counts)
+    # The left operand is the value being tested; the comparators on the
+    # right are values compared against and are always data. Whether the
+    # left operand counts as a branch test depends on the operator:
+    # ``==``/``!=`` against anything is a flag-style discriminator, and
+    # ``in``/``not in`` is one only against a literal (or tuple of
+    # literals). ``x in runtime_value`` makes ``x`` a search needle -- a
+    # data use, like indexing -- not a branch flag.
+    left_in_condition = in_condition and _left_is_branch_test(
+        node.ops[0], node.comparators[0]
+    )
+    _visit(node.left, left_in_condition, counts)
     for comparator in node.comparators:
         _visit(comparator, False, counts)
+
+
+def _is_literal_membership_rhs(node: ast.expr) -> bool:
+    # A compile-time literal or a tuple/list/set of literals.
+    if isinstance(node, ast.Constant):
+        return True
+    if isinstance(node, COLLECTION_NODES):
+        return all(isinstance(elt, ast.Constant) for elt in node.elts)
+    return False
+
+
+def _left_is_branch_test(op: ast.cmpop, rhs: ast.expr) -> bool:
+    if isinstance(op, (ast.In, ast.NotIn)):
+        return _is_literal_membership_rhs(rhs)
+    return True
 
 
 def _function_errors(node: FunctionType) -> Iterator[FlagParameterError]:

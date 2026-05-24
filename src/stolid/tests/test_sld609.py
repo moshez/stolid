@@ -101,6 +101,17 @@ _SLD609_PRESENT: list[tuple[str, str]] = [
         "posonly_flag",
         "def f(x, mark, /):\n    if mark:\n        return x\n    return -x\n",
     ),
+    (
+        "membership_in_literal_tuple",
+        "def f(x, mode):\n"
+        "    if mode in ('a', 'b'):\n"
+        "        return x\n"
+        "    return -x\n",
+    ),
+    (
+        "membership_in_string_literal",
+        "def classify(c):\n    if c in 'aeiou':\n        return 1\n    return 2\n",
+    ),
 ]
 
 
@@ -201,6 +212,17 @@ _SLD609_ABSENT: list[tuple[str, str]] = [
     (
         "ifexp_body_is_data",
         "def f(p):\n    return p if ready() else -p\n",
+    ),
+    (
+        "membership_in_runtime_value",
+        "def find(needle, hay):\n    return [x for x in hay if needle in x]\n",
+    ),
+    (
+        "membership_in_runtime_name",
+        "def f(key, table):\n"
+        "    if key in table:\n"
+        "        return 1\n"
+        "    return 2\n",
     ),
     (
         "compare_comparator_is_data",

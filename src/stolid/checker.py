@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import ast
 from dataclasses import dataclass
-from typing import Iterator
+from typing import Iterator, Sequence
 
 from ._ast_inspection import (
     bad_name_errors,
@@ -86,7 +86,7 @@ def _check_import_from(node: ast.ImportFrom) -> Iterator[Error]:
     if node.module not in ("unittest.mock", "mock"):  # noqa: SLD304
         return
     for alias in node.names:
-        if alias.name == "patch":  # noqa: SLD304 SLD306
+        if alias.name == "patch":  # noqa: SLD306
             yield _error(node, SLD102)
 
 
@@ -157,7 +157,7 @@ def _module_name_for_bad_name_check(filename: str) -> str | None:
     return name
 
 
-def _module_level_errors(lines: list[str], filename: str) -> Iterator[ErrorLike]:
+def _module_level_errors(lines: Sequence[str], filename: str) -> Iterator[ErrorLike]:
     # Yield errors derived from the module's lines or filename.
     if len(lines) > MAX_MODULE_LINES:
         yield Error(
@@ -171,7 +171,7 @@ def _module_level_errors(lines: list[str], filename: str) -> Iterator[ErrorLike]
 
 
 def _all_errors(
-    tree: ast.Module, lines: list[str], filename: str
+    tree: ast.Module, lines: Sequence[str], filename: str
 ) -> Iterator[ErrorLike]:
     yield from _module_level_errors(lines, filename)
     yield from check_global_names(tree)
@@ -189,15 +189,15 @@ def _all_errors(
         yield from _check_node(node, ctx)
 
 
-@dataclass(slots=True)
-class Checker:  # noqa: SLD501 SLD503
+@dataclass(frozen=True, slots=True)
+class Checker:  # noqa: SLD503 -- flake8 introspects positional plugin params
     """Flake8 checker for stolid: parsed ``tree``, source ``lines``, ``filename``."""
 
     name = "stolid"
     version = "0.1.0"
 
     tree: ast.Module
-    lines: list[str]  # noqa: SLD803 -- flake8 plugin protocol field
+    lines: Sequence[str]
     filename: str = ""
 
     def run(self) -> Iterator[tuple[int, int, str, type]]:  # noqa: SLD303

@@ -6,7 +6,12 @@ import ast
 from dataclasses import dataclass
 from typing import Iterator
 
-from ._ast_inspection import FUNCTION_DEF_NODES, SCOPE_NODES, get_base_name
+from ._ast_inspection import (
+    COLLECTION_NODES,
+    FUNCTION_DEF_NODES,
+    SCOPE_NODES,
+    get_base_name,
+)
 
 SLD304 = (
     "SLD304 Expression '{}' compared against multiple distinct string literals "
@@ -34,7 +39,6 @@ PEER_CONSTANT_THRESHOLD = 2
 _ENUM_BASES = frozenset({"Enum", "IntEnum", "StrEnum", "Flag", "IntFlag"})
 
 _TRACKABLE_NAMELIKE = (ast.Name, ast.Attribute, ast.Subscript)
-_COLLECTION_NODES = (ast.Tuple, ast.List, ast.Set)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -130,7 +134,7 @@ def _track_in_pair(
 ) -> None:
     if not isinstance(left, _TRACKABLE_NAMELIKE):
         return
-    if not isinstance(right, _COLLECTION_NODES):
+    if not isinstance(right, COLLECTION_NODES):
         return
     found = _collect_str_literals(right.elts)
     if found is None:
@@ -210,7 +214,7 @@ def _strings_from_compare(
                 if literal is not None:
                     yield literal
         elif isinstance(op, (ast.In, ast.NotIn)):
-            if isinstance(right, _COLLECTION_NODES):
+            if isinstance(right, COLLECTION_NODES):
                 for elt in right.elts:
                     literal = _as_str_literal(elt)
                     if literal is not None:

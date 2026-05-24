@@ -708,6 +708,18 @@ is being consumed for its value, not directly tested. ``self`` /
 used only inside a nested function or lambda are conservatively
 uncounted (they look like closure captures, not branch tests).
 
+Membership is treated by the right-hand side. ``p in ("a", "b")`` (a
+literal, or a tuple/list/set of literals) is a branch test -- a finite
+set of compile-time choices the caller could pick between -- so ``p``
+is flagged. But ``p in haystack`` where ``haystack`` is a runtime value
+makes ``p`` a *search needle*: its value is consumed like an index, not
+tested against a fixed set, so it counts as a data use and is not
+flagged. ``==`` / ``!=`` remain branch tests against any right-hand
+side. (A consequence: ``p in NAMED_CONSTANT`` is read as runtime and
+not flagged, and ``p in "literal_string"`` is read as a finite choice
+and flagged -- rare enough to silence with ``# noqa: SLD609`` when the
+string is really a search target.)
+
 .. code-block:: python
 
     # Bad
