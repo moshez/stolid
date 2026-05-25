@@ -1,5 +1,7 @@
 import functools
 import os
+import re
+import urllib.request
 
 import nox
 
@@ -7,6 +9,30 @@ nox.options.envdir = "build/nox"
 nox.options.sessions = ["lint", "tests", "mypy", "docs", "dry_release"]
 
 VERSIONS = ["3.12", "3.13", "3.14"]
+
+PUBLISH_ACTION = "pypa/gh-action-pypi-publish"
+
+
+def _publish_twine_requirement():
+    """The twine pin the release workflow uploads with.
+
+    Read the version straight from the action pinned in release.yml instead
+    of hardcoding it, so the dry run always validates with the same twine
+    that performs the real upload. A separate pin could silently fall behind
+    and let a release pass here only to be rejected on upload.
+    """
+    workflow = os.path.join(
+        os.path.dirname(__file__), ".github", "workflows", "release.yml"
+    )
+    with open(workflow, encoding="utf-8") as stream:
+        sha = re.search(rf"{PUBLISH_ACTION}@([0-9a-f]{{40}})", stream.read())
+    url = (
+        f"https://raw.githubusercontent.com/{PUBLISH_ACTION}/{sha.group(1)}"
+        "/requirements/runtime.txt"
+    )
+    with urllib.request.urlopen(url) as response:
+        runtime = response.read().decode()
+    return re.search(r"^twine==\S+", runtime, re.MULTILINE).group(0)
 
 
 @nox.session(python=VERSIONS)
@@ -47,11 +73,7 @@ def build(session):
 def dry_release(session):
     """Build sdist and wheel and validate them with twine (does not upload)."""
     output = os.path.abspath(os.path.join(session.create_tmp(), "dist"))
-    # Validate with the exact twine the publish workflow uploads with
-    # (pypa/gh-action-pypi-publish v1.14.0 pins twine==6.1.0). Keeping these
-    # in lockstep stops the dry run passing while the real upload rejects the
-    # metadata, which is how an older bundled twine slipped a 2.4 release past.
-    session.install("build", "twine==6.1.0")
+    session.install("build", _publish_twine_requirement())
     session.run("python", "-m", "build", "--outdir", output)
     files = sorted(os.path.join(output, name) for name in os.listdir(output))
     session.run("twine", "check", "--strict", *files)
