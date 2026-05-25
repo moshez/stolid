@@ -47,7 +47,11 @@ def build(session):
 def dry_release(session):
     """Build sdist and wheel and validate them with twine (does not upload)."""
     output = os.path.abspath(os.path.join(session.create_tmp(), "dist"))
-    session.install("build", "twine")
+    # Validate with the exact twine the publish workflow uploads with
+    # (pypa/gh-action-pypi-publish v1.14.0 pins twine==6.1.0). Keeping these
+    # in lockstep stops the dry run passing while the real upload rejects the
+    # metadata, which is how an older bundled twine slipped a 2.4 release past.
+    session.install("build", "twine==6.1.0")
     session.run("python", "-m", "build", "--outdir", output)
     files = sorted(os.path.join(output, name) for name in os.listdir(output))
     session.run("twine", "check", "--strict", *files)
