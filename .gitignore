@@ -5,3 +5,6 @@ __pycache__
 /build
 /git-log-head
 .coverage
+
+# Generated song sheets (may contain third-party copyrighted lyrics)
+*.pdf
