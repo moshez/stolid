@@ -107,7 +107,14 @@ def lint(session):
     session.install("-r", "requirements-lint.txt")
     session.install("-e", ".")
     session.run("black", "--check", "--diff", *files)
-    session.run("python", "-m", "stolid", "src/")
+    session.run(
+        "python",
+        "-m",
+        "stolid",
+        "--max-line-length=88",
+        "--ignore=E203,E503,W503",
+        "src/",
+    )
 
 
 @nox.session(python=VERSIONS[-1])

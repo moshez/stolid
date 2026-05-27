@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Protocol
 
 from ._contract_scan import scan_paths as contract_scan_paths
@@ -32,8 +33,16 @@ class OutputSink(Protocol):
         ...
 
 
-def _flake8_argv(paths: list[str]) -> list[str]:
-    return ["flake8", *paths]
+@dataclass(frozen=True, slots=True, kw_only=True)
+class Invocation:
+    """A stolid run: scan ``paths`` plus ``flake8_options`` forwarded to flake8."""
+
+    paths: list[str]
+    flake8_options: list[str]
+
+
+def _flake8_argv(invocation: Invocation) -> list[str]:
+    return ["flake8", *invocation.flake8_options, *invocation.paths]
 
 
 def _emit_results(result: ScanResult, rows: list[ReportLine], sink: OutputSink) -> int:
@@ -80,15 +89,16 @@ def run_stolid(
     runner: CommandRunner,
     fs: FileSystem,
     sink: OutputSink,
-    paths: list[str],
+    invocation: Invocation,
 ) -> int:
-    """Run flake8 via ``runner`` then the cross-file scanners over ``paths``.
+    """Run flake8 via ``runner`` then the cross-file scanners over ``invocation``.
 
     Uses ``fs`` to read files and ``sink`` to emit diagnostics. Returns the
     merged exit code (the maximum across flake8, duplicate scan, contract
     scan, and import-graph scan).
     """
-    flake8_exit = runner.run(_flake8_argv(paths))
+    paths = invocation.paths
+    flake8_exit = runner.run(_flake8_argv(invocation))
     duplicate_exit = run_duplicate_scan(fs, sink, paths)
     contract_exit = run_contract_scan(fs, sink, paths)
     import_graph_exit = run_import_graph_scan(fs, sink, paths)
@@ -98,3 +108,14 @@ def run_stolid(
 def resolve_paths(argv: list[str]) -> list[str]:
     """Return the list of paths from argv, defaulting to ``["."]``."""
     return argv if argv else ["."]
+
+
+def parse_argv(argv: list[str]) -> Invocation:
+    """Return an :class:`Invocation` parsed from ``argv``.
+
+    Tokens beginning with ``-`` are flake8 options forwarded to the flake8
+    subprocess; the rest are scan paths, defaulting to ``["."]``.
+    """
+    options = [arg for arg in argv if arg.startswith("-")]
+    paths = [arg for arg in argv if not arg.startswith("-")]
+    return Invocation(paths=resolve_paths(paths), flake8_options=options)
