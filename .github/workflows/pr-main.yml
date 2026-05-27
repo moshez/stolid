@@ -14,7 +14,7 @@ jobs:
           - { python: "3.14", os: ubuntu-latest, check: "docs" }
           - { python: "3.14", os: ubuntu-latest, check: "mypy" }
           - { python: "3.14", os: ubuntu-latest, check: "build" }
-          - { python: "3.14", os: ubuntu-latest, check: "dry_release" }
+          - { python: "3.13", os: ubuntu-latest, check: "dry_release" }
     name: ${{ matrix.check }} on Python ${{ matrix.python }} (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
 
