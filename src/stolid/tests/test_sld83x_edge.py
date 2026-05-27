@@ -7,7 +7,7 @@ from typing import Mapping
 
 from hamcrest import assert_that, equal_to, has_length
 
-from .._duplicate_cli import run_stolid
+from .._duplicate_cli import Invocation, run_stolid
 from .._import_graph_extract import anchor_for_prefix
 from ._sld83x_shared import (
     all_to_all,
@@ -190,7 +190,8 @@ class TestCLIIntegrationExitCode(unittest.TestCase):
         fs = InMemoryFileSystem(_files=dedent_files(files))
         runner = FixedRunner(_exit_code=0)
         sink = CapturedSink()
-        exit_code = run_stolid(runner=runner, fs=fs, sink=sink, paths=["."])
+        invocation = Invocation(paths=["."], flake8_options=[])
+        exit_code = run_stolid(runner=runner, fs=fs, sink=sink, invocation=invocation)
         assert_that(exit_code, equal_to(1))
         out_codes = [line for line in sink.out if "SLD831" in line]
         assert_that(out_codes, has_length(1))

@@ -13,7 +13,7 @@ import sys
 from dataclasses import dataclass
 from typing import Iterator
 
-from ._duplicate_cli import resolve_paths, run_stolid
+from ._duplicate_cli import parse_argv, run_stolid
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -50,12 +50,12 @@ class _RealSink:
 
 def main() -> int:
     """Run stolid as ``python -m stolid``; returns the merged exit code."""
-    paths = resolve_paths(sys.argv[1:])
+    invocation = parse_argv(sys.argv[1:])
     return run_stolid(
         runner=_RealRunner(),
         fs=_RealFileSystem(),
         sink=_RealSink(),
-        paths=paths,
+        invocation=invocation,
     )
 
 
