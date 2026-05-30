@@ -128,8 +128,7 @@ def _sld833(score: LevelScore, ctx: _Context) -> Iterator[ReportLine]:
 def _sld834(score: LevelScore, ctx: _Context) -> Iterator[ReportLine]:
     if score.node_count < MIN_LEVEL_NODES:
         return
-    if score.total_weight == 0:
-        return  # pragma: no cover
+    assert score.total_weight != 0  # a level with enough nodes has positive weight
     fraction = score.largest_scc_weight / score.total_weight
     if fraction <= MAX_SUBPACKAGE_MUD_FRACTION:
         return

@@ -227,3 +227,53 @@ string is really a search target.)
             opts = default_opts()
         return run(text, opts)
 
+**SLD610**: Flags ``for`` loops that iterate over ``range(len(...))``.
+Building a range of indices only to subscript the sequence is the
+bookkeeping ``enumerate`` exists to remove: reach for ``enumerate(seq)``
+when the index is genuinely needed and plain iteration when it is not.
+The check fires when the loop's iterable is a ``range(...)`` call with a
+``len(...)`` anywhere in its arguments, so ``range(len(x))``,
+``range(0, len(x))``, and ``range(len(x) - 1)`` all qualify; a
+``range(n)`` over a plain numeric count is left alone.
+
+.. code-block:: python
+
+    # Bad
+    for i in range(len(items)):
+        print(i, items[i])
+
+    # Good (index wanted)
+    for i, item in enumerate(items):
+        print(i, item)
+
+    # Good (index not wanted)
+    for item in items:
+        print(item)
+
+**SLD611**: Flags ``while`` loops that walk a manual cursor by comparing
+a bare index name against a ``len(...)`` count. It is the same indexing
+pattern as SLD610 wearing while-loop clothing -- the body invariably ends
+in ``i += 1`` and ``seq[i]`` -- and an iterator or ``enumerate`` carries
+the position for you. The check fires when the test is a single ordering
+comparison (``<``, ``<=``, ``>``, ``>=``) with a bare name on one side
+and an expression containing ``len(...)`` on the other. A worklist
+drained by mutation against a constant bound, such as
+``while len(stack) > 0``, is *not* flagged: neither side is a cursor name
+into the collection.
+
+.. code-block:: python
+
+    # Bad
+    i = 0
+    while i < len(items):
+        print(items[i])
+        i += 1
+
+    # Good
+    for item in items:
+        print(item)
+
+    # Fine (worklist drained by mutation, not an index walk)
+    while len(stack) > 0:
+        process(stack.pop())
+

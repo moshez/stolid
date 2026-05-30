@@ -49,8 +49,7 @@ def _bump_node(graph: ImportGraph, name: str) -> None:
 
 
 def _accept_edge(graph: ImportGraph, source: str, target: str) -> None:
-    if source == target:  # pragma: no cover - extraction yields no self-edges
-        return
+    assert source != target  # extraction yields no self-edges
     if graph.has_node(source) and graph.has_node(target):  # pragma: no branch
         graph.add_edge(source, target)
 
@@ -80,8 +79,7 @@ def _condensation_longest_path(
     graph: ImportGraph,
 ) -> int:
     condensed = nx.condensation(graph)
-    if condensed.number_of_nodes() == 0:  # pragma: no cover - quotient is never empty
-        return 0
+    assert condensed.number_of_nodes() != 0  # the condensation quotient is never empty
     return len(nx.dag_longest_path(condensed))
 
 
@@ -117,8 +115,7 @@ def score_level(graph: ImportGraph, level: int) -> LevelScore:
 
 def max_module_depth(graph: ImportGraph) -> int:
     """Return the deepest dotted-name segment count across nodes in ``graph``."""
-    if graph.number_of_nodes() == 0:  # pragma: no cover - scan guards empty graphs
-        return 0
+    assert graph.number_of_nodes() != 0  # the scan guards against empty graphs
     return max(node.count(".") + 1 for node in graph.nodes())
 
 
@@ -129,8 +126,7 @@ def reach_score(graph: ImportGraph) -> int:
     ``u``, add one. For every unordered pair of distinct modules in the same
     non-trivial strongly-connected component, add an additional one.
     """
-    if graph.number_of_nodes() == 0:  # pragma: no cover - reach_density guards empty
-        return 0
+    assert graph.number_of_nodes() != 0  # reach_density guards against empty graphs
     closure = nx.transitive_closure(graph, reflexive=False)
     ordered = sum(1 for u, v in closure.edges() if u != v)
     scc_bonus = 0

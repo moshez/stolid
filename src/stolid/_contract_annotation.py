@@ -160,8 +160,7 @@ def _classify_annotated_subscript(
     node: ast.Subscript, concrete_names: AbstractSet[str]
 ) -> Iterator[ContractError]:
     elements = _slice_elements(node.slice)
-    if not elements:
-        return  # pragma: no cover
+    assert elements  # a subscript slice always has at least one element
     yield from classify_annotation(elements[0], concrete_names)
 
 

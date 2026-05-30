@@ -108,8 +108,7 @@ def _walk_root(fs: FileSystem, root: str, state: _ScanState) -> None:
 
 def _suppressed(source_lines: list[str], error: ContractError) -> bool:
     index = error.lineno - 1
-    if index < 0 or index >= len(source_lines):
-        return False  # pragma: no cover
+    assert 0 <= index < len(source_lines)  # lineno comes from this file's own AST
     return is_suppressed(source_lines[index], _CODE_BY_KIND[error.kind])
 
 
