@@ -125,7 +125,7 @@ def _file_diagnostics(
     parsed: _ParsedFile, symbols: SymbolTable
 ) -> Iterator[ReportLine]:
     source_lines = parsed.source.splitlines()
-    for annotation in iter_public_annotations(parsed.tree, parsed.path):
+    for annotation in iter_public_annotations(parsed.tree):
         for error in classify_annotation(annotation, symbols.concrete_only):
             if _suppressed(source_lines, error):
                 continue

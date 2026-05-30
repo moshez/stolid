@@ -29,10 +29,21 @@ docstring): no methods, no private (``_``-prefixed) fields. Such a class
 is a pure record -- its annotations *are* its contract -- so callers may
 safely depend on it, assuming the field types are themselves allowed.
 
-"Public" surface here means: top-level functions and methods of public
-classes in modules whose filename does not start with ``_``
-(``__init__.py`` is treated as public). Private modules, private
-top-level classes, and private members of public classes are skipped.
+"Public" surface here is decided by *name*, not by the module a
+definition lives in: top-level functions, public classes and their
+public methods, and public class-level fields whose names do not start
+with a single underscore. A public-named definition is on the contract
+surface **even inside a private (``_``-prefixed) module** — callers can
+still import and depend on it, so its annotations are still a commitment.
+Only private *members* (``_``-prefixed functions, classes, fields, and
+members nested in public classes) are skipped.
+
+This is deliberately stricter than the module-based privacy used by the
+documentation checks below (SLD81x / SLD82x): a private module exempts
+its members from *docstring* requirements, but not from the public
+*contract*. If a function in a private module should be free to name
+concrete types, give it a ``_``-prefixed name so it is genuinely
+private.
 
 Diagnostics honor per-line ``# noqa`` markers exactly like SLD801.
 

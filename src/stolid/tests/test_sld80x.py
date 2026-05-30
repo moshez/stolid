@@ -59,6 +59,13 @@ _SLD802_PRESENT: list[tuple[str, dict[str, str]]] = [
             "b.py": "from .a import Backend\nthing: Backend = ...  # type: ignore\n",
         },
     ),
+    (
+        "concrete_in_public_function_of_private_module",
+        {
+            "a.py": CONCRETE_DEF,
+            "_b.py": "from .a import Backend\ndef run(b: Backend) -> None: ...\n",
+        },
+    ),
 ]
 
 
@@ -94,10 +101,10 @@ _SLD802_ABSENT: list[tuple[str, dict[str, str]]] = [
         },
     ),
     (
-        "concrete_in_private_module",
+        "concrete_in_private_function_of_private_module",
         {
             "a.py": CONCRETE_DEF,
-            "_b.py": "from .a import Backend\ndef run(b: Backend) -> None: ...\n",
+            "_b.py": "from .a import Backend\ndef _run(b: Backend) -> None: ...\n",
         },
     ),
     (
@@ -161,6 +168,10 @@ _SLD803_PRESENT: list[tuple[str, dict[str, str]]] = [
             ),
         },
     ),
+    (
+        "list_in_public_function_of_private_module",
+        {"_b.py": "def join(items: list[str]) -> str: ...\n"},
+    ),
 ]
 
 
@@ -199,6 +210,10 @@ _SLD804_PRESENT: list[tuple[str, dict[str, str]]] = [
         "variadic_in_return",
         {"b.py": "def grab() -> tuple[str, ...]: ...\n"},
     ),
+    (
+        "variadic_in_public_function_of_private_module",
+        {"_b.py": "def pack(xs: tuple[int, ...]) -> None: ...\n"},
+    ),
 ]
 
 
@@ -212,8 +227,8 @@ _SLD804_ABSENT: list[tuple[str, dict[str, str]]] = [
         {"b.py": "def pair(p: tuple[int, str]) -> None: ...\n"},
     ),
     (
-        "variadic_in_private_module",
-        {"_b.py": "def pack(xs: tuple[int, ...]) -> None: ...\n"},
+        "variadic_in_private_function_of_private_module",
+        {"_b.py": "def _pack(xs: tuple[int, ...]) -> None: ...\n"},
     ),
 ]
 
