@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import ast
 from dataclasses import dataclass
-from typing import Iterator, Sequence
+from typing import Iterator, Mapping, Sequence
 
 from ._ast_inspection import (
     FunctionType,
@@ -62,7 +62,7 @@ def _check_is_predicate(node: FunctionType) -> Iterator[FunctionError]:
 
 
 def check_function(
-    node: FunctionType, lines: Sequence[str], bracket_depths: dict[int, int]
+    node: FunctionType, lines: Sequence[str], bracket_depths: Mapping[int, int]
 ) -> Iterator[FunctionError]:
     """Yield SLD601/SLD602/SLD701/SLD704 violations for function ``node``.
 

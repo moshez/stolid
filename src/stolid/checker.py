@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import ast
 from dataclasses import dataclass
-from typing import Iterator, Sequence
+from typing import AbstractSet, Iterator, Sequence
 
 from ._ast_inspection import (
     bad_name_errors,
@@ -102,7 +102,7 @@ def _check_attribute(node: ast.Attribute) -> Iterator[Error]:
 
 
 def _check_call(
-    node: ast.Call, patch_names: set[str], cast_names: set[str]
+    node: ast.Call, patch_names: AbstractSet[str], cast_names: AbstractSet[str]
 ) -> Iterator[Error]:
     # Check function calls.
     if isinstance(node.func, ast.Name):
@@ -114,7 +114,9 @@ def _check_call(
         yield from _check_call_attribute(node, patch_names)
 
 
-def _check_call_attribute(node: ast.Call, patch_names: set[str]) -> Iterator[Error]:
+def _check_call_attribute(
+    node: ast.Call, patch_names: AbstractSet[str]
+) -> Iterator[Error]:
     # Check Call nodes whose func is an Attribute (patch.object, typing.cast).
     func = node.func
     assert isinstance(func, ast.Attribute)
@@ -138,7 +140,7 @@ def _check_dangerous_name(node: ast.Name) -> Iterator[Error]:
         yield _error(node, SLD103.format(node.id))
 
 
-def _check_with(node: ast.With, patch_names: set[str]) -> Iterator[Error]:
+def _check_with(node: ast.With, patch_names: AbstractSet[str]) -> Iterator[Error]:
     # Check with statements for patch context managers and ExitStack-friendly nesting.
     for item in node.items:
         call = item.context_expr

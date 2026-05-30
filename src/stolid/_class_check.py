@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import ast
 from dataclasses import dataclass
-from typing import Iterator
+from typing import AbstractSet, Iterator, Sequence
 
 from ._ast_inspection import (
     FUNCTION_DEF_NODES,
@@ -153,7 +153,7 @@ def check_abc_import(node: ast.ImportFrom) -> Iterator[ClassError]:
 
 
 def _name_decorator_errors(
-    decoration_list: list[ast.expr], names: set[str], template: str
+    decoration_list: Sequence[ast.expr], names: AbstractSet[str], template: str
 ) -> Iterator[ClassError]:
     for decorator in decoration_list:
         if is_name_among(decorator, names):
@@ -161,7 +161,7 @@ def _name_decorator_errors(
 
 
 def check_abstract_decorators(
-    decoration_list: list[ast.expr], names: set[str]
+    decoration_list: Sequence[ast.expr], names: AbstractSet[str]
 ) -> Iterator[ClassError]:
     """Yield SLD202 for @abstractmethod use in ``decoration_list``.
 
@@ -209,7 +209,7 @@ def _check_sld303_for_method(node: FunctionType) -> Iterator[ClassError]:
 
 
 def _check_class_method_bodies(
-    node: ast.ClassDef, abstractmethod_names: set[str]
+    node: ast.ClassDef, abstractmethod_names: AbstractSet[str]
 ) -> Iterator[ClassError]:
     is_protocol = _class_inherits_from(node, "Protocol")
     is_testcase = _class_inherits_from(node, "TestCase")
@@ -243,7 +243,7 @@ def _has_allowed_base(node: ast.ClassDef) -> bool:
 
 
 def check_class(
-    node: ast.ClassDef, abstractmethod_names: set[str]
+    node: ast.ClassDef, abstractmethod_names: AbstractSet[str]
 ) -> Iterator[ClassError]:
     """Yield SLD3xx/SLD4xx/SLD5xx/SLD603/SLD608/SLD701 violations for class ``node``.
 

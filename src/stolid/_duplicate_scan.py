@@ -5,6 +5,7 @@ from __future__ import annotations
 import ast
 from collections import defaultdict
 from dataclasses import dataclass, field
+from typing import Sequence
 
 from ._constants import MIN_CLONE_NODES, MIN_CLONE_SCORE
 from ._duplicate_fingerprint import Occurrence, fingerprint
@@ -48,7 +49,7 @@ class CloneGroup:
     """
 
     digest: bytes
-    occurrences: tuple[CloneOccurrence, ...]
+    occurrences: Sequence[CloneOccurrence]
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -59,8 +60,8 @@ class ScanResult:
     that could not be parsed.
     """
 
-    groups: list[CloneGroup] = field(default_factory=list)
-    syntax_errors: list[str] = field(default_factory=list)
+    groups: Sequence[CloneGroup] = field(default_factory=list)
+    syntax_errors: Sequence[str] = field(default_factory=list)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -178,7 +179,7 @@ def _scan_root(
         _scan_one_file(fs, path, entries, syntax_errors)
 
 
-def scan_paths(fs: FileSystem, roots: list[str]) -> ScanResult:
+def scan_paths(fs: FileSystem, roots: Sequence[str]) -> ScanResult:
     """Scan ``roots`` (via filesystem ``fs``) and return the clone groups found."""
     entries: list[_PathOccurrence] = []
     syntax_errors: list[str] = []

@@ -1,9 +1,10 @@
 # Walk a module's public API surface and yield every annotation expression
 # that callers are committed to.
 #
-# "Public" means the module is not private (filename does not start with a
-# single underscore; ``__init__.py`` is treated as public). Inside a public
-# module, the public surface points are:
+# "Public" is decided per definition by its *name*, never by the module it
+# lives in: a name without a leading underscore (dunders excepted) is part
+# of the API surface even inside a private (``_``-prefixed) module, because
+# callers can still import and depend on it. The public surface points are:
 #
 # - public top-level functions and async functions (parameter and return
 #   annotations);
@@ -11,13 +12,13 @@
 #   class-level annotated attributes (recursing into public nested classes);
 # - public top-level annotated assignments.
 #
-# Private modules, private top-level classes, and private members of public
-# classes are skipped entirely: they are not part of the API surface.
+# Only private *members* are skipped -- private-named functions, classes,
+# attributes, and members nested in public classes -- because those are not
+# part of the API surface regardless of where they live.
 
 from __future__ import annotations
 
 import ast
-import os
 from typing import Iterator
 
 from ._ast_inspection import FUNCTION_DEF_NODES, FunctionType, is_dunder_name
@@ -27,14 +28,6 @@ def _is_private_name(name: str) -> bool:
     if not name.startswith("_"):
         return False
     return not is_dunder_name(name)
-
-
-def is_public_module(filename: str) -> bool:
-    """Return True iff the file at ``filename`` is a public module."""
-    stem = os.path.basename(filename)[:-3]
-    if stem == "__init__":
-        return True
-    return not _is_private_name(stem)
 
 
 def _function_annotations(node: FunctionType) -> Iterator[ast.expr]:
@@ -60,6 +53,11 @@ def _ann_assign_annotation(stmt: ast.AnnAssign) -> Iterator[ast.expr]:
     yield stmt.annotation
 
 
+def _body_annotations(body: list[ast.stmt]) -> Iterator[ast.expr]:
+    for stmt in body:
+        yield from _statement_annotations(stmt)
+
+
 def _statement_annotations(stmt: ast.stmt) -> Iterator[ast.expr]:
     if isinstance(stmt, FUNCTION_DEF_NODES):
         if _is_private_name(stmt.name):
@@ -68,19 +66,16 @@ def _statement_annotations(stmt: ast.stmt) -> Iterator[ast.expr]:
     elif isinstance(stmt, ast.ClassDef):
         if _is_private_name(stmt.name):
             return
-        for child in stmt.body:
-            yield from _statement_annotations(child)
+        yield from _body_annotations(stmt.body)
     elif isinstance(stmt, ast.AnnAssign):
         yield from _ann_assign_annotation(stmt)
 
 
-def iter_public_annotations(tree: ast.Module, filename: str) -> Iterator[ast.expr]:
+def iter_public_annotations(tree: ast.Module) -> Iterator[ast.expr]:
     """Yield every annotation expression on the public surface of ``tree``.
 
-    ``filename`` selects whether the module itself is public. Private
-    modules yield nothing.
+    Every module is walked: public-named members are part of the API
+    surface even in a private module, so only private *members* are
+    skipped.
     """
-    if not is_public_module(filename):
-        return
-    for stmt in tree.body:
-        yield from _statement_annotations(stmt)
+    yield from _body_annotations(tree.body)

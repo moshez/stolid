@@ -36,7 +36,9 @@ class ScopeStack:
 
     _frames: list[Frame] = field(default_factory=list)
 
-    def enter(self, frame: Frame) -> None:
+    # Frame is this stack's own element type, co-designed with it rather
+    # than an interface meant to be swapped; SLD802 does not apply.
+    def enter(self, frame: Frame) -> None:  # noqa: SLD802
         """Push ``frame`` onto the stack as the new innermost scope."""
         self._frames.append(frame)
 

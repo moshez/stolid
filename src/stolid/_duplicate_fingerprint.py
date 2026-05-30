@@ -10,7 +10,7 @@ import ast
 import functools
 import hashlib
 from dataclasses import dataclass
-from typing import Iterable, Iterator
+from typing import Iterable, Iterator, MutableSequence
 
 from ._ast_inspection import (
     COMPREHENSION_NODES,
@@ -185,7 +185,12 @@ def _hash_node(node: ast.AST, signature: str, subtree_digests: list[bytes]) -> b
 
 
 def fingerprint(
-    node: ast.AST, scope: ScopeStack, collected: list[Occurrence]
+    node: ast.AST,
+    # ScopeStack is the duplicate detector's own scope machinery, co-designed
+    # with this function and not an interface meant to be swapped; SLD802 does
+    # not improve a concrete type that is the contract.
+    scope: ScopeStack,  # noqa: SLD802
+    collected: MutableSequence[Occurrence],
 ) -> tuple[bytes, int]:
     """Compute a Merkle hash of ``node`` using the current ``scope``.
 

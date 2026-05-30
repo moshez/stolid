@@ -51,7 +51,9 @@ def _flake8_argv(invocation: Invocation) -> list[str]:
     return ["flake8", *invocation.flake8_options, *invocation.paths]
 
 
-def _emit_results(result: ScanResult, rows: list[ReportLine], sink: OutputSink) -> int:
+def _emit_results(
+    result: ScanResult, rows: Sequence[ReportLine], sink: OutputSink
+) -> int:
     for path in result.syntax_errors:
         sink.stderr(f"{path}: syntax error; skipped")
     for line in rows:
@@ -88,7 +90,7 @@ def run_duplicate_scan(fs: FileSystem, sink: OutputSink, paths: Sequence[str]) -
     return _emit_results(result, lines, sink)
 
 
-def _emit_rows(sink: OutputSink, rows: list[ReportLine]) -> int:
+def _emit_rows(sink: OutputSink, rows: Sequence[ReportLine]) -> int:
     for line in rows:
         sink.stdout(format_line(line))
     return 1 if rows else 0

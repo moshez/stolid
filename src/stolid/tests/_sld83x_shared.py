@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Mapping, Protocol, Sequence
+from typing import AbstractSet, Mapping, Protocol, Sequence
 
 from ..cli import import_edges, import_graph_report
 from .code_parser import dedent_files
@@ -18,7 +18,7 @@ class _Edge(Protocol):
         ...
 
     @property
-    def targets(self) -> frozenset[str]:
+    def targets(self) -> AbstractSet[str]:
         """Return the dotted names this module imports within the workspace."""
         ...
 
@@ -29,7 +29,7 @@ def extract_edges(files: Mapping[str, str]) -> Sequence[_Edge]:
     return list(import_edges(fs, ["."]))
 
 
-def targets_of(files: Mapping[str, str], importer: str) -> frozenset[str]:
+def targets_of(files: Mapping[str, str], importer: str) -> AbstractSet[str]:
     """Return the resolved import targets of module ``importer`` in ``files``."""
     return next(e.targets for e in extract_edges(files) if e.importer == importer)
 
@@ -40,7 +40,7 @@ def scan_to_pairs(files: Mapping[str, str]) -> Sequence[tuple[str, str]]:
     return [(line.path, line.message) for line in import_graph_report(fs, ["."])]
 
 
-def importers_of(files: Mapping[str, str]) -> frozenset[str]:
+def importers_of(files: Mapping[str, str]) -> AbstractSet[str]:
     """Return the set of dotted module names extracted from ``files``."""
     return frozenset(e.importer for e in extract_edges(files))
 
@@ -50,7 +50,7 @@ def scan_codes(files: Mapping[str, str]) -> Sequence[str]:
     return [msg.split()[0] for _, msg in scan_to_pairs(files)]
 
 
-def all_to_all(n: int, prefix: str = "pkg") -> dict[str, str]:
+def all_to_all(n: int, prefix: str = "pkg") -> Mapping[str, str]:
     """Return ``files`` for ``n`` modules under ``prefix`` each importing every other.
 
     With ``prefix='pkg'``, includes a ``pkg/__init__.py``; with ``prefix=''``,

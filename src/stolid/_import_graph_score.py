@@ -9,7 +9,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Iterable, TypeAlias
+from typing import Iterable, Sequence, TypeAlias
 
 import networkx as nx
 
@@ -31,7 +31,7 @@ class LevelScore:
     level: int
     node_count: int
     total_weight: int
-    sccs: tuple[tuple[tuple[str, ...], int], ...]
+    sccs: Sequence[tuple[Sequence[str], int]]
     largest_scc_weight: int
     condensation_depth: int
 
@@ -162,7 +162,7 @@ def _init_with_nodes(
     return graph
 
 
-def build_graph(nodes: list[str], edges: list[tuple[str, str]]) -> ImportGraph:
+def build_graph(nodes: Sequence[str], edges: Sequence[tuple[str, str]]) -> ImportGraph:
     """Return a NetworkX ``DiGraph`` with the given ``nodes`` and ``edges``.
 
     Each node gets a ``size`` attribute of 1. Self-loops are dropped.

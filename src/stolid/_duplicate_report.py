@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Protocol
+from typing import Protocol, Sequence
 
 from ._duplicate_scan import CloneGroup, CloneOccurrence, ScanResult
 from ._noqa import is_suppressed
@@ -43,7 +43,7 @@ def _line_text(source: str, line_number: int) -> str:
     return ""  # pragma: no cover
 
 
-def report_lines(reader: SourceReader, result: ScanResult) -> list[ReportLine]:
+def report_lines(reader: SourceReader, result: ScanResult) -> Sequence[ReportLine]:
     """Format ``result`` (using ``reader`` to load source lines) into report lines.
 
     Returns flake8-style diagnostic lines and honors per-line ``noqa`` markers.

@@ -5,15 +5,16 @@ from __future__ import annotations
 import builtins
 import sys
 import typing
+from typing import AbstractSet
 
 
 def _public_names(module: object) -> frozenset[str]:
     return frozenset(name for name in dir(module) if not name.startswith("_"))
 
 
-BUILTIN_NAMES: frozenset[str] = _public_names(builtins)
-TYPING_NAMES: frozenset[str] = _public_names(typing)
-STDLIB_NAMES: frozenset[str] = frozenset(sys.stdlib_module_names)
+BUILTIN_NAMES: AbstractSet[str] = _public_names(builtins)
+TYPING_NAMES: AbstractSet[str] = _public_names(typing)
+STDLIB_NAMES: AbstractSet[str] = frozenset(sys.stdlib_module_names)
 
 
 def reserved_name_source(name: str) -> str | None:

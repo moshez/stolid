@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import unittest
-from typing import Sequence
+from typing import Mapping, Sequence
 
 from hamcrest import assert_that, equal_to, has_length
 
@@ -85,7 +85,7 @@ PKG_FIRST = "pkg.a"
 PKG_SECOND = "pkg.b"
 
 
-_COUNT_CASES: list[tuple[str, dict[str, str], str, int]] = [
+_COUNT_CASES: list[tuple[str, Mapping[str, str], str, int]] = [
     ("SLD831_at_16", _cycle_files(16), "SLD831", 1),
     ("SLD832_weight_14", _cross_pkg_cycle(count_per_sub=6), "SLD832", 1),
     ("SLD833_chain_10", _chain_imports(10), "SLD833", 1),

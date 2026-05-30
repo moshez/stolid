@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Iterator
+from typing import Iterator, Sequence
 
 from ._import_graph_extract import (
     ModuleEdges,
@@ -43,12 +43,12 @@ _PREVIEW = 5
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class _Context:
-    edges_list: list[ModuleEdges]
+    edges_list: Sequence[ModuleEdges]
     graph: ImportGraph
 
 
 def _build_digraph(
-    edges_list: list[ModuleEdges],
+    edges_list: Sequence[ModuleEdges],
 ) -> ImportGraph:
     nodes = [entry.importer for entry in edges_list]
     edges = [
@@ -57,7 +57,7 @@ def _build_digraph(
     return build_graph(nodes, edges)
 
 
-def _format_members(members: tuple[str, ...]) -> str:
+def _format_members(members: Sequence[str]) -> str:
     if len(members) <= _PREVIEW:
         return ", ".join(members)
     head = ", ".join(members[:_PREVIEW])
@@ -68,7 +68,7 @@ def _line(path: str, message: str) -> ReportLine:
     return ReportLine(path=path, line=1, col=0, message=message)
 
 
-def _common_prefix(members: tuple[str, ...]) -> str:
+def _common_prefix(members: Sequence[str]) -> str:
     split = [name.split(".") for name in members]
     shared: list[str] = []
     for parts in zip(*split):
@@ -79,7 +79,7 @@ def _common_prefix(members: tuple[str, ...]) -> str:
     return ".".join(shared)
 
 
-def _scc_anchor(members: tuple[str, ...], ctx: _Context) -> str:
+def _scc_anchor(members: Sequence[str], ctx: _Context) -> str:
     prefix = _common_prefix(members)
     return anchor_for_prefix(prefix, ctx.edges_list)
 
@@ -164,7 +164,7 @@ def _iter_diagnostics(ctx: _Context) -> Iterator[ReportLine]:
         yield from _sld834(score, ctx)
 
 
-def scan_paths(fs: FileSystem, roots: list[str]) -> list[ReportLine]:
+def scan_paths(fs: FileSystem, roots: Sequence[str]) -> Sequence[ReportLine]:
     """Walk ``roots`` via ``fs`` and return SLD83x report lines for the workspace.
 
     Builds the runtime import graph (excluding ``TYPE_CHECKING`` blocks), runs

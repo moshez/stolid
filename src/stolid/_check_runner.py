@@ -7,7 +7,7 @@ import io
 import itertools
 import tokenize
 from dataclasses import dataclass
-from typing import Iterable, Iterator, Protocol, Sequence
+from typing import AbstractSet, Iterable, Iterator, Mapping, Protocol, Sequence
 
 from ._ast_inspection import FunctionComplexity, collect_imports
 from ._constants import MAX_FUNCTION_LINES
@@ -86,11 +86,11 @@ class CheckContext:
     to the deepest bracket stack opened on that line.
     """
 
-    patch_names: set[str]
-    abstractmethod_names: set[str]
-    cast_names: set[str]
+    patch_names: AbstractSet[str]
+    abstractmethod_names: AbstractSet[str]
+    cast_names: AbstractSet[str]
     lines: Sequence[str]
-    bracket_depths: dict[int, int]
+    bracket_depths: Mapping[int, int]
 
 
 _PRIVACY_CODES: dict[PrivacyKind, str] = {

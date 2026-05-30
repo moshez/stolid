@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import ast
 from dataclasses import dataclass, field
-from typing import Iterator
+from typing import AbstractSet, Iterator, Sequence
 
 from ._ast_inspection import iter_runtime_nodes, safe_parse
 from ._workspace_walk import FileSystem, iter_python_files
@@ -28,7 +28,7 @@ class ModuleEdges:
     """
 
     importer: str
-    targets: frozenset[str]
+    targets: AbstractSet[str]
     anchor_path: str
 
 
@@ -143,7 +143,7 @@ def _parse_one(fs: FileSystem, path: str, state: _ScanState) -> None:
         state.init_paths[module] = path
 
 
-def extract_graph(fs: FileSystem, roots: list[str]) -> list[ModuleEdges]:
+def extract_graph(fs: FileSystem, roots: Sequence[str]) -> Sequence[ModuleEdges]:
     """Walk ``roots`` via ``fs`` and return the runtime import edges per module.
 
     The result is one ``ModuleEdges`` per parsed module; edges target only
@@ -164,12 +164,12 @@ def extract_graph(fs: FileSystem, roots: list[str]) -> list[ModuleEdges]:
     return output
 
 
-def _iter_paths(fs: FileSystem, roots: list[str]) -> Iterator[str]:
+def _iter_paths(fs: FileSystem, roots: Sequence[str]) -> Iterator[str]:
     for r in roots:
         yield from iter_python_files(fs, r)
 
 
-def anchor_for_prefix(prefix: str, edges_list: list[ModuleEdges]) -> str:
+def anchor_for_prefix(prefix: str, edges_list: Sequence[ModuleEdges]) -> str:
     """Return the file path that best anchors a diagnostic about ``prefix``.
 
     Searches ``edges_list`` (one entry per parsed module) for files whose
