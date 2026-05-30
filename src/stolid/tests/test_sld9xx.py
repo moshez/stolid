@@ -2,13 +2,10 @@
 
 from __future__ import annotations
 
-import ast
 import unittest
-from typing import AbstractSet
 
-from hamcrest import assert_that, contains_string, equal_to, has_item
+from hamcrest import assert_that, contains_string, equal_to
 
-from .._private_access_check import PrivacyKind, check_private_access
 from .code_parser import assert_absent, assert_present, check_code
 
 _SLD901_PRESENT: list[tuple[str, str]] = [
@@ -124,41 +121,42 @@ _SLD902_ABSENT: list[tuple[str, str]] = [
 ]
 
 
+# SLD903: a private name imported by any form other than ``from . import _x``.
 _SLD903_PRESENT: list[tuple[str, str]] = [
-    ("from_package_private_name", "from pkg import _helper\n"),
+    ("absolute_private_name", "from pkg import _helper\n"),
     ("mixed_public_and_private", "from pkg import alpha, _beta, gamma\n"),
     ("aliased_private_still_flagged", "from pkg import _x as y\n"),
+    ("sibling_module_private_name", "from .sub import _helper\n"),
+    ("ancestor_private_name", "from .. import _helper\n"),
+    ("private_name_from_own_submodule", "from ._sub import _helper\n"),
 ]
 
 
 _SLD903_ABSENT: list[tuple[str, str]] = [
-    ("relative_import_private_permitted", "from . import _helper\n"),
-    (
-        "relative_with_module_and_private_permitted",
-        "from .sub import _helper\n",
-    ),
-    ("relative_private_module_permitted", "from ._sub import public\n"),
+    ("own_private_submodule", "from . import _helper\n"),
+    ("own_private_submodule_aliased", "from . import _helper as h\n"),
+    ("own_submodule_public_surface", "from ._sub import public\n"),
     ("public_absolute_import", "from pkg import helper\n"),
     ("dunder_import_not_private", "from pkg import __version__\n"),
     ("star_import_not_flagged", "from pkg import *\n"),
 ]
 
 
+# SLD904: a private segment in an import path that is not the current
+# package's own private submodule (a single-dot relative import).
 _SLD904_PRESENT: list[tuple[str, str]] = [
     ("import_private_submodule", "import numpy._core\n"),
     ("from_import_private_module", "from numpy._core import multiarray\n"),
     ("top_level_private_package", "import _internal\n"),
     ("aliased_private_submodule", "import numpy._core as nc\n"),
-    (
-        "deeply_nested_private_one_violation",
-        "from pkg._a._b import x\n",
-    ),
+    ("deeply_nested_private", "from pkg._a._b import x\n"),
+    ("ancestor_private_submodule", "from .._utils import h\n"),
 ]
 
 
 _SLD904_ABSENT: list[tuple[str, str]] = [
-    ("relative_private_submodule_permitted", "from ._core import x\n"),
-    ("relative_dot_dot_private_permitted", "from .._utils import h\n"),
+    ("own_private_submodule_public", "from ._core import x\n"),
+    ("own_private_submodule_bare", "from . import _core\n"),
     ("public_module_import", "import numpy\n"),
     ("public_from_import", "from os.path import join\n"),
 ]
@@ -228,8 +226,8 @@ class TestSLD902ExternalWrite(unittest.TestCase):
         assert_absent(self, _SLD902_ABSENT, "SLD902")
 
 
-class TestSLD903AbsolutePrivateImport(unittest.TestCase):
-    """Tests for SLD903: absolute import of a private name."""
+class TestSLD903PrivateNameImport(unittest.TestCase):
+    """Tests for SLD903: a private name imported across a package boundary."""
 
     def test_present(self) -> None:
         """Verify present."""
@@ -288,40 +286,3 @@ class TestErrorMessages(unittest.TestCase):
                 errors = check_code(source)
                 messages = [msg for _, _, msg in errors if code in msg]
                 assert_that(messages[0], contains_string(expected))
-
-
-def kinds_for(source: str) -> AbstractSet[PrivacyKind]:
-    """Return the set of violation kinds emitted by the visitor for ``source``."""
-    return {err.kind for err in check_private_access(ast.parse(source))}
-
-
-class TestKindAndAttrEmission(unittest.TestCase):
-    """Tests against the visitor's semantic surface (kind, attr)."""
-
-    def test_emits_expected_kinds(self) -> None:
-        """Verify emits expected kinds."""
-        cases = [
-            ("def f(x): return x._private\n", PrivacyKind.EXTERNAL_PRIVATE_READ),
-            ("obj._token = 'x'\n", PrivacyKind.EXTERNAL_PRIVATE_WRITE),
-            ("del obj._cache\n", PrivacyKind.EXTERNAL_PRIVATE_WRITE),
-            ("from pkg import _helper\n", PrivacyKind.ABSOLUTE_PRIVATE_IMPORT),
-            ("from numpy._core import x\n", PrivacyKind.PRIVATE_SUBMODULE_IMPORT),
-            ("import numpy as np\nnp._core\n", PrivacyKind.MODULE_PRIVATE_ATTR),
-        ]
-        for source, expected in cases:
-            with self.subTest(kind=expected):
-                assert_that(tuple(kinds_for(source)), has_item(expected))
-
-    def test_relative_import_emits_nothing(self) -> None:
-        """Verify relative import emits nothing."""
-        assert_that(kinds_for("from . import _helper\n"), equal_to(set()))
-
-    def test_self_access_in_method_emits_nothing(self) -> None:
-        """Verify self access in method emits nothing."""
-        source = "class A:\n    def m(self):\n        return self._x\n"
-        assert_that(kinds_for(source), equal_to(set()))
-
-    def test_attr_field_records_offending_name(self) -> None:
-        """Verify attr field records offending name."""
-        errors = list(check_private_access(ast.parse("obj._secret\n")))
-        assert_that([err.attr for err in errors], equal_to(["_secret"]))

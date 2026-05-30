@@ -4,14 +4,21 @@
 #
 # - ``external_private_read``: reading ``obj._attr`` outside the owning class.
 # - ``external_private_write``: assigning or deleting ``obj._attr`` outside it.
-# - ``absolute_private_import``: ``from pkg import _name`` (absolute import).
-# - ``private_submodule_import``: ``import pkg._sub`` or
-#   ``from pkg._sub import x``.
+# - ``private_name_import``: importing a private name by any form other than
+#   ``from . import _name`` -- the sole way to bind the current package's own
+#   private submodule.
+# - ``private_submodule_import``: a private segment in an import's dotted path
+#   (``import pkg._sub``, ``from pkg._sub import x``, ``from .._sub import y``),
+#   except the current package's own private submodule (``from ._sub import x``).
 # - ``module_private_attr``: ``mod._attr`` where ``mod`` is a name bound by an
 #   import.
 #
-# Relative imports (``from . import _x``, ``from ._sub import y``) are permitted:
-# the syntax itself draws the package boundary.
+# Only the current package exposes a private surface you may reach: ``from .
+# import _x`` binds an own private submodule, and ``from ._sub import public``
+# reads its public surface. Every other relative form reaches across a package
+# boundary -- up into an ancestor (``from .. import _x``, ``from .._sub import
+# y``) or sideways into a sibling's private name (``from .sub import _x``) --
+# and is flagged just like an absolute private import.
 
 from __future__ import annotations
 
@@ -34,7 +41,7 @@ class PrivacyKind(Enum):
 
     EXTERNAL_PRIVATE_READ = auto()
     EXTERNAL_PRIVATE_WRITE = auto()
-    ABSOLUTE_PRIVATE_IMPORT = auto()
+    PRIVATE_NAME_IMPORT = auto()
     PRIVATE_SUBMODULE_IMPORT = auto()
     MODULE_PRIVATE_ATTR = auto()
 
@@ -196,12 +203,13 @@ def _visit_import(node: ast.Import, state: _State) -> None:
 
 
 def _visit_import_from(node: ast.ImportFrom, state: _State) -> None:
-    absolute = node.level == 0
-    if absolute and node.module is not None and _has_private_segment(node.module):
-        state.record(node, PrivacyKind.PRIVATE_SUBMODULE_IMPORT, node.module)
+    module = node.module
+    if module is not None and _has_private_segment(module) and node.level != 1:
+        state.record(node, PrivacyKind.PRIVATE_SUBMODULE_IMPORT, module)
+    own_package = node.level == 1 and module is None
     for alias in node.names:
-        if absolute and _is_private(alias.name):
-            state.record(node, PrivacyKind.ABSOLUTE_PRIVATE_IMPORT, alias.name)
+        if _is_private(alias.name) and not own_package:
+            state.record(node, PrivacyKind.PRIVATE_NAME_IMPORT, alias.name)
         state.bind_import(alias.asname or alias.name)
 
 
