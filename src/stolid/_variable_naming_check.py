@@ -183,23 +183,20 @@ def _diff_by_substitution(left: str, right: str) -> bool:
 
 
 def _diff_by_one_insertion(shorter: str, longer: str) -> bool:
-    # Walk both strings, allowing exactly one skipped char in ``longer``.
-    short_index = 0
-    long_index = 0
-    inserted: str | None = None
-    while long_index < len(longer):
-        if short_index < len(shorter) and shorter[short_index] == longer[long_index]:
-            short_index += 1
-            long_index += 1
-        elif inserted is not None:
-            return False
-        else:
-            inserted = longer[long_index]
-            long_index += 1
-    if short_index != len(shorter):  # pragma: no cover
+    # ``longer`` is exactly one character longer than ``shorter``: the first
+    # position where they disagree (or the trailing slot, when ``shorter`` is
+    # a prefix) holds the inserted character, and the remainder must line up.
+    prefix = next(
+        (
+            index
+            for index, (short_char, long_char) in enumerate(zip(shorter, longer))
+            if short_char != long_char
+        ),
+        len(shorter),
+    )
+    if shorter[prefix:] != longer[prefix + 1 :]:
         return False
-    assert inserted is not None
-    return inserted.isalpha()
+    return longer[prefix].isalpha()
 
 
 def _eligible_bindings(found: list[_Binding]) -> list[_Binding]:
