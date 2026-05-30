@@ -113,6 +113,11 @@ def lint(session):
         "stolid",
         "--max-line-length=88",
         "--ignore=E203,E503,W503",
+        "--style=google",
+        "--skip-checking-short-docstrings=False",
+        "--arg-type-hints-in-docstring=False",
+        "--check-return-types=False",
+        "--check-yield-types=False",
         "src/",
     )
 

@@ -7,7 +7,11 @@
 black==26.1.0
     # via stolid (pyproject.toml)
 click==8.3.1
-    # via black
+    # via
+    #   black
+    #   pydoclint
+docstring-parser-fork==0.0.14
+    # via pydoclint
 flake8==7.3.0
     # via stolid (pyproject.toml)
 mccabe==0.7.0
@@ -22,10 +26,14 @@ pathspec==1.0.3
     # via
     #   black
     #   stolid (pyproject.toml)
+placard==2026.5.30.83589
+    # via stolid (pyproject.toml)
 platformdirs==4.5.1
     # via black
 pycodestyle==2.14.0
     # via flake8
+pydoclint==0.8.4
+    # via stolid (pyproject.toml)
 pyflakes==3.4.0
     # via flake8
 pytokens==0.4.0
