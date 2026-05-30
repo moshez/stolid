@@ -2,18 +2,31 @@
 
 from __future__ import annotations
 
-from typing import Mapping, Sequence
+from typing import Mapping, Protocol, Sequence
 
-from .._import_graph_extract import ModuleEdges, extract_graph
-from .._import_graph_scan import scan_paths
+from ..cli import import_edges, import_graph_report
 from .code_parser import dedent_files
 from .fakes import InMemoryFileSystem
 
 
-def extract_edges(files: Mapping[str, str]) -> list[ModuleEdges]:
+class _Edge(Protocol):
+    # One module's resolved import-graph edges.
+
+    @property
+    def importer(self) -> str:
+        """Return the dotted name of the importing module."""
+        ...
+
+    @property
+    def targets(self) -> frozenset[str]:
+        """Return the dotted names this module imports within the workspace."""
+        ...
+
+
+def extract_edges(files: Mapping[str, str]) -> Sequence[_Edge]:
     """Return the import-graph edges extracted from in-memory ``files``."""
     fs = InMemoryFileSystem(_files=dedent_files(files))
-    return list(extract_graph(fs, ["."]))
+    return list(import_edges(fs, ["."]))
 
 
 def targets_of(files: Mapping[str, str], importer: str) -> frozenset[str]:
@@ -24,7 +37,7 @@ def targets_of(files: Mapping[str, str], importer: str) -> frozenset[str]:
 def scan_to_pairs(files: Mapping[str, str]) -> Sequence[tuple[str, str]]:
     """Scan ``files`` and return ``(path, message)`` pairs for each report line."""
     fs = InMemoryFileSystem(_files=dedent_files(files))
-    return [(line.path, line.message) for line in scan_paths(fs, ["."])]
+    return [(line.path, line.message) for line in import_graph_report(fs, ["."])]
 
 
 def importers_of(files: Mapping[str, str]) -> frozenset[str]:

@@ -11,9 +11,9 @@ import os
 import subprocess
 import sys
 from dataclasses import dataclass
-from typing import Iterator
+from typing import Iterator, Sequence
 
-from ._duplicate_cli import parse_argv, run_stolid
+from .cli import parse_argv, run_stolid
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -32,9 +32,9 @@ class _RealFileSystem:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class _RealRunner:
-    def run(self, argv: list[str]) -> int:  # noqa: SLD303
+    def run(self, argv: Sequence[str]) -> int:  # noqa: SLD303
         """Run subprocess with ``argv`` and return its exit code."""
-        return subprocess.call(argv)
+        return subprocess.call(list(argv))
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)

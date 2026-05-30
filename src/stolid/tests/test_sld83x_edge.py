@@ -3,12 +3,10 @@
 from __future__ import annotations
 
 import unittest
-from typing import Mapping
 
 from hamcrest import assert_that, equal_to, has_length
 
-from .._duplicate_cli import Invocation, run_stolid
-from .._import_graph_extract import anchor_for_prefix
+from ..cli import Invocation, run_stolid
 from ._sld83x_shared import (
     all_to_all,
     extract_edges,
@@ -21,10 +19,6 @@ from .fakes import CapturedSink, FixedRunner, InMemoryFileSystem
 
 PKG_FIRST = "pkg.a"
 PKG_SECOND = "pkg.b"
-
-
-def _anchor_of(files: Mapping[str, str], prefix: str) -> str:
-    return anchor_for_prefix(prefix, extract_edges(files))
 
 
 _TYPING_DOTTED_GUARD = {
@@ -103,38 +97,6 @@ class TestModuleNameResolution(unittest.TestCase):
         assert_that(importers_of(files), equal_to(frozenset({"script", "other"})))
 
 
-class TestAnchorForPrefix(unittest.TestCase):
-    """Verifying ``anchor_for_prefix`` over a few module layouts."""
-
-    def test_prefix_with_only_module_files(self) -> None:
-        """Verify the lexicographically-first module file is the fallback."""
-        files = {
-            "top1.py": "",
-            "top2.py": "import top1\n",
-        }
-        # Empty prefix matches everything; no __init__ exists, so fallback.
-        assert_that(_anchor_of(files, ""), equal_to("top1.py"))
-
-    def test_modules_outside_prefix_skipped(self) -> None:
-        """Verify ``anchor_for_prefix`` ignores modules outside the prefix."""
-        files = {
-            "pkg/__init__.py": "",
-            "pkg/a.py": "",
-            "other.py": "",
-        }
-        assert_that(_anchor_of(files, "pkg"), equal_to("pkg/__init__.py"))
-
-    def test_descendant_init_preferred_over_sibling_modules(self) -> None:
-        """Verify ``__init__.py`` paths win over plain module files."""
-        files = {
-            "pkg/__init__.py": "",
-            "pkg/a.py": "",
-            "pkg/sub/__init__.py": "",
-            "pkg/sub/b.py": "",
-        }
-        assert_that(_anchor_of(files, "pkg"), equal_to("pkg/__init__.py"))
-
-
 class TestSLD834SilentFraction(unittest.TestCase):
     """SLD834 silent when level has ≥ 10 nodes but no SCC dominates."""
 
@@ -164,6 +126,23 @@ class TestSCCAnchorEdgeCases(unittest.TestCase):
         rows = scan_to_pairs(files)
         anchors = {path for path, msg in rows if "SLD831" in msg}
         assert_that(anchors, equal_to({"pkg/__init__.py"}))
+
+    def test_scc_anchor_skips_modules_outside_prefix(self) -> None:
+        """Verify the anchor search ignores modules outside the SCC's prefix."""
+        # A 16-module cycle under ``pkg`` trips SLD831; ``other`` sits outside
+        # the ``pkg`` prefix and must be skipped, leaving the package init.
+        files = dict(all_to_all(16, prefix="pkg"))
+        files["other.py"] = ""
+        anchors = [path for path, msg in scan_to_pairs(files) if "SLD831" in msg]
+        assert_that(anchors, equal_to(["pkg/__init__.py"]))
+
+    def test_scc_anchor_falls_back_to_module_file(self) -> None:
+        """Verify an SCC with no ``__init__.py`` anchors on a module file."""
+        # 16 top-level modules form a cycle: the common prefix is empty and no
+        # ``__init__.py`` exists, so the anchor is the first module file.
+        rows = scan_to_pairs(all_to_all(16, prefix=""))
+        anchors = [path for path, msg in rows if "SLD831" in msg]
+        assert_that(anchors, equal_to(["m0.py"]))
 
 
 class TestFirstInitFallback(unittest.TestCase):
