@@ -6,9 +6,18 @@ import ast
 import os
 import re
 from dataclasses import dataclass
-from typing import Iterable, Iterator, Protocol, Sequence, TypeGuard, TypeVar
+from typing import (
+    AbstractSet,
+    Iterable,
+    Iterator,
+    Mapping,
+    Protocol,
+    Sequence,
+    TypeGuard,
+    TypeVar,
+)
 
-BAD_NAME_WORDS: frozenset[str] = frozenset(
+BAD_NAME_WORDS: AbstractSet[str] = frozenset(
     {"help", "helper", "helpers", "util", "utils", "manage", "manager", "managers"}
 )
 
@@ -218,7 +227,7 @@ def _line_cost(
 
 
 def _iter_line_costs(
-    node: FunctionType, lines: Sequence[str], bracket_depths: dict[int, int]
+    node: FunctionType, lines: Sequence[str], bracket_depths: Mapping[int, int]
 ) -> Iterator[_LineCost]:
     first_line = node.body[0].lineno
     last_line = node.body[-1].end_lineno or node.body[-1].lineno
@@ -234,7 +243,7 @@ def _cost_weight(cost: _LineCost) -> float:
 
 
 def get_function_complexity(
-    node: FunctionType, lines: Sequence[str], bracket_depths: dict[int, int]
+    node: FunctionType, lines: Sequence[str], bracket_depths: Mapping[int, int]
 ) -> FunctionComplexity:
     """Return the weighted-line complexity of function ``node``.
 
@@ -277,7 +286,9 @@ _ABSTRACT_WANTED = ("abstractmethod",)
 _CAST_WANTED = ("cast",)
 
 
-def collect_imports(tree: ast.AST) -> tuple[set[str], set[str], set[str]]:
+def collect_imports(
+    tree: ast.AST,
+) -> tuple[AbstractSet[str], AbstractSet[str], AbstractSet[str]]:
     """Return names bound in ``tree`` that alias patch, abstractmethod, and cast."""
     patch_names: set[str] = set()
     abstractmethod_names: set[str] = {"abstractmethod"}
@@ -300,7 +311,7 @@ def collect_imports(tree: ast.AST) -> tuple[set[str], set[str], set[str]]:
 _WORD_SPLIT_PATTERN = re.compile(r"_|(?<=[a-z])(?=[A-Z])")
 
 
-def split_identifier_into_words(name: str) -> list[str]:
+def split_identifier_into_words(name: str) -> Sequence[str]:
     """Split identifier ``name`` into its words and return them.
 
     Splits on underscores and CamelCase boundaries.

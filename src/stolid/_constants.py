@@ -4,13 +4,15 @@
 
 from __future__ import annotations
 
+from typing import AbstractSet
+
 # Duplicate detector thresholds
 MIN_CLONE_NODES = 12
 MIN_CLONE_SCORE = 2.5
 
 # Dangerous builtins for dynamic code execution. Any use is a strong signal
 # of metaprogramming shenanigans and should be carefully audited.
-DANGEROUS_BUILTINS: frozenset[str] = frozenset({"exec", "eval", "__import__"})
+DANGEROUS_BUILTINS: AbstractSet[str] = frozenset({"exec", "eval", "__import__"})
 
 # Code limits
 MAX_FUNCTION_LINES = 30
@@ -21,7 +23,7 @@ MAX_MODULE_LINES = 400
 MAX_MODULE_REFERENCES = 7
 
 # Allowed base classes for inheritance
-ALLOWED_BASES: frozenset[str] = frozenset(
+ALLOWED_BASES: AbstractSet[str] = frozenset(
     {
         # typing
         "Protocol",

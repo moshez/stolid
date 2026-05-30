@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import ast
 from dataclasses import dataclass, field
-from typing import Iterator
+from typing import AbstractSet, Iterator, Sequence
 
 from ._ast_inspection import safe_parse
 from ._contract_annotation import ContractError, ContractViolation, classify_annotation
@@ -64,7 +64,7 @@ class SymbolTable:
     in the scanned workspace.
     """
 
-    concrete_only: frozenset[str]
+    concrete_only: AbstractSet[str]
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -137,7 +137,7 @@ def build_symbol_table(state: _ScanState) -> SymbolTable:
     return SymbolTable(concrete_only=frozenset(state.concrete - state.contracts))
 
 
-def scan_paths(fs: FileSystem, roots: list[str]) -> list[ReportLine]:
+def scan_paths(fs: FileSystem, roots: Sequence[str]) -> Sequence[ReportLine]:
     """Scan ``roots`` via ``fs`` and return one report line per violation."""
     state = _ScanState()
     for path in roots:

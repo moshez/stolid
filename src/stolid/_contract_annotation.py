@@ -18,7 +18,7 @@ from __future__ import annotations
 import ast
 from dataclasses import dataclass
 from enum import Enum, auto
-from typing import Iterator
+from typing import AbstractSet, Iterator
 
 from ._ast_inspection import get_base_name
 
@@ -104,7 +104,7 @@ def _slice_elements(node: ast.expr) -> list[ast.expr]:
 
 
 def _classify_name(
-    node: ast.expr, name: str, concrete_names: frozenset[str]
+    node: ast.expr, name: str, concrete_names: AbstractSet[str]
 ) -> Iterator[ContractError]:
     if name in _PRIMITIVES or name in _ABSTRACT_GENERICS:
         return
@@ -126,7 +126,7 @@ def _classify_name(
 
 
 def _classify_tuple_subscript(
-    node: ast.Subscript, concrete_names: frozenset[str]
+    node: ast.Subscript, concrete_names: AbstractSet[str]
 ) -> Iterator[ContractError]:
     elements = _slice_elements(node.slice)
     if len(elements) == 2 and _is_ellipsis(elements[1]):
@@ -143,7 +143,7 @@ def _classify_tuple_subscript(
 
 
 def _classify_callable_subscript(
-    node: ast.Subscript, concrete_names: frozenset[str]
+    node: ast.Subscript, concrete_names: AbstractSet[str]
 ) -> Iterator[ContractError]:
     elements = _slice_elements(node.slice)
     for child in elements:
@@ -157,7 +157,7 @@ def _classify_callable_subscript(
 
 
 def _classify_annotated_subscript(
-    node: ast.Subscript, concrete_names: frozenset[str]
+    node: ast.Subscript, concrete_names: AbstractSet[str]
 ) -> Iterator[ContractError]:
     elements = _slice_elements(node.slice)
     if not elements:
@@ -166,14 +166,14 @@ def _classify_annotated_subscript(
 
 
 def _classify_slice(
-    node: ast.Subscript, concrete_names: frozenset[str]
+    node: ast.Subscript, concrete_names: AbstractSet[str]
 ) -> Iterator[ContractError]:
     for child in _slice_elements(node.slice):
         yield from classify_annotation(child, concrete_names)
 
 
 def _classify_subscript(
-    node: ast.Subscript, concrete_names: frozenset[str]
+    node: ast.Subscript, concrete_names: AbstractSet[str]
 ) -> Iterator[ContractError]:
     head = get_base_name(node.value)
     if head in _LITERAL_NAMES:
@@ -195,7 +195,7 @@ def _classify_subscript(
 
 
 def _classify_binop(
-    node: ast.BinOp, concrete_names: frozenset[str]
+    node: ast.BinOp, concrete_names: AbstractSet[str]
 ) -> Iterator[ContractError]:
     if isinstance(node.op, ast.BitOr):  # pragma: no branch
         yield from classify_annotation(node.left, concrete_names)
@@ -203,7 +203,7 @@ def _classify_binop(
 
 
 def classify_annotation(
-    node: ast.expr, concrete_names: frozenset[str]
+    node: ast.expr, concrete_names: AbstractSet[str]
 ) -> Iterator[ContractError]:
     """Yield SLD80x violations found in annotation ``node``.
 

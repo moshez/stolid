@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import unittest
-from typing import Sequence
+from typing import Mapping, Sequence
 
 from hamcrest import assert_that, equal_to, has_item
 
@@ -16,7 +16,7 @@ TAKE_BODY = (
 )
 
 
-def files(**code: str) -> dict[str, str]:
+def files(**code: str) -> Mapping[str, str]:
     """Bundle ``code`` keyword mappings and return them as a ``path -> source`` dict."""
     return dict(code)
 
