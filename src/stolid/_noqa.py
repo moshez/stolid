@@ -11,7 +11,15 @@ _NOQA_RE = re.compile(r"#\s*noqa(?::\s*([A-Z]+\d+(?:\s*,\s*[A-Z]+\d+)*))?", re.I
 
 
 def is_suppressed(line_text: str, code: str) -> bool:
-    """Return True iff ``line_text`` carries a ``# noqa`` marker covering ``code``."""
+    """Return True iff ``line_text`` carries a ``# noqa`` marker covering ``code``.
+
+    Args:
+        line_text: The raw source line to inspect for a ``# noqa`` comment.
+        code: The diagnostic code (e.g. ``SLD901``) to check for suppression.
+
+    Returns:
+        True if the line suppresses the given code, False otherwise.
+    """
     match = _NOQA_RE.search(line_text)
     if match is None:
         return False

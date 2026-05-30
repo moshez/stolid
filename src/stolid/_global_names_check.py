@@ -18,6 +18,11 @@ class GlobalNameError:
 
     ``lineno``/``col_offset`` locate the offending definition; ``message``
     is the formatted diagnostic.
+
+    Attributes:
+        lineno: Line number of the offending definition.
+        col_offset: Column offset of the offending definition.
+        message: The formatted SLD702 diagnostic string.
     """
 
     lineno: int
@@ -44,7 +49,14 @@ def _check_name(name: str, lineno: int, col_offset: int) -> Iterator[GlobalNameE
 
 
 def check_global_names(tree: ast.Module) -> Iterator[GlobalNameError]:
-    """Yield errors for module-level definitions in ``tree`` shadowing reserved."""
+    """Yield errors for module-level definitions in ``tree`` shadowing reserved.
+
+    Args:
+        tree: The module AST to check for reserved-name shadowing.
+
+    Yields:
+        One error per module-level definition that shadows a reserved name.
+    """
     for node in tree.body:
         if isinstance(node, NAMED_DEF_NODES):
             yield from _check_name(node.name, node.lineno, node.col_offset)

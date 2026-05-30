@@ -67,6 +67,11 @@ class DocstringError:
 
     Attributes ``lineno`` and ``col_offset`` locate the offending node;
     ``message`` is the formatted SLD81x/SLD82x diagnostic.
+
+    Attributes:
+        lineno: The line number of the offending node.
+        col_offset: The column offset of the offending node.
+        message: The formatted SLD81x/SLD82x diagnostic message.
     """
 
     lineno: int
@@ -215,6 +220,14 @@ def _check_module_docstring(
 
 
 def check_docstrings(tree: ast.Module, filename: str) -> Iterator[DocstringError]:
-    """Yield SLD81x/SLD82x violations for ``tree`` parsed from ``filename``."""
+    """Yield SLD81x/SLD82x violations for ``tree`` parsed from ``filename``.
+
+    Args:
+        tree: The parsed module AST to check for docstring violations.
+        filename: The source filename, used to derive the module name.
+
+    Yields:
+        Each SLD81x/SLD82x docstring violation found in ``tree``.
+    """
     yield from _check_module_docstring(tree, filename)
     yield from _walk_scope(tree.body)

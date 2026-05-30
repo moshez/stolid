@@ -14,6 +14,10 @@ class ImportPlacementError:
     """An import-placement violation.
 
     ``lineno`` and ``col_offset`` locate the misplaced import.
+
+    Attributes:
+        lineno: Line number of the misplaced import.
+        col_offset: Column offset of the misplaced import.
     """
 
     lineno: int
@@ -57,6 +61,13 @@ def _check_nested_imports(tree: ast.Module) -> Iterator[ImportPlacementError]:
 
 
 def check_import_placement(tree: ast.Module) -> Iterator[ImportPlacementError]:
-    """Yield errors for imports in ``tree`` that are not at the top of the module."""
+    """Yield errors for imports in ``tree`` that are not at the top of the module.
+
+    Args:
+        tree: The module AST to check for misplaced imports.
+
+    Yields:
+        One error per import statement not at the top of the module.
+    """
     yield from _check_module_body(tree)
     yield from _check_nested_imports(tree)

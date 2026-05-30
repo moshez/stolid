@@ -15,6 +15,12 @@ class ReportLine:
 
     Fields ``path``, ``line``, and ``col`` locate the diagnostic; ``message``
     is the human-readable text.
+
+    Attributes:
+        path: The file path where the diagnostic was found.
+        line: The 1-based line number of the diagnostic.
+        col: The 0-based column offset of the diagnostic.
+        message: The human-readable diagnostic text.
     """
 
     path: str
@@ -24,5 +30,12 @@ class ReportLine:
 
 
 def format_line(line: ReportLine) -> str:
-    """Render report ``line`` as ``path:line:col: message`` and return the string."""
+    """Render report ``line`` as ``path:line:col: message`` and return the string.
+
+    Args:
+        line: The report line to format.
+
+    Returns:
+        A flake8-format string of the form ``path:line:col: message``.
+    """
     return f"{line.path}:{line.line}:{line.col}: {line.message}"

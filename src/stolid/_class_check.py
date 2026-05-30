@@ -13,12 +13,12 @@ from typing import AbstractSet, Iterator, Sequence
 from ._ast_inspection import (
     FUNCTION_DEF_NODES,
     FunctionType,
-    bad_name_errors_as,
     get_base_name,
     is_dataclass_decorator,
     is_dunder_name,
     is_name_among,
 )
+from ._ast_names import bad_name_errors_as
 from ._constants import ALLOWED_BASES, MAX_CLASS_METHODS, MAX_DATACLASS_FIELDS
 
 SLD201 = "SLD201 Import of ABC is prohibited (use Protocol instead)"
@@ -55,6 +55,11 @@ class ClassError:
 
     ``lineno`` and ``col_offset`` locate the offending node; ``message``
     is the formatted SLD2xx/SLD3xx/SLD4xx/SLD5xx/SLD603/SLD608 diagnostic.
+
+    Attributes:
+        lineno: The line number of the offending node.
+        col_offset: The column offset of the offending node.
+        message: The formatted SLD2xx/SLD3xx/SLD4xx/SLD5xx/SLD603/SLD608 message.
     """
 
     lineno: int
@@ -142,7 +147,14 @@ def _method_accesses_private_state(node: FunctionType) -> bool:
 
 
 def check_abc_import(node: ast.ImportFrom) -> Iterator[ClassError]:
-    """Yield SLD201/SLD202 for forbidden ``from abc import`` patterns in ``node``."""
+    """Yield SLD201/SLD202 for forbidden ``from abc import`` patterns in ``node``.
+
+    Args:
+        node: The ``from abc import`` statement to inspect.
+
+    Yields:
+        Each SLD201 or SLD202 violation found in ``node``.
+    """
     if node.module != "abc":
         return
     for alias in node.names:
@@ -167,6 +179,13 @@ def check_abstract_decorators(
 
     ``names`` are the module-local bindings that refer to
     ``abstractmethod`` (e.g. when imported under an alias).
+
+    Args:
+        decoration_list: The decorator list from the function or class node.
+        names: Module-local names bound to ``abstractmethod``.
+
+    Yields:
+        Each SLD202 violation found in ``decoration_list``.
     """
     yield from _name_decorator_errors(decoration_list, names, SLD202)
     for decorator in decoration_list:
@@ -247,8 +266,11 @@ def check_class(
 ) -> Iterator[ClassError]:
     """Yield SLD3xx/SLD4xx/SLD5xx/SLD603/SLD608/SLD701 violations for class ``node``.
 
-    ``abstractmethod_names`` is the set of module-local bindings that
-    refer to ``abstractmethod`` (used by the SLD202 decorator check).
+    Args:
+        node: The class definition AST node to check.
+        abstractmethod_names: Module-local bindings for ``abstractmethod``.
+    Yields:
+        Each class-rule violation found in ``node``.
     """
     yield from bad_name_errors_as(node.name, node.lineno, node.col_offset, ClassError)
     yield from check_abstract_decorators(node.decorator_list, abstractmethod_names)

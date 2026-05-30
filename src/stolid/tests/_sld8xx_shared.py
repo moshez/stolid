@@ -17,14 +17,28 @@ TAKE_BODY = (
 
 
 def files(**code: str) -> Mapping[str, str]:
-    """Bundle ``code`` keyword mappings and return them as a ``path -> source`` dict."""
+    """Bundle ``code`` keyword mappings and return them as a ``path -> source`` dict.
+
+    Args:
+        **code: Keyword arguments mapping path names to source strings.
+
+    Returns:
+        A ``path -> source`` dict built from the given keyword arguments.
+    """
     return dict(code)
 
 
 def just_801(
     result: Sequence[tuple[str, int, int, str]],
 ) -> Sequence[tuple[str, int, int, str]]:
-    """Return the entries of ``result`` whose message mentions SLD801."""
+    """Return the entries of ``result`` whose message mentions SLD801.
+
+    Args:
+        result: The full sequence of ``(path, line, col, message)`` report entries.
+
+    Returns:
+        Only the entries whose message contains ``SLD801``.
+    """
     return [item for item in result if "SLD801" in item[3]]
 
 
@@ -38,6 +52,10 @@ def assert_pair_positive(
     """Assert SLD801 is reported for each ``(name, a, b)`` in ``cases``.
 
     Subtests run on ``test_case``.
+
+    Args:
+        test_case: The test case used to run subtests.
+        cases: Triples of ``(name, source_a, source_b)`` to check.
     """
     for name, a, b in cases:
         with test_case.subTest(name=name):
@@ -50,6 +68,10 @@ def assert_pair_negative(
     """Assert SLD801 is NOT reported for each ``(name, a, b)`` in ``cases``.
 
     Subtests run on ``test_case``.
+
+    Args:
+        test_case: The test case used to run subtests.
+        cases: Triples of ``(name, source_a, source_b)`` to check.
     """
     for name, a, b in cases:
         with test_case.subTest(name=name):

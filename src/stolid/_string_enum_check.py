@@ -47,6 +47,11 @@ class StringEnumError:
 
     ``lineno`` and ``col_offset`` locate the offending literal; ``message``
     is the formatted SLD30x diagnostic.
+
+    Attributes:
+        lineno: Line number of the offending literal.
+        col_offset: Column offset of the offending literal.
+        message: The formatted SLD30x diagnostic string.
     """
 
     lineno: int
@@ -360,7 +365,14 @@ def _check_enum_identifier_values(tree: ast.Module) -> Iterator[StringEnumError]
 
 
 def check_string_enum(tree: ast.Module) -> Iterator[StringEnumError]:
-    """Yield errors in ``tree`` for stringly-typed code that should use an enum."""
+    """Yield errors in ``tree`` for stringly-typed code that should use an enum.
+
+    Args:
+        tree: The module AST to check for string-enum violations.
+
+    Yields:
+        One error per stringly-typed pattern that should use an enum.
+    """
     yield from _check_multi_compare(tree)
     yield from _check_match_statements(tree)
     yield from _check_module_string_count(tree)

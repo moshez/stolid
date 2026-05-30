@@ -20,6 +20,11 @@ class Location:
 
     ``path`` is the file location; ``line`` and ``col`` give the 1-based line
     number and 0-based column offset within it.
+
+    Attributes:
+        path: The file path.
+        line: The 1-based line number within the file.
+        col: The 0-based column offset within the line.
     """
 
     path: str
@@ -33,6 +38,11 @@ class CloneOccurrence:
 
     ``node_count`` is the total number of AST nodes in the cloned subtree;
     ``end_line`` is the 1-based last line the subtree spans.
+
+    Attributes:
+        location: The file location of this occurrence.
+        node_count: Total number of AST nodes in the cloned subtree.
+        end_line: The 1-based last line the subtree spans.
     """
 
     location: Location
@@ -46,6 +56,10 @@ class CloneGroup:
 
     ``digest`` is the shared Merkle hash and ``occurrences`` lists every
     place that subtree was found.
+
+    Attributes:
+        digest: The shared Merkle hash of the cloned subtree.
+        occurrences: Every place the subtree was found.
     """
 
     digest: bytes
@@ -58,6 +72,10 @@ class ScanResult:
 
     ``groups`` lists the clone groups found; ``syntax_errors`` lists paths
     that could not be parsed.
+
+    Attributes:
+        groups: The clone groups found during the scan.
+        syntax_errors: Paths that could not be parsed due to syntax errors.
     """
 
     groups: Sequence[CloneGroup] = field(default_factory=list)
@@ -179,7 +197,15 @@ def _scan_root(
 
 
 def scan_paths(fs: FileSystem, roots: Sequence[str]) -> ScanResult:
-    """Scan ``roots`` (via filesystem ``fs``) and return the clone groups found."""
+    """Scan ``roots`` (via filesystem ``fs``) and return the clone groups found.
+
+    Args:
+        fs: The filesystem used to read source files.
+        roots: The root paths to scan for Python files.
+
+    Returns:
+        The scan result containing clone groups and any syntax errors.
+    """
     entries: list[_PathOccurrence] = []
     syntax_errors: list[str] = []
     for path in roots:

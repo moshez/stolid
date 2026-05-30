@@ -4,39 +4,7 @@ from __future__ import annotations
 
 import ast
 import os
-import re
-from dataclasses import dataclass
-from typing import (
-    AbstractSet,
-    Iterable,
-    Iterator,
-    Mapping,
-    Protocol,
-    Sequence,
-    TypeGuard,
-    TypeVar,
-)
-
-BAD_NAME_WORDS: AbstractSet[str] = frozenset(
-    {"help", "helper", "helpers", "util", "utils", "manage", "manager", "managers"}
-)
-
-# SLD601 counts a *weighted* line budget, not raw lines. Each line's weight is
-# COMPLEXITY_FACTOR ** (indent_depth + max(0, bracket_depth - 1)), where
-# indent_depth is the line's indent past the function body's baseline (one
-# step = INDENT_WIDTH spaces), and bracket_depth is the deepest stack of
-# brackets opened on the line itself. Blank lines weigh 0; comment-only
-# lines weigh 1 unweighted. A flat function still costs ~1 per line, so
-# the budget reads roughly like a line count for unnested code.
-#
-# Factor 1.3 was chosen for symmetry with the spirit of cyclomatic
-# complexity while staying tolerable: depth-4 code costs ~2.86x per line,
-# so a budget of 30 fits ~10 lines of consistently 4-deep code -- enough
-# room for typical guard/branch nesting, harsh enough to push staircase
-# code toward extraction or early returns. INDENT_WIDTH is hardcoded to 4
-# in line with PEP 8 and stolid's opinionated stance on style.
-COMPLEXITY_FACTOR = 1.3
-INDENT_WIDTH = 4
+from typing import AbstractSet, Iterable, Iterator, TypeGuard
 
 FUNCTION_DEF_NODES = (ast.FunctionDef, ast.AsyncFunctionDef)
 FunctionType = ast.FunctionDef | ast.AsyncFunctionDef
@@ -54,6 +22,12 @@ def iter_name_targets(target: ast.expr) -> Iterator[ast.Name]:
 
     Recurses through tuple/list targets and ``Starred`` wrappers; other
     expression shapes (attribute, subscript) yield nothing.
+
+    Args:
+        target: The assignment target expression to walk.
+
+    Yields:
+        Each ``ast.Name`` bound by ``target``.
     """
     if isinstance(target, ast.Name):
         yield target
@@ -69,6 +43,12 @@ def iter_args(arguments: ast.arguments) -> Iterator[ast.arg]:
 
     Visits ``posonlyargs``, ``args``, ``kwonlyargs``, then ``vararg`` and
     ``kwarg`` if present.
+
+    Args:
+        arguments: The ``ast.arguments`` node to enumerate.
+
+    Yields:
+        Each ``ast.arg`` declared in ``arguments``.
     """
     yield from arguments.posonlyargs
     yield from arguments.args
@@ -80,22 +60,54 @@ def iter_args(arguments: ast.arguments) -> Iterator[ast.arg]:
 
 
 def is_name_id(node: ast.AST, name: str) -> TypeGuard[ast.Name]:
-    """Return True iff ``node`` is ``ast.Name`` with id ``name``."""
+    """Return True iff ``node`` is ``ast.Name`` with id ``name``.
+
+    Args:
+        node: The AST node to test.
+        name: The identifier to match against ``node.id``.
+
+    Returns:
+        True when ``node`` is an ``ast.Name`` whose id equals ``name``.
+    """
     return isinstance(node, ast.Name) and node.id == name
 
 
 def is_name_among(node: ast.AST, names: Iterable[str]) -> bool:
-    """Return True iff ``node`` is ``ast.Name`` whose id is in ``names``."""
+    """Return True iff ``node`` is ``ast.Name`` whose id is in ``names``.
+
+    Args:
+        node: The AST node to test.
+        names: The identifiers to match against ``node.id``.
+
+    Returns:
+        True when ``node`` is an ``ast.Name`` whose id is in ``names``.
+    """
     return isinstance(node, ast.Name) and node.id in names
 
 
 def is_attribute_attr(node: ast.AST, attr: str) -> bool:
-    """Return True iff ``node`` is ``ast.Attribute`` with ``.attr`` == ``attr``."""
+    """Return True iff ``node`` is ``ast.Attribute`` with ``.attr`` == ``attr``.
+
+    Args:
+        node: The AST node to test.
+        attr: The attribute name to match against ``node.attr``.
+
+    Returns:
+        True when ``node`` is an ``ast.Attribute`` whose attr equals ``attr``.
+    """
     return isinstance(node, ast.Attribute) and node.attr == attr
 
 
 def is_attribute_in(node: ast.AST, attrs: Iterable[str]) -> bool:
-    """Return True iff ``node`` is ``ast.Attribute`` whose attr is in ``attrs``."""
+    """Return True iff ``node`` is ``ast.Attribute`` whose attr is in ``attrs``.
+
+    Args:
+        node: The AST node to test.
+        attrs: The attribute names to match against ``node.attr``.
+
+    Returns:
+        True when ``node`` is an ``ast.Attribute`` whose attr is in ``attrs``.
+    """
     return isinstance(node, ast.Attribute) and node.attr in attrs
 
 
@@ -104,6 +116,13 @@ def safe_parse(source: str, filename: str) -> ast.Module | None:
 
     Cross-file scanners use this to skip un-parseable files rather than abort
     the whole scan.
+
+    Args:
+        source: The Python source text to parse.
+        filename: The filename associated with ``source`` for diagnostics.
+
+    Returns:
+        The parsed module, or ``None`` if ``source`` is not valid Python.
     """
     try:
         return ast.parse(source, filename=filename)
@@ -116,6 +135,12 @@ def is_type_checking_test(node: ast.expr) -> bool:
 
     Matches ``TYPE_CHECKING``, ``typing.TYPE_CHECKING``, ``t.TYPE_CHECKING``
     (and any other ``foo.TYPE_CHECKING`` alias) syntactically.
+
+    Args:
+        node: The ``if`` test expression to inspect.
+
+    Returns:
+        True when ``node`` names ``TYPE_CHECKING`` directly or as an attribute.
     """
     if isinstance(node, ast.Name):
         return node.id == "TYPE_CHECKING"
@@ -129,6 +154,12 @@ def iter_runtime_nodes(node: ast.AST) -> Iterator[ast.AST]:
 
     The ``else:`` branch of a ``TYPE_CHECKING`` guard still executes at
     runtime and is visited.
+
+    Args:
+        node: The AST node whose runtime descendants to walk.
+
+    Yields:
+        ``node`` and each descendant reachable at runtime.
     """
     if isinstance(node, ast.If) and is_type_checking_test(node.test):
         for stmt in node.orelse:
@@ -140,7 +171,14 @@ def iter_runtime_nodes(node: ast.AST) -> Iterator[ast.AST]:
 
 
 def get_base_name(node: ast.expr) -> str | None:
-    """Return the base-class name expressed by ``node``, or ``None`` if unknown."""
+    """Return the base-class name expressed by ``node``, or ``None`` if unknown.
+
+    Args:
+        node: The base-class expression to resolve.
+
+    Returns:
+        The simple name of the base class, or ``None`` if it cannot be derived.
+    """
     if isinstance(node, ast.Name):
         return node.id
     if isinstance(node, ast.Attribute):
@@ -151,7 +189,14 @@ def get_base_name(node: ast.expr) -> str | None:
 
 
 def is_dataclass_decorator(node: ast.expr) -> bool:
-    """Return True iff ``node`` is a ``@dataclass`` or ``@dataclasses.dataclass``."""
+    """Return True iff ``node`` is a ``@dataclass`` or ``@dataclasses.dataclass``.
+
+    Args:
+        node: The decorator expression to inspect.
+
+    Returns:
+        True when ``node`` names the ``dataclass`` decorator, called or bare.
+    """
     if is_name_id(node, "dataclass"):
         return True
     if is_attribute_attr(node, "dataclass"):
@@ -162,12 +207,26 @@ def is_dataclass_decorator(node: ast.expr) -> bool:
 
 
 def has_dataclass_decorator(node: ast.ClassDef) -> bool:
-    """Return True iff ``node`` carries a ``@dataclass`` decorator."""
+    """Return True iff ``node`` carries a ``@dataclass`` decorator.
+
+    Args:
+        node: The class definition to inspect.
+
+    Returns:
+        True when any decorator on ``node`` is a ``dataclass`` decorator.
+    """
     return any(is_dataclass_decorator(d) for d in node.decorator_list)
 
 
 def is_dunder_name(name: str) -> bool:
-    """Return True iff ``name`` is a dunder identifier (``__xxx__``)."""
+    """Return True iff ``name`` is a dunder identifier (``__xxx__``).
+
+    Args:
+        name: The identifier to test.
+
+    Returns:
+        True when ``name`` starts and ends with a double underscore.
+    """
     return name.startswith("__") and name.endswith("__")
 
 
@@ -176,6 +235,12 @@ def module_name_from_filename(filename: str) -> str | None:
 
     Returns ``None`` if ``filename`` is empty or does not end in ``.py``.
     Does not filter dunder modules; callers that care apply that check.
+
+    Args:
+        filename: The path whose module basename to extract.
+
+    Returns:
+        The basename without its ``.py`` suffix, or ``None`` if inapplicable.
     """
     if not filename:
         return None
@@ -183,94 +248,6 @@ def module_name_from_filename(filename: str) -> str | None:
     if not base.endswith(".py"):
         return None
     return base[:-3]
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class FunctionComplexity:
-    """Weighted-line complexity score for a function body.
-
-    ``weight`` is the sum of per-line weights. ``heaviest_line`` is the line
-    number of the most expensive body line; ``heaviest_weight`` is its
-    weight, and ``heaviest_indent`` / ``heaviest_brackets`` are the indent
-    depth and bracket depth that produced it.
-    """
-
-    weight: float
-    heaviest_line: int
-    heaviest_weight: float
-    heaviest_indent: int
-    heaviest_brackets: int
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class _LineCost:
-    lineno: int
-    weight: float
-    indent: int
-    brackets: int
-
-
-def _line_cost(
-    lineno: int, line: str, baseline_indent: int, bracket_depth: int
-) -> _LineCost:
-    stripped = line.lstrip()
-    if not stripped:
-        return _LineCost(lineno=lineno, weight=0.0, indent=0, brackets=bracket_depth)
-    if stripped.startswith("#"):
-        return _LineCost(lineno=lineno, weight=1.0, indent=0, brackets=bracket_depth)
-    indent_chars = len(line) - len(stripped)
-    indent = max(0, (indent_chars - baseline_indent) // INDENT_WIDTH)
-    weight = COMPLEXITY_FACTOR ** (indent + max(0, bracket_depth - 1))
-    return _LineCost(
-        lineno=lineno, weight=weight, indent=indent, brackets=bracket_depth
-    )
-
-
-def _iter_line_costs(
-    node: FunctionType, lines: Sequence[str], bracket_depths: Mapping[int, int]
-) -> Iterator[_LineCost]:
-    first_line = node.body[0].lineno
-    last_line = node.body[-1].end_lineno or node.body[-1].lineno
-    baseline = node.body[0].col_offset
-    for lineno in range(first_line, last_line + 1):
-        yield _line_cost(
-            lineno, lines[lineno - 1], baseline, bracket_depths.get(lineno, 0)
-        )
-
-
-def _cost_weight(cost: _LineCost) -> float:
-    return cost.weight
-
-
-def get_function_complexity(
-    node: FunctionType, lines: Sequence[str], bracket_depths: Mapping[int, int]
-) -> FunctionComplexity:
-    """Return the weighted-line complexity of function ``node``.
-
-    ``lines`` is the source of the enclosing module and ``bracket_depths``
-    maps each line number to its deepest opened bracket stack. See
-    ``_constants.py`` for the formula and rationale behind
-    ``COMPLEXITY_FACTOR`` and ``INDENT_WIDTH``.
-    """
-    assert node.body, "Function body cannot be empty in valid Python"
-    costs = list(_iter_line_costs(node, lines, bracket_depths))
-    heaviest = max(costs, key=_cost_weight)
-    return FunctionComplexity(
-        weight=sum(c.weight for c in costs),
-        heaviest_line=heaviest.lineno,
-        heaviest_weight=heaviest.weight,
-        heaviest_indent=heaviest.indent,
-        heaviest_brackets=heaviest.brackets,
-    )
-
-
-def get_function_arg_count(node: FunctionType) -> int:
-    """Return the argument count of function ``node`` (``self``/``cls`` excluded)."""
-    args = node.args
-    total = len(args.args) + len(args.posonlyargs) + len(args.kwonlyargs)
-    if args.args and args.args[0].arg in ("self", "cls"):  # noqa: SLD304
-        total -= 1
-    return total
 
 
 def _add_matching_aliases(
@@ -289,7 +266,14 @@ _CAST_WANTED = ("cast",)
 def collect_imports(
     tree: ast.AST,
 ) -> tuple[AbstractSet[str], AbstractSet[str], AbstractSet[str]]:
-    """Return names bound in ``tree`` that alias patch, abstractmethod, and cast."""
+    """Return names bound in ``tree`` that alias patch, abstractmethod, and cast.
+
+    Args:
+        tree: The module AST to scan for the relevant imports.
+
+    Returns:
+        The patch, abstractmethod, and cast name sets, in that order.
+    """
     patch_names: set[str] = set()
     abstractmethod_names: set[str] = {"abstractmethod"}
     cast_names: set[str] = set()
@@ -303,82 +287,3 @@ def collect_imports(
         if node.module == "typing":  # noqa: SLD304
             _add_matching_aliases(node.names, _CAST_WANTED, cast_names)
     return patch_names, abstractmethod_names, cast_names
-
-
-# Pattern to split identifiers into words:
-# - Split on underscores
-# - Split on CamelCase boundaries (lowercase followed by uppercase)
-_WORD_SPLIT_PATTERN = re.compile(r"_|(?<=[a-z])(?=[A-Z])")
-
-
-def split_identifier_into_words(name: str) -> Sequence[str]:
-    """Split identifier ``name`` into its words and return them.
-
-    Splits on underscores and CamelCase boundaries.
-
-    Examples:
-        "DiskUtil" -> ["Disk", "Util"]
-        "disk_util" -> ["disk", "util"]
-        "Futile" -> ["Futile"]
-        "MyHelperClass" -> ["My", "Helper", "Class"]
-    """
-    return [word for word in _WORD_SPLIT_PATTERN.split(name) if word]
-
-
-def find_bad_name_word(name: str) -> str | None:
-    """Return the first forbidden word in identifier ``name``, or ``None`` if absent."""
-    parts = split_identifier_into_words(name)
-    for word in parts:
-        if word.lower() in BAD_NAME_WORDS:
-            return word.lower()
-    return None
-
-
-SLD701 = "SLD701 Name '{}' contains forbidden word '{}' (use a more specific name)"
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class BadNameError:
-    """A bad-name violation.
-
-    ``lineno`` and ``col_offset`` locate the offending name; ``message``
-    is the formatted SLD701 diagnostic.
-    """
-
-    lineno: int
-    col_offset: int
-    message: str
-
-
-def bad_name_errors(name: str, lineno: int, col_offset: int) -> Iterator[BadNameError]:
-    """Yield SLD701 if ``name`` contains a forbidden word.
-
-    ``lineno`` and ``col_offset`` locate the offending name.
-    """
-    bad_word = find_bad_name_word(name)
-    if bad_word is not None:
-        yield BadNameError(
-            lineno=lineno, col_offset=col_offset, message=SLD701.format(name, bad_word)
-        )
-
-
-_E = TypeVar("_E", covariant=True)
-
-
-class _BadNameErrorFactory(Protocol[_E]):
-    def __call__(  # noqa: E704
-        self, *, lineno: int, col_offset: int, message: str
-    ) -> _E: ...
-
-
-def bad_name_errors_as(
-    name: str, lineno: int, col_offset: int, factory: _BadNameErrorFactory[_E]
-) -> Iterator[_E]:
-    """Yield ``factory(...)``-wrapped SLD701 errors for ``name``.
-
-    ``factory`` is called with ``lineno``, ``col_offset``, and ``message``
-    keyword arguments; use it to lift the shared ``BadNameError`` into
-    each module's local error dataclass.
-    """
-    for err in bad_name_errors(name, lineno, col_offset):
-        yield factory(lineno=err.lineno, col_offset=err.col_offset, message=err.message)

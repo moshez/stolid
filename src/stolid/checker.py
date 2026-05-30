@@ -7,11 +7,11 @@ from dataclasses import dataclass
 from typing import AbstractSet, Iterator, Sequence
 
 from ._ast_inspection import (
-    bad_name_errors,
     is_attribute_attr,
     is_name_id,
     module_name_from_filename,
 )
+from ._ast_names import bad_name_errors
 from ._check_runner import (
     CheckContext,
     ErrorLike,
@@ -52,7 +52,13 @@ __all__ = ["Checker"]
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class Error:
-    """A lint error: ``lineno``/``col_offset`` locate it; ``message`` describes it."""
+    """A lint error: ``lineno``/``col_offset`` locate it; ``message`` describes it.
+
+    Attributes:
+        lineno: The line number of the offending source position.
+        col_offset: The column offset of the offending source position.
+        message: The formatted SLDxxx diagnostic message.
+    """
 
     lineno: int
     col_offset: int
@@ -195,7 +201,15 @@ def _all_errors(
 
 @dataclass(frozen=True, slots=True)
 class Checker:  # noqa: SLD503 -- flake8 introspects positional plugin params
-    """Flake8 checker for stolid: parsed ``tree``, source ``lines``, ``filename``."""
+    """Flake8 checker for stolid: parsed ``tree``, source ``lines``, ``filename``.
+
+    Attributes:
+        name: The flake8 plugin name, always ``stolid``.
+        version: The plugin version string.
+        tree: The parsed module AST to check.
+        lines: The raw source lines of the module under check.
+        filename: The path of the file being checked.
+    """
 
     name = "stolid"
     version = "0.1.0"
@@ -205,7 +219,11 @@ class Checker:  # noqa: SLD503 -- flake8 introspects positional plugin params
     filename: str = ""
 
     def run(self) -> Iterator[tuple[int, int, str, type]]:  # noqa: SLD303
-        """Run all stolid checks and yield ``(line, col, message, type)`` tuples."""
+        """Run all stolid checks and yield ``(line, col, message, type)`` tuples.
+
+        Yields:
+            Each violation as a ``(line, col, message, type)`` tuple.
+        """
         cls = type(self)
         for err in _all_errors(self.tree, self.lines, self.filename):
             yield (err.lineno, err.col_offset, err.message, cls)

@@ -168,6 +168,13 @@ def scan_paths(fs: FileSystem, roots: Sequence[str]) -> Sequence[ReportLine]:
 
     Builds the runtime import graph (excluding ``TYPE_CHECKING`` blocks), runs
     the per-level analyses, and emits one line per finding.
+
+    Args:
+        fs: The filesystem used to read each path.
+        roots: The root directories to walk for Python files.
+
+    Returns:
+        The report lines describing any import-graph violations found.
     """
     edges_list = extract_graph(fs, roots)
     graph = _build_digraph(edges_list)

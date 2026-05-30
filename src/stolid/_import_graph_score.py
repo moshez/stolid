@@ -26,6 +26,14 @@ class LevelScore:
     as ``(members, weight)``. ``largest_scc_weight`` is the heaviest
     non-trivial SCC's total module weight, or 0 if none. ``condensation_depth``
     is the longest-path length in the condensation DAG.
+
+    Attributes:
+        level: The truncation depth used to build the quotient graph.
+        node_count: The number of distinct prefixes at this level.
+        total_weight: The sum of leaf module counts across all nodes.
+        sccs: Each non-trivial strongly-connected component as ``(members, weight)``.
+        largest_scc_weight: The heaviest non-trivial SCC's total module weight, or 0.
+        condensation_depth: The longest-path length in the condensation DAG.
     """
 
     level: int
@@ -62,6 +70,13 @@ def quotient_at_level(graph: ImportGraph, level: int) -> ImportGraph:
     distinct prefixes, edges aggregated, and a ``size`` attribute equal to
     the leaf count covered by each prefix. Self-loops introduced by
     collapsing are dropped.
+
+    Args:
+        graph: The full leaf-module import graph to collapse.
+        level: The prefix depth at which to truncate dotted module names.
+
+    Returns:
+        The quotient graph with aggregated node weights and edges.
     """
     mapping: dict[str, str] = {
         node: _quotient_node(node, level) for node in graph.nodes()
@@ -97,7 +112,15 @@ def _non_trivial_sccs(
 
 
 def score_level(graph: ImportGraph, level: int) -> LevelScore:
-    """Score ``graph`` at quotient ``level`` and return the aggregated metrics."""
+    """Score ``graph`` at quotient ``level`` and return the aggregated metrics.
+
+    Args:
+        graph: The full leaf-module import graph to score.
+        level: The prefix depth at which to collapse module names.
+
+    Returns:
+        The aggregated metrics for the quotient graph at this level.
+    """
     quotient = quotient_at_level(graph, level)
     sccs = _non_trivial_sccs(quotient)
     total_weight = sum(quotient.nodes[node]["size"] for node in quotient.nodes())
@@ -114,7 +137,14 @@ def score_level(graph: ImportGraph, level: int) -> LevelScore:
 
 
 def max_module_depth(graph: ImportGraph) -> int:
-    """Return the deepest dotted-name segment count across nodes in ``graph``."""
+    """Return the deepest dotted-name segment count across nodes in ``graph``.
+
+    Args:
+        graph: The import graph whose nodes are dotted module names.
+
+    Returns:
+        The maximum number of dotted-name segments across all nodes.
+    """
     assert graph.number_of_nodes() != 0  # the scan guards against empty graphs
     return max(node.count(".") + 1 for node in graph.nodes())
 
@@ -125,6 +155,12 @@ def reach_score(graph: ImportGraph) -> int:
     For every ordered pair ``(u, v)`` with ``u != v`` and ``v`` reachable from
     ``u``, add one. For every unordered pair of distinct modules in the same
     non-trivial strongly-connected component, add an additional one.
+
+    Args:
+        graph: The import graph to score.
+
+    Returns:
+        The reach score for the graph.
     """
     assert graph.number_of_nodes() != 0  # reach_density guards against empty graphs
     closure = nx.transitive_closure(graph, reflexive=False)
@@ -142,6 +178,12 @@ def reach_density(graph: ImportGraph) -> float:
     """Return ``reach_score(graph)`` normalized by ``n * (n - 1)``.
 
     Returns 0.0 when the graph has fewer than two nodes.
+
+    Args:
+        graph: The import graph to measure.
+
+    Returns:
+        The normalized reach density in the range [0.0, 1.0].
     """
     n = graph.number_of_nodes()
     if n < 2:
@@ -162,6 +204,13 @@ def build_graph(nodes: Sequence[str], edges: Sequence[tuple[str, str]]) -> Impor
     """Return a NetworkX ``DiGraph`` with the given ``nodes`` and ``edges``.
 
     Each node gets a ``size`` attribute of 1. Self-loops are dropped.
+
+    Args:
+        nodes: The dotted module names to add as graph nodes.
+        edges: The ``(importer, imported)`` pairs to add as directed edges.
+
+    Returns:
+        The constructed directed import graph.
     """
     graph = _init_with_nodes(nodes)
     for u, v in edges:

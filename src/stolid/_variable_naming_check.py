@@ -32,6 +32,11 @@ class VariableNamingError:
 
     ``lineno`` and ``col_offset`` locate the offending binding; ``message``
     is the formatted SLD703 diagnostic.
+
+    Attributes:
+        lineno: Line number of the offending binding.
+        col_offset: Column offset of the offending binding.
+        message: The formatted SLD703 diagnostic string.
     """
 
     lineno: int
@@ -237,6 +242,13 @@ def _check_scope(scope: ast.AST) -> Iterator[VariableNamingError]:
 
 
 def check_variable_naming(tree: ast.Module) -> Iterator[VariableNamingError]:
-    """Yield SLD703 violations for every scope in ``tree``."""
+    """Yield SLD703 violations for every scope in ``tree``.
+
+    Args:
+        tree: The module AST to check for near-duplicate variable names.
+
+    Yields:
+        One error per binding that differs from an earlier binding by one letter.
+    """
     for scope in _all_scopes(tree):
         yield from _check_scope(scope)

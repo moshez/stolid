@@ -24,7 +24,13 @@ from ._ast_inspection import get_base_name
 
 
 class ContractViolation(Enum):
-    """The three kinds of contract violation reported on a public annotation."""
+    """The three kinds of contract violation reported on a public annotation.
+
+    Attributes:
+        CONCRETE_CLASS: A workspace-defined concrete class used in a public annotation.
+        CONCRETE_CONTAINER: A builtin concrete container (``list``, ``dict``, …) used.
+        VARIADIC_TUPLE: A variadic ``tuple[X, ...]`` form used in a public annotation.
+    """
 
     CONCRETE_CLASS = auto()
     CONCRETE_CONTAINER = auto()
@@ -39,6 +45,12 @@ class ContractError:
     ``kind`` selects the SLD80x category; ``name`` is the offending
     identifier (the concrete class, the concrete container, or the empty
     string for a variadic tuple).
+
+    Attributes:
+        lineno: Line number of the offending sub-expression.
+        col_offset: Column offset of the offending sub-expression.
+        kind: The SLD80x violation category.
+        name: The offending identifier, or empty string for a variadic tuple.
     """
 
     lineno: int
@@ -209,6 +221,13 @@ def classify_annotation(
     ``concrete_names`` is the set of workspace-defined names that are
     classified as concrete (not Protocol/ABC/TypedDict/NamedTuple/Enum).
     Unknown names are treated as allowed.
+
+    Args:
+        node: The annotation AST expression to classify.
+        concrete_names: Workspace-defined names classified as concrete.
+
+    Yields:
+        Each contract violation found in the annotation.
     """
     if isinstance(node, ast.Constant):
         return

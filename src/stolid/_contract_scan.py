@@ -62,6 +62,9 @@ class SymbolTable:
     ``concrete_only`` lists names that are defined exclusively as concrete
     classes (never as a Protocol/ABC/TypedDict/NamedTuple/Enum) anywhere
     in the scanned workspace.
+
+    Attributes:
+        concrete_only: Names defined exclusively as concrete classes in the workspace.
     """
 
     concrete_only: AbstractSet[str]
@@ -132,12 +135,27 @@ def _file_diagnostics(
 
 
 def build_symbol_table(state: _ScanState) -> SymbolTable:
-    """Return the workspace symbol table derived from a completed scan ``state``."""
+    """Return the workspace symbol table derived from a completed scan ``state``.
+
+    Args:
+        state: The completed scan state containing concrete and contract name sets.
+
+    Returns:
+        The workspace symbol table.
+    """
     return SymbolTable(concrete_only=frozenset(state.concrete - state.contracts))
 
 
 def scan_paths(fs: FileSystem, roots: Sequence[str]) -> Sequence[ReportLine]:
-    """Scan ``roots`` via ``fs`` and return one report line per violation."""
+    """Scan ``roots`` via ``fs`` and return one report line per violation.
+
+    Args:
+        fs: The filesystem abstraction used to list and read files.
+        roots: The root paths to scan for Python source files.
+
+    Returns:
+        One report line per contract violation found.
+    """
     state = _ScanState()
     for path in roots:
         _walk_root(fs, path, state)

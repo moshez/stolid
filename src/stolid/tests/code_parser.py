@@ -18,7 +18,11 @@ class _CheckerRun(Protocol):
     # A constructed per-module stolid checker.
 
     def run(self) -> Iterator[tuple[int, int, str, type]]:
-        """Yield ``(line, col, message, type)`` tuples for the module."""
+        """Yield ``(line, col, message, type)`` tuples for the module.
+
+        Returns:
+            An iterator of ``(line, col, message, type)`` diagnostic tuples.
+        """
         ...
 
 
@@ -28,7 +32,16 @@ class _CheckerFactory(Protocol):
     def __call__(
         self, *, tree: ast.Module, lines: Sequence[str], filename: str
     ) -> _CheckerRun:
-        """Return a checker for the given module."""
+        """Return a checker for the given module.
+
+        Args:
+            tree: The parsed AST of the module.
+            lines: The raw source lines of the module.
+            filename: The filename associated with the module.
+
+        Returns:
+            A checker instance ready to run against the module.
+        """
         ...
 
 
@@ -46,7 +59,15 @@ _CHECKER = _load_checker()
 
 
 def check_code(code: str, filename: str = "") -> Sequence[tuple[int, int, str]]:
-    """Parse ``code`` (under ``filename``) and return ``(line, col, msg)`` errors."""
+    """Parse ``code`` (under ``filename``) and return ``(line, col, msg)`` errors.
+
+    Args:
+        code: The Python source code to check.
+        filename: The filename to associate with the module.
+
+    Returns:
+        A sequence of ``(line, col, msg)`` diagnostic tuples.
+    """
     dedented = textwrap.dedent(code)
     tree = ast.parse(dedented)
     lines = dedented.splitlines()
@@ -55,13 +76,28 @@ def check_code(code: str, filename: str = "") -> Sequence[tuple[int, int, str]]:
 
 
 def get_error_codes(code: str, filename: str = "") -> Sequence[str]:
-    """Parse ``code`` (under ``filename``) and return the list of error codes only."""
+    """Parse ``code`` (under ``filename``) and return the list of error codes only.
+
+    Args:
+        code: The Python source code to check.
+        filename: The filename to associate with the module.
+
+    Returns:
+        A sequence of diagnostic code tokens (e.g. ``SLD601``).
+    """
     errors = check_code(code, filename=filename)
     return [msg.split()[0] for _, _, msg in errors]
 
 
 def dedent_files(files: Mapping[str, str]) -> Mapping[str, str]:
-    """Return ``files`` with each source dedented and the leading newline stripped."""
+    """Return ``files`` with each source dedented and the leading newline stripped.
+
+    Args:
+        files: A ``path -> source`` mapping of raw source strings.
+
+    Returns:
+        A new mapping with each source dedented and its leading newline removed.
+    """
     return {
         path: textwrap.dedent(source).lstrip("\n") for path, source in files.items()
     }
@@ -73,6 +109,13 @@ def check_multifile(
     """Run the cross-file scanners over virtual ``files`` under ``roots``.
 
     Returns a list of report entries from the duplicate and contract scanners.
+
+    Args:
+        files: A ``path -> source`` mapping of virtual source files.
+        roots: The root directories to scan; defaults to ``["."]``.
+
+    Returns:
+        A sequence of ``(path, line, col, message)`` report entries.
     """
     sources = dedent_files(files)
     fs = InMemoryFileSystem(_files=sources)
@@ -82,7 +125,14 @@ def check_multifile(
 
 
 def multifile_codes(files: Mapping[str, str]) -> Sequence[str]:
-    """Run the duplicate scanner over ``files`` and return just the error codes."""
+    """Run the duplicate scanner over ``files`` and return just the error codes.
+
+    Args:
+        files: A ``path -> source`` mapping of virtual source files.
+
+    Returns:
+        A sequence of diagnostic code tokens from the cross-file scan.
+    """
     return [msg.split()[0] for _, _, _, msg in check_multifile(files)]
 
 
@@ -97,6 +147,12 @@ def assert_present(
 
     Each entry is checked under ``filename`` (default ``""``); subtests
     run on ``test_case``.
+
+    Args:
+        test_case: The test case used to run subtests.
+        cases: Pairs of ``(name, source)`` to check.
+        sld_code: The diagnostic code expected in each result.
+        filename: The filename passed to the checker for each source snippet.
     """
     for name, code in cases:
         with test_case.subTest(name=name):
@@ -114,6 +170,12 @@ def assert_absent(
 
     Each entry is checked under ``filename`` (default ``""``); subtests
     run on ``test_case``.
+
+    Args:
+        test_case: The test case used to run subtests.
+        cases: Pairs of ``(name, source)`` to check.
+        sld_code: The diagnostic code expected to be absent from each result.
+        filename: The filename passed to the checker for each source snippet.
     """
     for name, code in cases:
         with test_case.subTest(name=name):
@@ -128,6 +190,11 @@ def assert_count(
     """Assert ``sld_code`` appears with the given count for each entry in ``cases``.
 
     Subtests run on ``test_case``.
+
+    Args:
+        test_case: The test case used to run subtests.
+        cases: Triples of ``(name, source, expected_count)`` to check.
+        sld_code: The diagnostic code to count in each result.
     """
     for name, code, count in cases:
         with test_case.subTest(name=name):
@@ -138,6 +205,10 @@ def assert_source_absent(source: str, sld_code: str) -> None:
     """Assert ``sld_code`` is not produced when checking ``source``.
 
     For one-off edge cases that don't fit the table-driven helpers above.
+
+    Args:
+        source: The Python source code to check.
+        sld_code: The diagnostic code expected to be absent.
     """
     assert_that(sld_code in get_error_codes(source), equal_to(False))
 
@@ -147,7 +218,13 @@ def _matching_messages(code: str, sld_code: str) -> list[str]:
 
 
 def assert_message_contains(code: str, sld_code: str, expected: str) -> None:
-    """Assert the first ``sld_code`` message from ``code`` contains ``expected``."""
+    """Assert the first ``sld_code`` message from ``code`` contains ``expected``.
+
+    Args:
+        code: The Python source code to check.
+        sld_code: The diagnostic code to filter messages by.
+        expected: The substring the first matching message must contain.
+    """
     messages = _matching_messages(code, sld_code)
     assert_that(messages[0], contains_string(expected))
 
@@ -161,6 +238,12 @@ def assert_message_contains_all(
     """Assert the first ``sld_code`` message from ``code`` contains every ``wanted``.
 
     Each wanted substring runs in its own subtest on ``test_case``.
+
+    Args:
+        test_case: The test case used to run subtests.
+        code: The Python source code to check.
+        sld_code: The diagnostic code to filter messages by.
+        wanted: The substrings that must all appear in the first matching message.
     """
     messages = _matching_messages(code, sld_code)
     for one in wanted:

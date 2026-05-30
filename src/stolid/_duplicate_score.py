@@ -25,7 +25,14 @@ _OPERATIONS = (ast.BinOp, ast.BoolOp, ast.Compare)
 
 
 def node_score(node: ast.AST) -> float:
-    """Return the interestingness contribution of a single AST node."""
+    """Return the interestingness contribution of a single AST node.
+
+    Args:
+        node: The AST node to score.
+
+    Returns:
+        The interestingness score for the node.
+    """
     if isinstance(node, ast.Call):
         return _call_score(node)
     if isinstance(node, ast.Attribute):
@@ -40,5 +47,12 @@ def node_score(node: ast.AST) -> float:
 
 
 def subtree_score(node: ast.AST) -> float:
-    """Return the summed interestingness score of every descendant of ``node``."""
+    """Return the summed interestingness score of every descendant of ``node``.
+
+    Args:
+        node: The root AST node whose descendants to score.
+
+    Returns:
+        The total interestingness score for all descendants.
+    """
     return sum(node_score(child) for child in ast.walk(node))

@@ -12,11 +12,25 @@ class FileSystem(Protocol):
     """Filesystem operations the walker depends on."""
 
     def walk(self, root: str) -> Iterator[str]:
-        """Yield every file path beneath ``root``."""
+        """Yield every file path beneath ``root``.
+
+        Args:
+            root: The directory path to walk recursively.
+
+        Returns:
+            An iterator of file paths found beneath ``root``.
+        """
         ...
 
     def read(self, path: str) -> str:
-        """Return the text contents of the file at ``path``."""
+        """Return the text contents of the file at ``path``.
+
+        Args:
+            path: The file path to read.
+
+        Returns:
+            The full text contents of the file.
+        """
         ...
 
 
@@ -42,6 +56,13 @@ def iter_python_files(fs: FileSystem, root: str) -> Iterator[str]:
     """Yield ``.py`` file paths under ``root`` not matched by its ``.gitignore``.
 
     Uses ``fs`` to walk the tree and read any ``.gitignore`` it finds.
+
+    Args:
+        fs: The filesystem abstraction used to walk and read files.
+        root: The directory path to search for Python files.
+
+    Yields:
+        Each ``.py`` file path under ``root`` not excluded by ``.gitignore``.
     """
     spec = _read_gitignore(fs, root)
     for path in fs.walk(root):

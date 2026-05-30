@@ -18,7 +18,14 @@ STDLIB_NAMES: AbstractSet[str] = frozenset(sys.stdlib_module_names)
 
 
 def reserved_name_source(name: str) -> str | None:
-    """Return a human-readable reference for a reserved name, else None."""
+    """Return a human-readable reference for a reserved name, else None.
+
+    Args:
+        name: The identifier to look up in builtins, typing, and stdlib.
+
+    Returns:
+        A human-readable string identifying the source, or None if not reserved.
+    """
     if name in BUILTIN_NAMES:
         return f"builtin '{name}'"
     if name in TYPING_NAMES:
