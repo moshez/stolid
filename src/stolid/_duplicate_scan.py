@@ -89,9 +89,8 @@ def _is_eligible(occurrence: Occurrence) -> bool:
 
 def _node_end_line(node: ast.AST) -> int:
     end = getattr(node, "end_lineno", None)
-    if end is not None:
-        return int(end)
-    return int(getattr(node, "lineno", 1))  # pragma: no cover
+    assert end is not None  # ast statement/expression nodes always carry end_lineno
+    return int(end)
 
 
 def _to_clone_occurrence(path: str, occurrence: Occurrence) -> CloneOccurrence:

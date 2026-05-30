@@ -38,9 +38,8 @@ def _occurrence_to_line(occurrence: CloneOccurrence, group: CloneGroup) -> Repor
 def _line_text(source: str, line_number: int) -> str:
     lines = source.splitlines()
     index = line_number - 1
-    if 0 <= index < len(lines):
-        return lines[index]
-    return ""  # pragma: no cover
+    assert 0 <= index < len(lines)  # line_number comes from this source's own AST
+    return lines[index]
 
 
 def report_lines(reader: SourceReader, result: ScanResult) -> Sequence[ReportLine]:

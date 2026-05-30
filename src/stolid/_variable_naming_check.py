@@ -177,8 +177,7 @@ def _diff_by_substitution(left: str, right: str) -> bool:
         if diff_position is not None:
             return False
         diff_position = index
-    if diff_position is None:  # pragma: no cover
-        return False
+    assert diff_position is not None  # distinct equal-length names always differ
     return left[diff_position].isalpha() or right[diff_position].isalpha()
 
 
