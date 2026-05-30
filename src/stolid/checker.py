@@ -25,6 +25,7 @@ from ._docstring_check import check_docstrings
 from ._flag_parameter_check import check_flag_parameters
 from ._function_check import check_function
 from ._global_names_check import check_global_names
+from ._index_loop_check import check_index_loops
 from ._module_overuse_check import check_module_overuse
 from ._not_implemented_check import check_not_implemented
 from ._string_enum_check import check_string_enum
@@ -183,6 +184,7 @@ def _all_errors(
     yield from check_flag_parameters(tree)
     yield from check_module_overuse(tree)
     yield from check_not_implemented(tree)
+    yield from check_index_loops(tree)
     yield from check_try(tree)
     yield from check_variable_naming(tree)
     yield from privacy_errors(tree)

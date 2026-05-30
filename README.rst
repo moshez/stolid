@@ -59,7 +59,8 @@ whole family can be reasoned about — or silenced — together:
 - **SLD5xx** — dataclass configuration: ``frozen``, ``slots``, and
   ``kw_only`` on every dataclass.
 - **SLD6xx** — code complexity: bounded function weight, argument and
-  method counts, and context-manager-friendly cleanup.
+  method counts, context-manager-friendly cleanup, and ``enumerate`` /
+  iteration over manual ``range(len(...))`` and ``while``-index walks.
 - **SLD7xx** — naming: no vague words, no shadowing of stdlib names, no
   confusable near-duplicate names.
 - **SLD8xx** — cross-file contracts, documentation, and import-graph
