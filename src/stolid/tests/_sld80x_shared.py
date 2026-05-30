@@ -25,7 +25,15 @@ PROTOCOL_DEF = (
 
 
 def matching_prefix(found: Sequence[str], prefix: str) -> Sequence[str]:
-    """Return the entries of ``found`` that start with ``prefix``."""
+    """Return the entries of ``found`` that start with ``prefix``.
+
+    Args:
+        found: The sequence of strings to filter.
+        prefix: The prefix to match against.
+
+    Returns:
+        All entries from ``found`` that start with ``prefix``.
+    """
     return [entry for entry in found if entry.startswith(prefix)]
 
 
@@ -37,6 +45,11 @@ def assert_present(
     """Assert ``sld_code`` is reported for each ``(name, files)`` in ``cases``.
 
     Subtests run on ``test``.
+
+    Args:
+        test: The test case used to run subtests.
+        cases: Pairs of ``(name, files)`` to check.
+        sld_code: The diagnostic code expected in the scan results.
     """
     for name, files in cases:
         with test.subTest(name=name):
@@ -51,6 +64,11 @@ def assert_absent(
     """Assert ``sld_code`` is not reported for each ``(name, files)`` in ``cases``.
 
     Subtests run on ``test``.
+
+    Args:
+        test: The test case used to run subtests.
+        cases: Pairs of ``(name, files)`` to check.
+        sld_code: The diagnostic code expected to be absent from the scan results.
     """
     for name, files in cases:
         with test.subTest(name=name):
@@ -60,7 +78,13 @@ def assert_absent(
 def assert_multifile_message_contains(
     files: Mapping[str, str], sld_code: str, expected: str
 ) -> None:
-    """Assert every ``sld_code`` message from ``files`` contains ``expected``."""
+    """Assert every ``sld_code`` message from ``files`` contains ``expected``.
+
+    Args:
+        files: The virtual filesystem to scan.
+        sld_code: The diagnostic code to filter messages by.
+        expected: The substring every matching message must contain.
+    """
     result = check_multifile(files)
     matching = [item for item in result if sld_code in item[3]]
     assert_that(len(matching), greater_than(0))

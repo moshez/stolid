@@ -8,13 +8,9 @@ import ast
 from dataclasses import dataclass
 from typing import Iterator, Mapping, Sequence
 
-from ._ast_inspection import (
-    FunctionType,
-    bad_name_errors_as,
-    get_base_name,
-    get_function_arg_count,
-    get_function_complexity,
-)
+from ._ast_inspection import FunctionType, get_base_name
+from ._ast_metrics import get_function_arg_count, get_function_complexity
+from ._ast_names import bad_name_errors_as
 from ._check_runner import format_sld601
 from ._constants import MAX_FUNCTION_ARGS, MAX_FUNCTION_LINES
 
@@ -33,6 +29,11 @@ class FunctionError:
 
     ``lineno`` and ``col_offset`` locate the offending node; ``message``
     is the formatted SLD601/SLD602/SLD701 diagnostic.
+
+    Attributes:
+        lineno: Line number of the offending node.
+        col_offset: Column offset of the offending node.
+        message: The formatted SLD601/SLD602/SLD701 diagnostic string.
     """
 
     lineno: int
@@ -69,6 +70,14 @@ def check_function(
     ``lines`` is the enclosing module source and ``bracket_depths`` maps
     each line number to its deepest opened bracket stack; both feed the
     SLD601 complexity computation.
+
+    Args:
+        node: The function definition node to check.
+        lines: The raw source lines of the enclosing module.
+        bracket_depths: Mapping from line number to deepest bracket depth.
+
+    Yields:
+        One error per SLD601/SLD602/SLD701/SLD704 violation found.
     """
     yield from bad_name_errors_as(
         node.name, node.lineno, node.col_offset, FunctionError

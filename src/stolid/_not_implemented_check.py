@@ -27,6 +27,11 @@ class NotImplementedUseError:
 
     ``lineno`` and ``col_offset`` locate the offending name; ``message``
     is the formatted SLD206 diagnostic.
+
+    Attributes:
+        lineno: Line number of the offending reference.
+        col_offset: Column offset of the offending reference.
+        message: The formatted SLD206 diagnostic string.
     """
 
     lineno: int
@@ -82,6 +87,12 @@ def check_not_implemented(tree: ast.Module) -> Iterator[NotImplementedUseError]:
 
     Each reference is reported unless its enclosing function is directly
     decorated with ``functools.singledispatch``.
+
+    Args:
+        tree: The module AST to check for disallowed ``NotImplementedError`` use.
+
+    Yields:
+        One error per ``NotImplementedError`` reference outside a singledispatch.
     """
     yield from _emit_refs(tree.body)
     for node in ast.walk(tree):

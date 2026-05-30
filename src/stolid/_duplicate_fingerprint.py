@@ -65,21 +65,42 @@ def _arg_names(arguments: ast.arguments) -> Iterator[str]:
 
 
 def function_binders(node: FunctionType) -> Iterator[str]:
-    """Yield the names bound in function ``node``'s frame in source order."""
+    """Yield the names bound in function ``node``'s frame in source order.
+
+    Args:
+        node: The function definition node whose bound names to yield.
+
+    Yields:
+        Each name bound in the function's frame, in source order.
+    """
     yield from _arg_names(node.args)
     for body_node in _iter_body_nodes(node):
         yield from _statement_binders(body_node)
 
 
 def lambda_binders(node: ast.Lambda) -> Iterator[str]:
-    """Yield the names bound in lambda ``node``'s frame in source order."""
+    """Yield the names bound in lambda ``node``'s frame in source order.
+
+    Args:
+        node: The lambda node whose bound names to yield.
+
+    Yields:
+        Each name bound in the lambda's frame, in source order.
+    """
     yield from _arg_names(node.args)
 
 
 def comprehension_binders(
     node: ast.ListComp | ast.SetComp | ast.DictComp | ast.GeneratorExp,
 ) -> Iterator[str]:
-    """Yield the names bound in comprehension ``node``'s frame in source order."""
+    """Yield the names bound in comprehension ``node``'s frame in source order.
+
+    Args:
+        node: The comprehension node whose bound names to yield.
+
+    Yields:
+        Each name bound in the comprehension's frame, in source order.
+    """
     for generator in node.generators:
         yield from _target_names(generator.target)
 
@@ -149,6 +170,11 @@ class Occurrence:
 
     ``digest`` is the Merkle hash of the subtree, ``node`` is the AST node
     itself, and ``node_count`` is the total number of AST nodes it contains.
+
+    Attributes:
+        digest: The Merkle hash of the subtree.
+        node: The AST node at the root of this subtree.
+        node_count: Total number of AST nodes in the subtree.
     """
 
     digest: bytes
@@ -196,6 +222,14 @@ def fingerprint(
 
     Records every visited subtree (and its digest) into ``collected``.
     Returns the digest and the node count of this subtree.
+
+    Args:
+        node: The AST node to fingerprint.
+        scope: The current scope stack for name normalization.
+        collected: Accumulator for all visited subtree occurrences.
+
+    Returns:
+        A tuple of the subtree digest and its total node count.
     """
     frame = _frame_for(node)
     if frame is not None:

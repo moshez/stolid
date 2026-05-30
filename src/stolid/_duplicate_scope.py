@@ -21,12 +21,23 @@ class Frame:
     _bindings: dict[str, int] = field(default_factory=dict)
 
     def add(self, name: str) -> None:
-        """Record ``name`` in this frame, assigning it the next positional slot."""
+        """Record ``name`` in this frame, assigning it the next positional slot.
+
+        Args:
+            name: The identifier to bind in this frame.
+        """
         if name not in self._bindings:
             self._bindings[name] = len(self._bindings)
 
     def position(self, name: str) -> int | None:
-        """Return ``name``'s positional slot in this frame, or ``None`` if unbound."""
+        """Return ``name``'s positional slot in this frame, or ``None`` if unbound.
+
+        Args:
+            name: The identifier to look up in this frame.
+
+        Returns:
+            The positional slot index, or ``None`` if the name is not bound.
+        """
         return self._bindings.get(name)
 
 
@@ -39,7 +50,11 @@ class ScopeStack:
     # Frame is this stack's own element type, co-designed with it rather
     # than an interface meant to be swapped; SLD802 does not apply.
     def enter(self, frame: Frame) -> None:  # noqa: SLD802
-        """Push ``frame`` onto the stack as the new innermost scope."""
+        """Push ``frame`` onto the stack as the new innermost scope.
+
+        Args:
+            frame: The binding frame to push onto the stack.
+        """
         self._frames.append(frame)
 
     def exit(self) -> None:
@@ -47,7 +62,14 @@ class ScopeStack:
         self._frames.pop()
 
     def normalize(self, name: str) -> str:
-        """Return the normalized form of ``name`` relative to this stack."""
+        """Return the normalized form of ``name`` relative to this stack.
+
+        Args:
+            name: The identifier to normalize.
+
+        Returns:
+            The normalized identifier string.
+        """
         if not self._frames:
             return name
         current_pos = self._frames[-1].position(name)

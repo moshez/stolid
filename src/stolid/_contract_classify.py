@@ -20,7 +20,17 @@ from ._ast_inspection import get_base_name, has_dataclass_decorator
 
 
 class ClassKind(Enum):
-    """The contract-vs-concrete classification of a ``class X(...):`` statement."""
+    """The contract-vs-concrete classification of a ``class X(...):`` statement.
+
+    Attributes:
+        PROTOCOL: A ``Protocol`` subclass.
+        ABSTRACT: An ``ABC`` subclass.
+        TYPED_DICT: A ``TypedDict`` subclass.
+        NAMED_TUPLE: A ``NamedTuple`` subclass.
+        ENUMERATION: An ``Enum`` (or variant) subclass.
+        DATA_RECORD: A dataclass whose body contains only public fields.
+        CONCRETE: Any other class, treated as a concrete implementation.
+    """
 
     PROTOCOL = auto()
     ABSTRACT = auto()
@@ -72,7 +82,14 @@ def _is_data_record(node: ast.ClassDef) -> bool:
 
 
 def classify_class(node: ast.ClassDef) -> ClassKind:
-    """Return the contract-vs-concrete classification of class ``node``."""
+    """Return the contract-vs-concrete classification of class ``node``.
+
+    Args:
+        node: The class definition AST node to classify.
+
+    Returns:
+        The classification of the class.
+    """
     base_names = {get_base_name(base) for base in node.bases}
     for marker_bases, kind in _KIND_BY_BASE:
         if base_names & marker_bases:

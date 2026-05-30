@@ -77,5 +77,11 @@ def iter_public_annotations(tree: ast.Module) -> Iterator[ast.expr]:
     Every module is walked: public-named members are part of the API
     surface even in a private module, so only private *members* are
     skipped.
+
+    Args:
+        tree: The module AST to walk for public annotation expressions.
+
+    Yields:
+        Each annotation expression found on the public API surface.
     """
     yield from _body_annotations(tree.body)

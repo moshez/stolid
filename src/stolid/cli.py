@@ -23,7 +23,14 @@ class CommandRunner(Protocol):
     """Runs an external command and returns its exit code."""
 
     def run(self, argv: Sequence[str]) -> int:
-        """Run the command described by ``argv`` and return its exit code."""
+        """Run the command described by ``argv`` and return its exit code.
+
+        Args:
+            argv: The command and its arguments to execute.
+
+        Returns:
+            The exit code of the command.
+        """
         ...
 
 
@@ -31,17 +38,30 @@ class OutputSink(Protocol):
     """Receives stdout and stderr lines from the duplicate CLI."""
 
     def stdout(self, line: str) -> None:
-        """Emit ``line`` on the standard-output stream."""
+        """Emit ``line`` on the standard-output stream.
+
+        Args:
+            line: The text to emit.
+        """
         ...
 
     def stderr(self, line: str) -> None:
-        """Emit ``line`` on the standard-error stream."""
+        """Emit ``line`` on the standard-error stream.
+
+        Args:
+            line: The text to emit.
+        """
         ...
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class Invocation:
-    """A stolid run: scan ``paths`` plus ``flake8_options`` forwarded to flake8."""
+    """A stolid run: scan ``paths`` plus ``flake8_options`` forwarded to flake8.
+
+    Attributes:
+        paths: The filesystem paths to scan.
+        flake8_options: Options forwarded verbatim to the flake8 subprocess.
+    """
 
     paths: Sequence[str]
     flake8_options: Sequence[str]
@@ -64,27 +84,68 @@ def _emit_results(
 
 
 def duplicate_report(fs: FileSystem, paths: Sequence[str]) -> Sequence[ReportLine]:
-    """Return the SLD1xx clone report lines for ``paths`` (read via ``fs``)."""
+    """Return the SLD1xx clone report lines for ``paths`` (read via ``fs``).
+
+    Args:
+        fs: The filesystem used to read each path.
+        paths: The root paths to scan.
+
+    Returns:
+        The report lines describing any duplicate-code findings.
+    """
     return report_lines(fs, scan_paths(fs, list(paths)))
 
 
 def contract_report(fs: FileSystem, paths: Sequence[str]) -> Sequence[ReportLine]:
-    """Return the SLD80x contract report lines for ``paths`` (read via ``fs``)."""
+    """Return the SLD80x contract report lines for ``paths`` (read via ``fs``).
+
+    Args:
+        fs: The filesystem used to read each path.
+        paths: The root paths to scan.
+
+    Returns:
+        The report lines describing any contract violations.
+    """
     return contract_scan_paths(fs, list(paths))
 
 
 def import_graph_report(fs: FileSystem, paths: Sequence[str]) -> Sequence[ReportLine]:
-    """Return the SLD83x import-graph report lines for ``paths`` (read via ``fs``)."""
+    """Return the SLD83x import-graph report lines for ``paths`` (read via ``fs``).
+
+    Args:
+        fs: The filesystem used to read each path.
+        paths: The root paths to scan.
+
+    Returns:
+        The report lines describing any import-graph violations.
+    """
     return import_graph_scan_paths(fs, list(paths))
 
 
 def import_edges(fs: FileSystem, paths: Sequence[str]) -> Sequence[ModuleEdges]:
-    """Return the workspace import-graph edges for ``paths`` (read via ``fs``)."""
+    """Return the workspace import-graph edges for ``paths`` (read via ``fs``).
+
+    Args:
+        fs: The filesystem used to read each path.
+        paths: The root paths to scan.
+
+    Returns:
+        The per-module import edges for the workspace.
+    """
     return extract_graph(fs, list(paths))
 
 
 def run_duplicate_scan(fs: FileSystem, sink: OutputSink, paths: Sequence[str]) -> int:
-    """Scan ``paths`` via ``fs``; emit reports to ``sink``; return the exit code."""
+    """Scan ``paths`` via ``fs``; emit reports to ``sink``; return the exit code.
+
+    Args:
+        fs: The filesystem used to read each path.
+        sink: The output sink for diagnostics.
+        paths: The root paths to scan.
+
+    Returns:
+        The exit code: 0 if no findings, 1 otherwise.
+    """
     result = scan_paths(fs, list(paths))
     lines = report_lines(fs, result)
     return _emit_results(result, lines, sink)
@@ -100,6 +161,14 @@ def run_contract_scan(fs: FileSystem, sink: OutputSink, paths: Sequence[str]) ->
     """Scan ``paths`` for SLD80x violations; emit reports to ``sink``; return exit code.
 
     Uses ``fs`` to read every ``.py`` file under each path.
+
+    Args:
+        fs: The filesystem used to read each path.
+        sink: The output sink for diagnostics.
+        paths: The root paths to scan.
+
+    Returns:
+        The exit code: 0 if no findings, 1 otherwise.
     """
     return _emit_rows(sink, contract_scan_paths(fs, list(paths)))
 
@@ -111,6 +180,14 @@ def run_import_graph_scan(
 
     Uses ``fs`` to read every ``.py`` file under each path and computes
     architectural metrics over the workspace import graph.
+
+    Args:
+        fs: The filesystem used to read each path.
+        sink: The output sink for diagnostics.
+        paths: The root paths to scan.
+
+    Returns:
+        The exit code: 0 if no findings, 1 otherwise.
     """
     return _emit_rows(sink, import_graph_scan_paths(fs, list(paths)))
 
@@ -126,6 +203,15 @@ def run_stolid(
     Uses ``fs`` to read files and ``sink`` to emit diagnostics. Returns the
     merged exit code (the maximum across flake8, duplicate scan, contract
     scan, and import-graph scan).
+
+    Args:
+        runner: The command runner used to invoke flake8.
+        fs: The filesystem used to read each path.
+        sink: The output sink for diagnostics.
+        invocation: The parsed CLI invocation describing paths and options.
+
+    Returns:
+        The maximum exit code across all scan stages.
     """
     paths = invocation.paths
     flake8_exit = runner.run(_flake8_argv(invocation))
@@ -136,7 +222,14 @@ def run_stolid(
 
 
 def resolve_paths(argv: Sequence[str]) -> Sequence[str]:
-    """Return the list of paths from argv, defaulting to ``["."]``."""
+    """Return the list of paths from argv, defaulting to ``["."]``.
+
+    Args:
+        argv: The positional arguments from the command line.
+
+    Returns:
+        The paths to scan, or ``["."]`` if none were given.
+    """
     return argv if argv else ["."]
 
 
@@ -145,6 +238,12 @@ def parse_argv(argv: Sequence[str]) -> Invocation:
 
     Tokens beginning with ``-`` are flake8 options forwarded to the flake8
     subprocess; the rest are scan paths, defaulting to ``["."]``.
+
+    Args:
+        argv: The raw command-line arguments (excluding the program name).
+
+    Returns:
+        The parsed invocation.
     """
     options = [arg for arg in argv if arg.startswith("-")]
     paths = [arg for arg in argv if not arg.startswith("-")]

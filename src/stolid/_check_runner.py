@@ -9,7 +9,8 @@ import tokenize
 from dataclasses import dataclass
 from typing import AbstractSet, Iterable, Iterator, Mapping, Protocol, Sequence
 
-from ._ast_inspection import FunctionComplexity, collect_imports
+from ._ast_inspection import collect_imports
+from ._ast_metrics import FunctionComplexity
 from ._constants import MAX_FUNCTION_LINES
 from ._import_placement_check import check_import_placement
 from ._private_access_check import PrivacyKind, check_private_access
@@ -68,6 +69,11 @@ class AdaptedError:
 
     ``lineno``/``col_offset`` locate the offending source position;
     ``message`` is the fully-formatted diagnostic.
+
+    Attributes:
+        lineno: The line number of the offending source position.
+        col_offset: The column offset of the offending source position.
+        message: The fully-formatted SLDxxx diagnostic message.
     """
 
     lineno: int
@@ -84,6 +90,13 @@ class CheckContext:
     ``typing.cast`` via the module's imports. ``lines`` is the raw source
     of the module under check; ``bracket_depths`` maps each line number
     to the deepest bracket stack opened on that line.
+
+    Attributes:
+        patch_names: Module-local names bound to ``patch``.
+        abstractmethod_names: Module-local names bound to ``abstractmethod``.
+        cast_names: Module-local names bound to ``typing.cast``.
+        lines: The raw source lines of the module under check.
+        bracket_depths: Per-line deepest bracket stack opened on that line.
     """
 
     patch_names: AbstractSet[str]
@@ -103,13 +116,27 @@ _PRIVACY_CODES: dict[PrivacyKind, str] = {
 
 
 def import_placement_errors(tree: ast.Module) -> Iterator[AdaptedError]:
-    """Yield import-placement errors from ``tree`` with SLD204 attached."""
+    """Yield import-placement errors from ``tree`` with SLD204 attached.
+
+    Args:
+        tree: The module AST to check for misplaced imports.
+
+    Yields:
+        Each SLD204 import-placement violation found in ``tree``.
+    """
     for err in check_import_placement(tree):
         yield AdaptedError(lineno=err.lineno, col_offset=err.col_offset, message=SLD204)
 
 
 def privacy_errors(tree: ast.Module) -> Iterator[AdaptedError]:
-    """Yield privacy errors from ``tree`` with the right SLD9xx code formatted in."""
+    """Yield privacy errors from ``tree`` with the right SLD9xx code formatted in.
+
+    Args:
+        tree: The module AST to check for privacy violations.
+
+    Yields:
+        Each SLD9xx privacy violation found in ``tree``.
+    """
     for err in check_private_access(tree):
         yield AdaptedError(
             lineno=err.lineno,
@@ -151,7 +178,15 @@ def _bracket_depths_by_line(source: str) -> dict[int, int]:
 
 
 def build_context(tree: ast.AST, lines: Sequence[str]) -> CheckContext:
-    """Return per-module state for ``tree`` (source ``lines``) used by node checks."""
+    """Return per-module state for ``tree`` (source ``lines``) used by node checks.
+
+    Args:
+        tree: The module AST to derive per-module state from.
+        lines: The raw source lines of the module under check.
+
+    Returns:
+        The per-module check context.
+    """
     patch_names, abstractmethod_names, cast_names = collect_imports(tree)
     return CheckContext(
         patch_names=patch_names,
@@ -163,7 +198,15 @@ def build_context(tree: ast.AST, lines: Sequence[str]) -> CheckContext:
 
 
 def format_sld601(name: str, complexity: FunctionComplexity) -> str:
-    """Return the SLD601 message for function ``name`` with ``complexity`` breakdown."""
+    """Return the SLD601 message for function ``name`` with ``complexity`` breakdown.
+
+    Args:
+        name: The name of the function that exceeded the complexity limit.
+        complexity: The complexity breakdown for ``name``.
+
+    Returns:
+        The fully-formatted SLD601 diagnostic string.
+    """
     return SLD601.format(
         name,
         complexity.weight,

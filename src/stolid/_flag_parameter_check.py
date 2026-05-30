@@ -36,6 +36,11 @@ class FlagParameterError:
 
     ``lineno`` and ``col_offset`` locate the offending parameter;
     ``message`` is the formatted SLD609 diagnostic.
+
+    Attributes:
+        lineno: Line number of the offending parameter.
+        col_offset: Column offset of the offending parameter.
+        message: The formatted SLD609 diagnostic string.
     """
 
     lineno: int
@@ -232,7 +237,14 @@ def _function_errors(node: FunctionType) -> Iterator[FlagParameterError]:
 
 
 def check_flag_parameters(tree: ast.Module) -> Iterator[FlagParameterError]:
-    """Yield SLD609 violations from ``tree``."""
+    """Yield SLD609 violations from ``tree``.
+
+    Args:
+        tree: The module AST to check for flag-parameter violations.
+
+    Yields:
+        One error per parameter used only as a branch condition.
+    """
     for node in ast.walk(tree):
         if isinstance(node, FUNCTION_DEF_NODES):
             yield from _function_errors(node)

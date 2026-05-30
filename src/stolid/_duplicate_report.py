@@ -17,7 +17,14 @@ class SourceReader(Protocol):
     """Reads the textual content of a source file."""
 
     def read(self, path: str) -> str:
-        """Return the text contents of the file at ``path``."""
+        """Return the text contents of the file at ``path``.
+
+        Args:
+            path: The filesystem path of the file to read.
+
+        Returns:
+            The full text content of the file.
+        """
         ...
 
 
@@ -46,6 +53,13 @@ def report_lines(reader: SourceReader, result: ScanResult) -> Sequence[ReportLin
     """Format ``result`` (using ``reader`` to load source lines) into report lines.
 
     Returns flake8-style diagnostic lines and honors per-line ``noqa`` markers.
+
+    Args:
+        reader: Used to load the text of source files.
+        result: The scan result to format into report lines.
+
+    Returns:
+        The formatted diagnostic lines, with suppressed entries omitted.
     """
     sources: dict[str, str] = {}
     output: list[ReportLine] = []

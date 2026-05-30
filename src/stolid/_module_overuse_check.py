@@ -42,6 +42,11 @@ class ModuleOveruseError:
 
     ``lineno`` and ``col_offset`` locate the offending import statement;
     ``message`` is the formatted SLD205 or SLD207 diagnostic.
+
+    Attributes:
+        lineno: Line number of the offending import statement.
+        col_offset: Column offset of the offending import statement.
+        message: The formatted SLD205 or SLD207 diagnostic string.
     """
 
     lineno: int
@@ -125,7 +130,14 @@ def _import_errors(state: _State) -> Iterator[ModuleOveruseError]:
 
 
 def check_module_overuse(tree: ast.Module) -> Iterator[ModuleOveruseError]:
-    """Yield SLD205/SLD207 errors when ``tree``'s reference counts exceed the limit."""
+    """Yield SLD205/SLD207 errors when ``tree``'s reference counts exceed the limit.
+
+    Args:
+        tree: The module AST to check for over-imported or overused modules.
+
+    Yields:
+        One error per module whose distinct reference count exceeds the limit.
+    """
     state = _collect(tree)
     yield from _from_errors(state)
     yield from _import_errors(state)

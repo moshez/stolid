@@ -44,6 +44,11 @@ class TryError:
 
     ``lineno`` and ``col_offset`` locate the offending ``try``;
     ``message`` is the formatted SLD606 or SLD607 diagnostic.
+
+    Attributes:
+        lineno: Line number of the offending ``try`` statement.
+        col_offset: Column offset of the offending ``try`` statement.
+        message: The formatted SLD606 or SLD607 diagnostic string.
     """
 
     lineno: int
@@ -103,5 +108,12 @@ def _walk(node: ast.AST, in_contextmanager: bool) -> Iterator[TryError]:
 
 
 def check_try(tree: ast.Module) -> Iterator[TryError]:
-    """Yield SLD606 / SLD607 violations from ``tree``."""
+    """Yield SLD606 / SLD607 violations from ``tree``.
+
+    Args:
+        tree: The module AST to check for try-statement violations.
+
+    Yields:
+        One error per ``try``/``finally`` or ``try``/``except``/``pass`` pattern.
+    """
     yield from _walk(tree, in_contextmanager=False)

@@ -37,7 +37,15 @@ from ._ast_inspection import (
 
 
 class PrivacyKind(Enum):
-    """The five categories of private-access violation tracked by the checker."""
+    """The five categories of private-access violation tracked by the checker.
+
+    Attributes:
+        EXTERNAL_PRIVATE_READ: Reading ``obj._attr`` outside the owning class.
+        EXTERNAL_PRIVATE_WRITE: Assigning or deleting ``obj._attr`` outside it.
+        PRIVATE_NAME_IMPORT: Importing a private name via a disallowed import form.
+        PRIVATE_SUBMODULE_IMPORT: A private segment in an import's dotted path.
+        MODULE_PRIVATE_ATTR: Accessing ``mod._attr`` where ``mod`` is an imported name.
+    """
 
     EXTERNAL_PRIVATE_READ = auto()
     EXTERNAL_PRIVATE_WRITE = auto()
@@ -50,8 +58,13 @@ class PrivacyKind(Enum):
 class PrivacyError:
     """A privacy convention violation.
 
-    ``lineno`` and ``col_offset`` locate the offending access; ``kind`` is
-    a :class:`PrivacyKind` member; ``attr`` is the private name.
+    ``lineno`` and ``col_offset`` locate the offending access.
+
+    Attributes:
+        lineno: Line number of the offending access.
+        col_offset: Column offset of the offending access.
+        kind: The privacy violation category.
+        attr: The private name that was accessed.
     """
 
     lineno: int
@@ -75,11 +88,19 @@ class _State:
     _violations: list[PrivacyError] = field(default_factory=list)
 
     def in_class(self) -> bool:
-        """Return True iff at least one enclosing class is being visited."""
+        """Return True iff at least one enclosing class is being visited.
+
+        Returns:
+            True if at least one enclosing class is on the stack.
+        """
         return bool(self._class_stack)
 
     def enter_class(self, name: str) -> None:
-        """Push class ``name`` onto the class stack."""
+        """Push class ``name`` onto the class stack.
+
+        Args:
+            name: The name of the class being entered.
+        """
         self._class_stack.append(name)
 
     def exit_class(self) -> None:
@@ -87,7 +108,11 @@ class _State:
         self._class_stack.pop()
 
     def enter_function(self, privileged: str | None) -> None:
-        """Push a function frame whose privileged first-arg name is ``privileged``."""
+        """Push a function frame whose privileged first-arg name is ``privileged``.
+
+        Args:
+            privileged: The first-arg name granting self-access, or ``None``.
+        """
         self._privileged_args.append(privileged)
 
     def exit_function(self) -> None:
@@ -95,21 +120,42 @@ class _State:
         self._privileged_args.pop()
 
     def privileged_arg(self) -> str | None:
-        """Return the innermost function's privileged first-arg name, or ``None``."""
+        """Return the innermost function's privileged first-arg name, or ``None``.
+
+        Returns:
+            The privileged first-arg name, or ``None`` if not in a method.
+        """
         if not self._privileged_args:
             return None
         return self._privileged_args[-1]
 
     def is_imported(self, name: str) -> bool:
-        """Return True iff ``name`` was bound by an ``import``/``from`` statement."""
+        """Return True iff ``name`` was bound by an ``import``/``from`` statement.
+
+        Args:
+            name: The name to look up in the imported-names set.
+
+        Returns:
+            True if the name was bound by an import statement.
+        """
         return name in self._imported_names
 
     def bind_import(self, name: str) -> None:
-        """Record that ``name`` is bound to an imported module/symbol."""
+        """Record that ``name`` is bound to an imported module/symbol.
+
+        Args:
+            name: The name to record as imported.
+        """
         self._imported_names.add(name)
 
     def record(self, node: ast.stmt | ast.expr, kind: PrivacyKind, attr: str) -> None:
-        """Record a violation of ``kind`` for private ``attr`` located at ``node``."""
+        """Record a violation of ``kind`` for private ``attr`` located at ``node``.
+
+        Args:
+            node: The AST node at which the violation occurs.
+            kind: The category of privacy violation.
+            attr: The private name that was accessed.
+        """
         self._violations.append(
             PrivacyError(
                 lineno=node.lineno,
@@ -120,7 +166,11 @@ class _State:
         )
 
     def violations(self) -> Iterator[PrivacyError]:
-        """Yield every recorded :class:`PrivacyError` in insertion order."""
+        """Yield every recorded :class:`PrivacyError` in insertion order.
+
+        Yields:
+            Each recorded privacy error in insertion order.
+        """
         yield from self._violations
 
 
@@ -229,7 +279,14 @@ def _visit(node: ast.AST, state: _State) -> None:
 
 
 def check_private_access(tree: ast.AST) -> Iterator[PrivacyError]:
-    """Yield privacy convention violations found in ``tree``."""
+    """Yield privacy convention violations found in ``tree``.
+
+    Args:
+        tree: The module AST to walk for privacy violations.
+
+    Yields:
+        Each privacy convention violation found in the tree.
+    """
     state = _State()
     _visit(tree, state)
     yield from state.violations()

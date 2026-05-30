@@ -25,6 +25,11 @@ class ModuleEdges:
     ``targets`` is the set of dotted names it imports (filtered to the
     workspace); ``anchor_path`` is the file on disk that defines the
     importer (the ``__init__.py`` for a package, otherwise the module file).
+
+    Attributes:
+        importer: The dotted module name doing the importing.
+        targets: The set of dotted names imported (filtered to the workspace).
+        anchor_path: The file on disk that defines the importer.
     """
 
     importer: str
@@ -149,6 +154,13 @@ def extract_graph(fs: FileSystem, roots: Sequence[str]) -> Sequence[ModuleEdges]
     The result is one ``ModuleEdges`` per parsed module; edges target only
     other modules present in the workspace. ``TYPE_CHECKING`` blocks are
     excluded.
+
+    Args:
+        fs: The filesystem used to read each path.
+        roots: The root directories to walk for Python files.
+
+    Returns:
+        The per-module import edges for the workspace.
     """
     state = _ScanState()
     for path in _iter_paths(fs, roots):
@@ -176,6 +188,13 @@ def anchor_for_prefix(prefix: str, edges_list: Sequence[ModuleEdges]) -> str:
     importer matches ``prefix`` or sits below it; prefers the
     lexicographically-first ``__init__.py`` and falls back to the first
     module file in sorted order otherwise.
+
+    Args:
+        prefix: The dotted module prefix to anchor the diagnostic to.
+        edges_list: The per-module import edges for the workspace.
+
+    Returns:
+        The file path that best anchors the diagnostic.
     """
     inits: list[str] = []
     fallbacks: list[str] = []

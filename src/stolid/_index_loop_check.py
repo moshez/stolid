@@ -43,6 +43,11 @@ class IndexLoopError:
 
     ``lineno`` and ``col_offset`` locate the offending loop; ``message``
     is the formatted SLD610 or SLD611 diagnostic.
+
+    Attributes:
+        lineno: Line number of the offending loop.
+        col_offset: Column offset of the offending loop.
+        message: The formatted SLD610 or SLD611 diagnostic string.
     """
 
     lineno: int
@@ -93,7 +98,14 @@ def _check_while(node: ast.While) -> Iterator[IndexLoopError]:
 
 
 def check_index_loops(tree: ast.Module) -> Iterator[IndexLoopError]:
-    """Yield SLD610 / SLD611 violations from ``tree``."""
+    """Yield SLD610 / SLD611 violations from ``tree``.
+
+    Args:
+        tree: The module AST to check for manual index-loop patterns.
+
+    Yields:
+        One error per ``for``/``while`` loop using a manual index.
+    """
     for node in ast.walk(tree):
         if isinstance(node, ast.For):
             yield from _check_for(node)
