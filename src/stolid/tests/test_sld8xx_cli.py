@@ -6,8 +6,8 @@ import unittest
 
 from hamcrest import assert_that, equal_to, greater_than, has_length
 
+from ..cli import Invocation, parse_argv, resolve_paths, run_stolid
 from ._sld8xx_shared import TAKE_BODY
-from .._duplicate_cli import Invocation, parse_argv, resolve_paths, run_stolid
 from .fakes import CapturedSink, FixedRunner, InMemoryFileSystem
 
 

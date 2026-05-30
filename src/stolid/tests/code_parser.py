@@ -5,15 +5,44 @@ from __future__ import annotations
 import ast
 import textwrap
 import unittest
-from typing import Iterable, Mapping, Sequence
+from importlib.metadata import entry_points
+from typing import Iterable, Iterator, Mapping, Protocol, Sequence
 
 from hamcrest import assert_that, contains_string, equal_to, has_item
 
-from .._contract_scan import scan_paths as contract_scan_paths
-from .._duplicate_report import report_lines
-from .._duplicate_scan import scan_paths
-from ..checker import Checker
+from ..cli import contract_report, duplicate_report
 from .fakes import InMemoryFileSystem
+
+
+class _CheckerRun(Protocol):
+    # A constructed per-module stolid checker.
+
+    def run(self) -> Iterator[tuple[int, int, str, type]]:
+        """Yield ``(line, col, message, type)`` tuples for the module."""
+        ...
+
+
+class _CheckerFactory(Protocol):
+    # Constructs a checker from one parsed module's tree, lines, and filename.
+
+    def __call__(
+        self, *, tree: ast.Module, lines: Sequence[str], filename: str
+    ) -> _CheckerRun:
+        """Return a checker for the given module."""
+        ...
+
+
+def _load_checker() -> _CheckerFactory:
+    # Discover the stolid plugin the way flake8 does: by its registered
+    # ``flake8.extension`` entry-point name. Tests drive this class rather
+    # than importing ``stolid.checker`` directly.
+    extensions = entry_points(group="flake8.extension")
+    (endpoint,) = [ep for ep in extensions if ep.name == "SLD"]
+    factory: _CheckerFactory = endpoint.load()
+    return factory
+
+
+_CHECKER = _load_checker()
 
 
 def check_code(code: str, filename: str = "") -> Sequence[tuple[int, int, str]]:
@@ -21,7 +50,7 @@ def check_code(code: str, filename: str = "") -> Sequence[tuple[int, int, str]]:
     dedented = textwrap.dedent(code)
     tree = ast.parse(dedented)
     lines = dedented.splitlines()
-    checker = Checker(tree=tree, lines=lines, filename=filename)
+    checker = _CHECKER(tree=tree, lines=lines, filename=filename)
     return [(line, col, msg) for line, col, msg, _ in checker.run()]
 
 
@@ -48,12 +77,8 @@ def check_multifile(
     sources = dedent_files(files)
     fs = InMemoryFileSystem(_files=sources)
     targets = list(roots) if roots is not None else ["."]
-    duplicate_lines = report_lines(fs, scan_paths(fs, targets))
-    contract_lines = contract_scan_paths(fs, targets)
-    return [
-        (item.path, item.line, item.col, item.message)
-        for item in duplicate_lines + contract_lines
-    ]
+    lines = list(duplicate_report(fs, targets)) + list(contract_report(fs, targets))
+    return [(item.path, item.line, item.col, item.message) for item in lines]
 
 
 def multifile_codes(files: Mapping[str, str]) -> Sequence[str]:

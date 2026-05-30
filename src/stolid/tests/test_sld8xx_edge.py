@@ -14,9 +14,7 @@ from ._sld8xx_shared import (
     files,
     just_801,
 )
-from .._duplicate_scan import scan_paths
 from .code_parser import check_multifile, multifile_codes
-from .fakes import InMemoryFileSystem
 
 _NEGATIVE_PAIRS: list[tuple[str, str, str]] = [
     (
@@ -161,6 +159,7 @@ class TestPathRoots(unittest.TestCase):
             "import itertools\n"
             "def take(seq, n): return list(itertools.islice(seq, n))\n"
         )
-        fs = InMemoryFileSystem(_files={"src/a.py": take, "src/b.py": take})
-        result = scan_paths(fs, ["src/"])
-        assert_that(len(result.groups), equal_to(1))
+        result = just_801(
+            check_multifile({"src/a.py": take, "src/b.py": take}, roots=["src/"])
+        )
+        assert_that(result, has_length(2))

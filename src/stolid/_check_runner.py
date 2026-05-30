@@ -32,12 +32,13 @@ SLD902 = (
     "(assign only from the defining class)"
 )
 SLD903 = (
-    "SLD903 Absolute import of private name '{}' "
-    "(use a relative import to stay intra-package)"
+    "SLD903 Private name '{}' imported across a package boundary "
+    "(only 'from . import _name' may import a private name)"
 )
 SLD904 = (
     "SLD904 Import reaches into private submodule '{}' "
-    "(use a relative import or the package's public surface)"
+    "(reach a private submodule only within its own package, "
+    "as 'from ._sub import ...')"
 )
 SLD905 = (
     "SLD905 Access to private attribute '{}' on an imported name "
@@ -95,7 +96,7 @@ class CheckContext:
 _PRIVACY_CODES: dict[PrivacyKind, str] = {
     PrivacyKind.EXTERNAL_PRIVATE_READ: SLD901,
     PrivacyKind.EXTERNAL_PRIVATE_WRITE: SLD902,
-    PrivacyKind.ABSOLUTE_PRIVATE_IMPORT: SLD903,
+    PrivacyKind.PRIVATE_NAME_IMPORT: SLD903,
     PrivacyKind.PRIVATE_SUBMODULE_IMPORT: SLD904,
     PrivacyKind.MODULE_PRIVATE_ATTR: SLD905,
 }
