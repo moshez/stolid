@@ -39,6 +39,11 @@ fire — names that differ only in digits or punctuation
 (``SLD304`` / ``SLD305``, ``foo_1`` / ``foo_2``, ``foo`` / ``_foo``)
 are intentionally allowed.
 
+Dunder names (the ``__name__`` form, such as ``__init__``, ``__add__``,
+or ``__all__``) are never flagged: they are mandated by Python and a
+user cannot rename them to disambiguate, so pairs like ``__add__`` /
+``__and__`` are exempt.
+
 .. code-block:: python
 
     # Bad

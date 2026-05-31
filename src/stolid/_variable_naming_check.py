@@ -203,9 +203,16 @@ def _diff_by_one_insertion(shorter: str, longer: str) -> bool:
     return longer[prefix].isalpha()
 
 
+def _is_dunder(name: str) -> bool:
+    # Names of the ``__name__`` form are mandated by Python -- users cannot
+    # rename ``__init__`` to disambiguate it from ``__init`` -- so they are
+    # never candidates for the near-duplicate check.
+    return len(name) > 4 and name.startswith("__") and name.endswith("__")
+
+
 def _eligible_bindings(found: list[_Binding]) -> list[_Binding]:
     # Keep the first binding per name; drop single-letter names whose every
-    # occurrence is a for-loop iteration target.
+    # occurrence is a for-loop iteration target, and drop dunder names.
     first_seen: dict[str, _Binding] = {}
     has_non_loop: set[str] = set()
     for entry in found:
@@ -217,6 +224,8 @@ def _eligible_bindings(found: list[_Binding]) -> list[_Binding]:
     for name, entry in first_seen.items():
         only_loop = name not in has_non_loop
         if len(name) == 1 and only_loop:
+            continue
+        if _is_dunder(name):
             continue
         kept.append(entry)
     return kept
