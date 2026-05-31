@@ -149,6 +149,20 @@ _ABSENT: list[tuple[str, str]] = [
         "underscore_insertion_not_a_letter",
         "foo = 1\n_foo = 2\n",
     ),
+    (
+        "dunder_methods_are_python_mandated",
+        (
+            "class Box:\n"
+            "    def __add__(self, other):\n"
+            "        return self\n"
+            "    def __and__(self, other):\n"
+            "        return self\n"
+        ),
+    ),
+    (
+        "dunder_module_attrs_are_python_mandated",
+        "__all__ = []\n__alt__ = []\n",
+    ),
 ]
 
 
