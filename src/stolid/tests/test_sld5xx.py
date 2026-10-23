@@ -8,7 +8,7 @@ from hamcrest import assert_that, empty, has_item
 
 from .code_parser import assert_absent, assert_present, get_error_codes
 
-_SLD501_PRESENT: list[tuple[str, str]] = [
+_MISSING_FROZEN_PRESENT: list[tuple[str, str]] = [
     (
         "no_frozen",
         "from dataclasses import dataclass\n\n@dataclass\n"
@@ -29,7 +29,7 @@ _SLD501_PRESENT: list[tuple[str, str]] = [
 ]
 
 
-_SLD501_ABSENT: list[tuple[str, str]] = [
+_MISSING_FROZEN_ABSENT: list[tuple[str, str]] = [
     (
         "frozen_true",
         "from dataclasses import dataclass\n\n"
@@ -39,7 +39,7 @@ _SLD501_ABSENT: list[tuple[str, str]] = [
 ]
 
 
-_SLD502_PRESENT: list[tuple[str, str]] = [
+_MISSING_SLOTS_PRESENT: list[tuple[str, str]] = [
     (
         "no_slots",
         "from dataclasses import dataclass\n\n"
@@ -55,7 +55,7 @@ _SLD502_PRESENT: list[tuple[str, str]] = [
 ]
 
 
-_SLD502_ABSENT: list[tuple[str, str]] = [
+_MISSING_SLOTS_ABSENT: list[tuple[str, str]] = [
     (
         "slots_true",
         "from dataclasses import dataclass\n\n"
@@ -65,7 +65,7 @@ _SLD502_ABSENT: list[tuple[str, str]] = [
 ]
 
 
-_SLD503_PRESENT: list[tuple[str, str]] = [
+_MISSING_KW_ONLY_PRESENT: list[tuple[str, str]] = [
     (
         "no_kw_only",
         "from dataclasses import dataclass\n\n"
@@ -81,7 +81,7 @@ _SLD503_PRESENT: list[tuple[str, str]] = [
 ]
 
 
-_SLD503_ABSENT: list[tuple[str, str]] = [
+_MISSING_KW_ONLY_ABSENT: list[tuple[str, str]] = [
     (
         "kw_only_true",
         "from dataclasses import dataclass\n\n"
@@ -123,7 +123,7 @@ _NO_SLD50X: list[tuple[str, str]] = [
 ]
 
 
-_SLD504_PRESENT: list[tuple[str, str]] = [
+_NOT_A_DATACLASS_PRESENT: list[tuple[str, str]] = [
     (
         "plain_class",
         "class MyClass:\n    x: int\n",
@@ -144,7 +144,7 @@ _SLD504_PRESENT: list[tuple[str, str]] = [
 ]
 
 
-_SLD504_ABSENT: list[tuple[str, str]] = [
+_NOT_A_DATACLASS_ABSENT: list[tuple[str, str]] = [
     (
         "dataclass",
         "from dataclasses import dataclass\n\n"
@@ -188,11 +188,11 @@ class TestSLD501FrozenDataclass(unittest.TestCase):
 
     def test_present(self) -> None:
         """Verify present."""
-        assert_present(self, _SLD501_PRESENT, "SLD501")
+        assert_present(self, _MISSING_FROZEN_PRESENT, "SLD501")
 
     def test_absent(self) -> None:
         """Verify absent."""
-        assert_absent(self, _SLD501_ABSENT, "SLD501")
+        assert_absent(self, _MISSING_FROZEN_ABSENT, "SLD501")
 
 
 class TestSLD502SlotsDataclass(unittest.TestCase):
@@ -200,11 +200,11 @@ class TestSLD502SlotsDataclass(unittest.TestCase):
 
     def test_present(self) -> None:
         """Verify present."""
-        assert_present(self, _SLD502_PRESENT, "SLD502")
+        assert_present(self, _MISSING_SLOTS_PRESENT, "SLD502")
 
     def test_absent(self) -> None:
         """Verify absent."""
-        assert_absent(self, _SLD502_ABSENT, "SLD502")
+        assert_absent(self, _MISSING_SLOTS_ABSENT, "SLD502")
 
 
 class TestSLD503KwOnlyDataclass(unittest.TestCase):
@@ -212,11 +212,11 @@ class TestSLD503KwOnlyDataclass(unittest.TestCase):
 
     def test_present(self) -> None:
         """Verify present."""
-        assert_present(self, _SLD503_PRESENT, "SLD503")
+        assert_present(self, _MISSING_KW_ONLY_PRESENT, "SLD503")
 
     def test_absent(self) -> None:
         """Verify absent."""
-        assert_absent(self, _SLD503_ABSENT, "SLD503")
+        assert_absent(self, _MISSING_KW_ONLY_ABSENT, "SLD503")
 
 
 class TestSLD504MustBeDataclass(unittest.TestCase):
@@ -224,11 +224,11 @@ class TestSLD504MustBeDataclass(unittest.TestCase):
 
     def test_present(self) -> None:
         """Verify present."""
-        assert_present(self, _SLD504_PRESENT, "SLD504")
+        assert_present(self, _NOT_A_DATACLASS_PRESENT, "SLD504")
 
     def test_absent(self) -> None:
         """Verify absent."""
-        assert_absent(self, _SLD504_ABSENT, "SLD504")
+        assert_absent(self, _NOT_A_DATACLASS_ABSENT, "SLD504")
 
 
 class TestDataclassVariants(unittest.TestCase):

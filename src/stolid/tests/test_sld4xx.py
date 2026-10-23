@@ -6,7 +6,7 @@ import unittest
 
 from .code_parser import assert_absent, assert_present
 
-_SLD401_PRESENT: list[tuple[str, str]] = [
+_CONCRETE_BASE_PRESENT: list[tuple[str, str]] = [
     (
         "inherit_from_concrete_class",
         "class Parent:\n    pass\n\nclass Child(Parent):\n    pass\n",
@@ -20,7 +20,7 @@ _SLD401_PRESENT: list[tuple[str, str]] = [
 ]
 
 
-_SLD401_ABSENT: list[tuple[str, str]] = [
+_CONCRETE_BASE_ABSENT: list[tuple[str, str]] = [
     (
         "protocol",
         "from typing import Protocol\n\n"
@@ -75,8 +75,8 @@ class TestSLD401InheritanceProhibited(unittest.TestCase):
 
     def test_present(self) -> None:
         """Verify present."""
-        assert_present(self, _SLD401_PRESENT, "SLD401")
+        assert_present(self, _CONCRETE_BASE_PRESENT, "SLD401")
 
     def test_absent(self) -> None:
         """Verify absent."""
-        assert_absent(self, _SLD401_ABSENT, "SLD401")
+        assert_absent(self, _CONCRETE_BASE_ABSENT, "SLD401")

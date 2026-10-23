@@ -8,7 +8,7 @@ from hamcrest import assert_that, equal_to
 
 from .code_parser import assert_absent, assert_present, get_error_codes
 
-_SLD301_PRESENT: list[tuple[str, str]] = [
+_INIT_METHOD_PRESENT: list[tuple[str, str]] = [
     (
         "init_in_regular_class",
         "class MyClass:\n    def __init__(self):\n        pass\n",
@@ -40,7 +40,7 @@ _SLD301_PRESENT: list[tuple[str, str]] = [
 ]
 
 
-_SLD301_ABSENT: list[tuple[str, str]] = [
+_INIT_METHOD_ABSENT: list[tuple[str, str]] = [
     (
         "dataclass_no_explicit_init",
         "from dataclasses import dataclass\n\n"
@@ -59,7 +59,7 @@ _SLD301_ABSENT: list[tuple[str, str]] = [
 ]
 
 
-_SLD302_PRESENT: list[tuple[str, str]] = [
+_PRIVATE_METHOD_PRESENT: list[tuple[str, str]] = [
     (
         "private_method",
         "class MyClass:\n" "    def _private_method(self):\n        pass\n",
@@ -71,7 +71,7 @@ _SLD302_PRESENT: list[tuple[str, str]] = [
 ]
 
 
-_SLD302_ABSENT: list[tuple[str, str]] = [
+_PRIVATE_METHOD_ABSENT: list[tuple[str, str]] = [
     (
         "dunder_methods_allowed",
         "class MyClass:\n"
@@ -86,7 +86,7 @@ _SLD302_ABSENT: list[tuple[str, str]] = [
 ]
 
 
-_SLD303_PRESENT: list[tuple[str, str]] = [
+_STATELESS_METHOD_PRESENT: list[tuple[str, str]] = [
     (
         "method_accesses_only_public",
         "class MyClass:\n"
@@ -110,7 +110,7 @@ _SLD303_PRESENT: list[tuple[str, str]] = [
 ]
 
 
-_SLD303_ABSENT: list[tuple[str, str]] = [
+_STATELESS_METHOD_ABSENT: list[tuple[str, str]] = [
     (
         "method_accesses_private_allowed",
         "class MyClass:\n    def process(self):\n        return self._data + 1\n",
@@ -187,11 +187,11 @@ class TestSLD301InitProhibited(unittest.TestCase):
 
     def test_present(self) -> None:
         """Verify present."""
-        assert_present(self, _SLD301_PRESENT, "SLD301")
+        assert_present(self, _INIT_METHOD_PRESENT, "SLD301")
 
     def test_absent(self) -> None:
         """Verify absent."""
-        assert_absent(self, _SLD301_ABSENT, "SLD301")
+        assert_absent(self, _INIT_METHOD_ABSENT, "SLD301")
 
 
 class TestSLD302PrivateMethodsProhibited(unittest.TestCase):
@@ -199,11 +199,11 @@ class TestSLD302PrivateMethodsProhibited(unittest.TestCase):
 
     def test_present(self) -> None:
         """Verify present."""
-        assert_present(self, _SLD302_PRESENT, "SLD302")
+        assert_present(self, _PRIVATE_METHOD_PRESENT, "SLD302")
 
     def test_absent(self) -> None:
         """Verify absent."""
-        assert_absent(self, _SLD302_ABSENT, "SLD302")
+        assert_absent(self, _PRIVATE_METHOD_ABSENT, "SLD302")
 
 
 class TestSLD303PublicAccess(unittest.TestCase):
@@ -211,11 +211,11 @@ class TestSLD303PublicAccess(unittest.TestCase):
 
     def test_present(self) -> None:
         """Verify present."""
-        assert_present(self, _SLD303_PRESENT, "SLD303")
+        assert_present(self, _STATELESS_METHOD_PRESENT, "SLD303")
 
     def test_absent(self) -> None:
         """Verify absent."""
-        assert_absent(self, _SLD303_ABSENT, "SLD303")
+        assert_absent(self, _STATELESS_METHOD_ABSENT, "SLD303")
 
     def test_function_without_self_no_lint(self) -> None:
         """Verify function without self no lint."""

@@ -26,11 +26,11 @@ from ._ast_inspection import (
     is_name_among,
 )
 
-SLD606 = (
+TRY_FINALLY = (
     "SLD606 'try'/'finally' should be replaced with a context manager "
     "(use 'with' or @contextlib.contextmanager)"
 )
-SLD607 = (
+PASS_ONLY_EXCEPT = (
     "SLD607 'try'/'except' with pass-only handlers should be "
     "'with contextlib.suppress(...)'"
 )
@@ -88,12 +88,12 @@ def _all_handlers_pass(handlers: list[ast.ExceptHandler]) -> bool:
 
 def _check_try_finally(node: ast.Try) -> Iterator[TryError]:
     if node.finalbody:
-        yield _emit(node, SLD606)
+        yield _emit(node, TRY_FINALLY)
 
 
 def _check_try_pass(node: ast.Try) -> Iterator[TryError]:
     if not node.finalbody and not node.orelse and _all_handlers_pass(node.handlers):
-        yield _emit(node, SLD607)
+        yield _emit(node, PASS_ONLY_EXCEPT)
 
 
 def _walk(node: ast.AST, in_contextmanager: bool) -> Iterator[TryError]:

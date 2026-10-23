@@ -11,7 +11,7 @@ from .code_parser import (
     assert_present,
 )
 
-_SLD606_PRESENT: list[tuple[str, str]] = [
+_TRY_FINALLY_PRESENT: list[tuple[str, str]] = [
     (
         "try_finally_at_module_level",
         "try:\n    do()\nfinally:\n    cleanup()\n",
@@ -49,7 +49,7 @@ _SLD606_PRESENT: list[tuple[str, str]] = [
 ]
 
 
-_SLD606_ABSENT: list[tuple[str, str]] = [
+_TRY_FINALLY_ABSENT: list[tuple[str, str]] = [
     (
         "try_finally_in_contextmanager_bare",
         "from contextlib import contextmanager\n\n"
@@ -90,7 +90,7 @@ _SLD606_ABSENT: list[tuple[str, str]] = [
 ]
 
 
-_SLD607_PRESENT: list[tuple[str, str]] = [
+_PASS_ONLY_EXCEPT_PRESENT: list[tuple[str, str]] = [
     (
         "try_except_pass_at_module_level",
         "try:\n    do()\nexcept ValueError:\n    pass\n",
@@ -123,7 +123,7 @@ _SLD607_PRESENT: list[tuple[str, str]] = [
 ]
 
 
-_SLD607_ABSENT: list[tuple[str, str]] = [
+_PASS_ONLY_EXCEPT_ABSENT: list[tuple[str, str]] = [
     (
         "try_except_with_real_handler",
         "try:\n    do()\nexcept ValueError:\n    log()\n",
@@ -153,7 +153,7 @@ _SLD607_ABSENT: list[tuple[str, str]] = [
 ]
 
 
-_SLD606_COUNT: list[tuple[str, str, int]] = [
+_TRY_FINALLY_COUNT: list[tuple[str, str, int]] = [
     (
         "two_independent_try_finally",
         "try:\n    a()\nfinally:\n    cleanup_a()\n"
@@ -174,15 +174,15 @@ class TestSLD606TryFinally(unittest.TestCase):
 
     def test_present(self) -> None:
         """Verify present."""
-        assert_present(self, _SLD606_PRESENT, "SLD606")
+        assert_present(self, _TRY_FINALLY_PRESENT, "SLD606")
 
     def test_absent(self) -> None:
         """Verify absent."""
-        assert_absent(self, _SLD606_ABSENT, "SLD606")
+        assert_absent(self, _TRY_FINALLY_ABSENT, "SLD606")
 
     def test_count(self) -> None:
         """Verify count."""
-        assert_count(self, _SLD606_COUNT, "SLD606")
+        assert_count(self, _TRY_FINALLY_COUNT, "SLD606")
 
     def test_message_describes_replacement(self) -> None:
         """Verify the SLD606 message points at the replacement."""
@@ -198,11 +198,11 @@ class TestSLD607TryExceptPass(unittest.TestCase):
 
     def test_present(self) -> None:
         """Verify present."""
-        assert_present(self, _SLD607_PRESENT, "SLD607")
+        assert_present(self, _PASS_ONLY_EXCEPT_PRESENT, "SLD607")
 
     def test_absent(self) -> None:
         """Verify absent."""
-        assert_absent(self, _SLD607_ABSENT, "SLD607")
+        assert_absent(self, _PASS_ONLY_EXCEPT_ABSENT, "SLD607")
 
     def test_message_mentions_suppress(self) -> None:
         """Verify the SLD607 message points at contextlib.suppress."""

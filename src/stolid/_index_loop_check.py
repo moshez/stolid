@@ -25,11 +25,11 @@ from typing import Iterator
 
 from ._ast_inspection import is_name_id
 
-SLD610 = (
+RANGE_LEN_LOOP = (
     "SLD610 'for' over 'range(len(...))' should use 'enumerate' "
     "or iterate the sequence directly"
 )
-SLD611 = (
+WHILE_INDEX_LOOP = (
     "SLD611 'while' indexing against 'len(...)' should use 'enumerate' "
     "or an iterator"
 )
@@ -77,7 +77,7 @@ def _is_range_len(node: ast.expr) -> bool:
 
 def _check_for(node: ast.For) -> Iterator[IndexLoopError]:
     if _is_range_len(node.iter):
-        yield _emit(node, SLD610)
+        yield _emit(node, RANGE_LEN_LOOP)
 
 
 def _is_index_comparison(left: ast.expr, right: ast.expr) -> bool:
@@ -94,7 +94,7 @@ def _check_while(node: ast.While) -> Iterator[IndexLoopError]:
     if not isinstance(test.ops[0], _ORDERING_OPS):
         return
     if _is_index_comparison(test.left, test.comparators[0]):
-        yield _emit(node, SLD611)
+        yield _emit(node, WHILE_INDEX_LOOP)
 
 
 def check_index_loops(tree: ast.Module) -> Iterator[IndexLoopError]:

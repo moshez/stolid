@@ -22,14 +22,14 @@ from ._import_graph_score import (
 from ._report_line import ReportLine
 from ._workspace_walk import FileSystem
 
-SLD831 = "SLD831 cyclic dependency cluster contains {} modules: {}"
-SLD832 = (
+LARGE_CYCLE = "SLD831 cyclic dependency cluster contains {} modules: {}"
+CROSS_PACKAGE_CYCLE = (
     "SLD832 cross-package cycle at level {} covers {} modules "
     "across {} subpackages: {}"
 )
-SLD833 = "SLD833 condensation at level {} has depth {} (max {})"
-SLD834 = "SLD834 largest level-{} SCC covers {}% of modules"
-SLD835 = "SLD835 module-level reach density is {:.2f} (max {})"
+DEEP_CONDENSATION = "SLD833 condensation at level {} has depth {} (max {})"
+DOMINANT_COMPONENT = "SLD834 largest level-{} SCC covers {}% of modules"
+DENSE_REACH = "SLD835 module-level reach density is {:.2f} (max {})"
 
 MAX_SCC_MODULES = 15
 MAX_CROSS_PACKAGE_SCC_WEIGHT = 10
@@ -95,37 +95,45 @@ def _first_init(ctx: _Context) -> str:
     return sorted(entry.anchor_path for entry in ctx.edges_list)[0]
 
 
-def _sld831(score: LevelScore, ctx: _Context) -> Iterator[ReportLine]:
+def _report_large_cycle(score: LevelScore, ctx: _Context) -> Iterator[ReportLine]:
     for members, _ in score.sccs:
         if len(members) <= MAX_SCC_MODULES:
             continue
         anchor = _scc_anchor(members, ctx)
-        yield _line(anchor, SLD831.format(len(members), _format_members(members)))
+        yield _line(anchor, LARGE_CYCLE.format(len(members), _format_members(members)))
 
 
-def _sld832(score: LevelScore, ctx: _Context) -> Iterator[ReportLine]:
+def _report_cross_package_cycle(
+    score: LevelScore, ctx: _Context
+) -> Iterator[ReportLine]:
     for members, weight in score.sccs:
         if weight <= MAX_CROSS_PACKAGE_SCC_WEIGHT:
             continue
         anchor = _scc_anchor(members, ctx)
         yield _line(
             anchor,
-            SLD832.format(score.level, weight, len(members), _format_members(members)),
+            CROSS_PACKAGE_CYCLE.format(
+                score.level, weight, len(members), _format_members(members)
+            ),
         )
 
 
-def _sld833(score: LevelScore, ctx: _Context) -> Iterator[ReportLine]:
+def _report_deep_condensation(score: LevelScore, ctx: _Context) -> Iterator[ReportLine]:
     if score.node_count < MIN_LEVEL_NODES:
         return
     if score.condensation_depth <= MAX_CONDENSATION_DEPTH:
         return
     yield _line(
         _first_init(ctx),
-        SLD833.format(score.level, score.condensation_depth, MAX_CONDENSATION_DEPTH),
+        DEEP_CONDENSATION.format(
+            score.level, score.condensation_depth, MAX_CONDENSATION_DEPTH
+        ),
     )
 
 
-def _sld834(score: LevelScore, ctx: _Context) -> Iterator[ReportLine]:
+def _report_dominant_component(
+    score: LevelScore, ctx: _Context
+) -> Iterator[ReportLine]:
     if score.node_count < MIN_LEVEL_NODES:
         return
     assert score.total_weight != 0  # a level with enough nodes has positive weight
@@ -134,17 +142,17 @@ def _sld834(score: LevelScore, ctx: _Context) -> Iterator[ReportLine]:
         return
     yield _line(
         _first_init(ctx),
-        SLD834.format(score.level, round(fraction * 100)),
+        DOMINANT_COMPONENT.format(score.level, round(fraction * 100)),
     )
 
 
-def _sld835(ctx: _Context) -> Iterator[ReportLine]:
+def _report_dense_reach(ctx: _Context) -> Iterator[ReportLine]:
     density = reach_density(ctx.graph)
     if density <= MAX_REACH_DENSITY:
         return
     yield _line(
         _first_init(ctx),
-        SLD835.format(density, MAX_REACH_DENSITY),
+        DENSE_REACH.format(density, MAX_REACH_DENSITY),
     )
 
 
@@ -153,14 +161,14 @@ def _iter_diagnostics(ctx: _Context) -> Iterator[ReportLine]:
         return
     deepest = max_module_depth(ctx.graph)
     module_score = score_level(ctx.graph, deepest)
-    yield from _sld831(module_score, ctx)
-    yield from _sld835(ctx)
-    yield from _sld833(module_score, ctx)
+    yield from _report_large_cycle(module_score, ctx)
+    yield from _report_dense_reach(ctx)
+    yield from _report_deep_condensation(module_score, ctx)
     for level in range(2, deepest):
         score = score_level(ctx.graph, level)
-        yield from _sld832(score, ctx)
-        yield from _sld833(score, ctx)
-        yield from _sld834(score, ctx)
+        yield from _report_cross_package_cycle(score, ctx)
+        yield from _report_deep_condensation(score, ctx)
+        yield from _report_dominant_component(score, ctx)
 
 
 def scan_paths(fs: FileSystem, roots: Sequence[str]) -> Sequence[ReportLine]:

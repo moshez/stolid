@@ -28,30 +28,30 @@ from ._ast_inspection import (
     module_name_from_filename,
 )
 
-SLD811 = "SLD811 Public module '{}' missing docstring"
-SLD812 = "SLD812 Public class '{}' missing docstring"
-SLD813 = "SLD813 Public function/method '{}' missing docstring"
-SLD814 = (
+MODULE_MISSING_DOCSTRING = "SLD811 Public module '{}' missing docstring"
+CLASS_MISSING_DOCSTRING = "SLD812 Public class '{}' missing docstring"
+FUNCTION_MISSING_DOCSTRING = "SLD813 Public function/method '{}' missing docstring"
+UNDOCUMENTED_ARGUMENT = (
     "SLD814 Function '{}' docstring does not mention argument '{}' "
     "(describe the semantics of every parameter)"
 )
-SLD815 = (
+UNDOCUMENTED_RETURN = (
     "SLD815 Function '{}' docstring does not mention the return value "
     "(use 'return'/'returns'/'yield'/'yields' to describe what is produced)"
 )
-SLD816 = (
+UNDOCUMENTED_FIELD = (
     "SLD816 Dataclass '{}' docstring does not mention field '{}' "
     "(document every non-private field, or annotate with field(doc=...))"
 )
-SLD821 = (
+PRIVATE_MODULE_DOCSTRING = (
     "SLD821 Private module '{}' has a docstring "
     "(use ``#`` comments for implementation notes)"
 )
-SLD822 = (
+PRIVATE_CLASS_DOCSTRING = (
     "SLD822 Private class '{}' has a docstring "
     "(use ``#`` comments for implementation notes)"
 )
-SLD823 = (
+PRIVATE_FUNCTION_DOCSTRING = (
     "SLD823 Private function/method '{}' has a docstring "
     "(use ``#`` comments for implementation notes)"
 )
@@ -125,11 +125,11 @@ def _check_function_docstring(
 ) -> Iterator[DocstringError]:
     for arg_name in _function_arg_names(node):
         if not _mentions_name(docstring, arg_name):
-            yield _error(node, SLD814.format(node.name, arg_name))
+            yield _error(node, UNDOCUMENTED_ARGUMENT.format(node.name, arg_name))
     if _returns_none(node):
         return
     if not _mentions_return(docstring):
-        yield _error(node, SLD815.format(node.name))
+        yield _error(node, UNDOCUMENTED_RETURN.format(node.name))
 
 
 def _check_function(node: FunctionType) -> Iterator[DocstringError]:
@@ -138,12 +138,12 @@ def _check_function(node: FunctionType) -> Iterator[DocstringError]:
     docstring = ast.get_docstring(node)
     if _is_public(node.name):
         if docstring is None:
-            yield _error(node, SLD813.format(node.name))
+            yield _error(node, FUNCTION_MISSING_DOCSTRING.format(node.name))
             return
         yield from _check_function_docstring(node, docstring)
         return
     if docstring is not None:
-        yield _error(node, SLD823.format(node.name))
+        yield _error(node, PRIVATE_FUNCTION_DOCSTRING.format(node.name))
 
 
 def _dataclass_field_has_doc(value: ast.expr | None) -> bool:
@@ -176,20 +176,20 @@ def _check_dataclass_fields(
 ) -> Iterator[DocstringError]:
     for field_name in _class_field_names(node):
         if not _mentions_name(docstring, field_name):
-            yield _error(node, SLD816.format(node.name, field_name))
+            yield _error(node, UNDOCUMENTED_FIELD.format(node.name, field_name))
 
 
 def _check_class(node: ast.ClassDef) -> Iterator[DocstringError]:
     docstring = ast.get_docstring(node)
     if _is_public(node.name):
         if docstring is None:
-            yield _error(node, SLD812.format(node.name))
+            yield _error(node, CLASS_MISSING_DOCSTRING.format(node.name))
             return
         if has_dataclass_decorator(node):
             yield from _check_dataclass_fields(node, docstring)
         return
     if docstring is not None:
-        yield _error(node, SLD822.format(node.name))
+        yield _error(node, PRIVATE_CLASS_DOCSTRING.format(node.name))
 
 
 # Recurses into class bodies (methods are still scope-level) but never
@@ -213,10 +213,14 @@ def _check_module_docstring(
     has_docstring = ast.get_docstring(tree) is not None
     if _is_public(name):
         if not has_docstring:
-            yield DocstringError(lineno=1, col_offset=0, message=SLD811.format(name))
+            yield DocstringError(
+                lineno=1, col_offset=0, message=MODULE_MISSING_DOCSTRING.format(name)
+            )
         return
     if has_docstring:
-        yield DocstringError(lineno=1, col_offset=0, message=SLD821.format(name))
+        yield DocstringError(
+            lineno=1, col_offset=0, message=PRIVATE_MODULE_DOCSTRING.format(name)
+        )
 
 
 def check_docstrings(tree: ast.Module, filename: str) -> Iterator[DocstringError]:

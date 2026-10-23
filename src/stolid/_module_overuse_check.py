@@ -24,11 +24,11 @@ from typing import Iterator
 from ._ast_inspection import iter_runtime_nodes
 from ._constants import MAX_MODULE_REFERENCES
 
-SLD205 = (
+OVER_IMPORTED_MODULE = (
     "SLD205 Module '{}' is over-imported: {} distinct names imported "
     "(limit: {}); split the dependency or narrow the imports"
 )
-SLD207 = (
+OVERUSED_MODULE_ATTRIBUTES = (
     "SLD207 Module '{}' is overused: {} distinct attributes accessed "
     "(limit: {}); split the dependency or wrap it behind a narrower API"
 )
@@ -113,7 +113,9 @@ def _from_errors(state: _State) -> Iterator[ModuleOveruseError]:
         yield ModuleOveruseError(
             lineno=stmt.lineno,
             col_offset=stmt.col_offset,
-            message=SLD205.format(module, len(names), MAX_MODULE_REFERENCES),
+            message=OVER_IMPORTED_MODULE.format(
+                module, len(names), MAX_MODULE_REFERENCES
+            ),
         )
 
 
@@ -125,7 +127,9 @@ def _import_errors(state: _State) -> Iterator[ModuleOveruseError]:
         yield ModuleOveruseError(
             lineno=stmt.lineno,
             col_offset=stmt.col_offset,
-            message=SLD207.format(module, len(attrs), MAX_MODULE_REFERENCES),
+            message=OVERUSED_MODULE_ATTRIBUTES.format(
+                module, len(attrs), MAX_MODULE_REFERENCES
+            ),
         )
 
 

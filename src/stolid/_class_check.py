@@ -21,32 +21,38 @@ from ._ast_inspection import (
 from ._ast_names import bad_name_errors_as
 from ._constants import ALLOWED_BASES, MAX_CLASS_METHODS, MAX_DATACLASS_FIELDS
 
-SLD201 = "SLD201 Import of ABC is prohibited (use Protocol instead)"
-SLD202 = "SLD202 Use of @abstractmethod is prohibited (use Protocol instead)"
-SLD301 = (
+ABC_IMPORT = "SLD201 Import of ABC is prohibited (use Protocol instead)"
+ABSTRACTMETHOD_USE = (
+    "SLD202 Use of @abstractmethod is prohibited (use Protocol instead)"
+)
+INIT_METHOD = (
     "SLD301 {} method is prohibited (use @dataclass with default_factory "
     "for attribute initialization; use @classmethod for ergonomic parameter "
     "computation)"
 )
-SLD302 = "SLD302 Private method '{}' defined (extract to separate class)"
-SLD303 = (
+PRIVATE_METHOD = "SLD302 Private method '{}' defined (extract to separate class)"
+STATELESS_METHOD = (
     "SLD303 Method '{}' does not access any private state "
     "(convert to module-level function; use functools.singledispatch "
     "if polymorphism is needed)"
 )
-SLD401 = "SLD401 Class '{}' inherits from concrete class '{}' (use composition)"
-SLD501 = "SLD501 Dataclass '{}' missing frozen=True"
-SLD502 = "SLD502 Dataclass '{}' missing slots=True"
-SLD503 = "SLD503 Dataclass '{}' missing kw_only=True"
-SLD504 = "SLD504 Class '{}' is not a @dataclass"
-SLD603 = "SLD603 Class '{}' has {} methods (limit: {})"
-SLD608 = "SLD608 Dataclass '{}' has {} fields (limit: {})"
+CONCRETE_BASE = "SLD401 Class '{}' inherits from concrete class '{}' (use composition)"
+MISSING_FROZEN = "SLD501 Dataclass '{}' missing frozen=True"
+MISSING_SLOTS = "SLD502 Dataclass '{}' missing slots=True"
+MISSING_KW_ONLY = "SLD503 Dataclass '{}' missing kw_only=True"
+NOT_A_DATACLASS = "SLD504 Class '{}' is not a @dataclass"
+TOO_MANY_METHODS = "SLD603 Class '{}' has {} methods (limit: {})"
+TOO_MANY_FIELDS = "SLD608 Dataclass '{}' has {} fields (limit: {})"
 
 _CM_SM = ("classmethod", "staticmethod")
 _PROPERTY_NAMES = ("property",)
 _PROPERTY_SUFFIXES = ("setter", "getter", "deleter")
 _OVERRIDE_NAMES = ("override",)
-_DATACLASS_FLAGS = (("frozen", SLD501), ("slots", SLD502), ("kw_only", SLD503))
+_DATACLASS_FLAGS = (
+    ("frozen", MISSING_FROZEN),
+    ("slots", MISSING_SLOTS),
+    ("kw_only", MISSING_KW_ONLY),
+)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -159,9 +165,9 @@ def check_abc_import(node: ast.ImportFrom) -> Iterator[ClassError]:
         return
     for alias in node.names:
         if alias.name == "ABC":  # noqa: SLD304
-            yield _error(node, SLD201)
+            yield _error(node, ABC_IMPORT)
         if alias.name == "abstractmethod":  # noqa: SLD304
-            yield _error(node, SLD202)
+            yield _error(node, ABSTRACTMETHOD_USE)
 
 
 def _name_decorator_errors(
@@ -187,17 +193,17 @@ def check_abstract_decorators(
     Yields:
         Each SLD202 violation found in ``decoration_list``.
     """
-    yield from _name_decorator_errors(decoration_list, names, SLD202)
+    yield from _name_decorator_errors(decoration_list, names, ABSTRACTMETHOD_USE)
     for decorator in decoration_list:
         if isinstance(decorator, ast.Attribute) and decorator.attr == "abstractmethod":
-            yield _error(decorator, SLD202)
+            yield _error(decorator, ABSTRACTMETHOD_USE)
 
 
 def _check_class_bases(node: ast.ClassDef) -> Iterator[ClassError]:
     for base in node.bases:
         base_name = get_base_name(base)
         if base_name is not None and base_name not in ALLOWED_BASES:
-            yield _error(base, SLD401.format(node.name, base_name))
+            yield _error(base, CONCRETE_BASE.format(node.name, base_name))
 
 
 def _check_dataclass_flags(
@@ -210,9 +216,9 @@ def _check_dataclass_flags(
 
 def _check_method_naming(node: FunctionType) -> Iterator[ClassError]:
     if node.name in ("__init__", "__post_init__"):  # noqa: SLD304
-        yield _error(node, SLD301.format(node.name))
+        yield _error(node, INIT_METHOD.format(node.name))
     if node.name.startswith("_") and not is_dunder_name(node.name):
-        yield _error(node, SLD302.format(node.name))
+        yield _error(node, PRIVATE_METHOD.format(node.name))
 
 
 def _check_sld303_for_method(node: FunctionType) -> Iterator[ClassError]:
@@ -224,7 +230,7 @@ def _check_sld303_for_method(node: FunctionType) -> Iterator[ClassError]:
     if _is_override_method(node):
         return
     if not _method_accesses_private_state(node):
-        yield _error(node, SLD303.format(node.name))
+        yield _error(node, STATELESS_METHOD.format(node.name))
 
 
 def _check_class_method_bodies(
@@ -261,6 +267,28 @@ def _has_allowed_base(node: ast.ClassDef) -> bool:
     return False
 
 
+def _check_dataclass_shape(node: ast.ClassDef) -> Iterator[ClassError]:
+    # SLD501-SLD503 and SLD608 for a dataclass; SLD504 for a class that is
+    # neither a dataclass nor built on an allowed base.
+    flags = _dataclass_flags(node)
+    if flags is None:
+        if not _has_allowed_base(node):
+            yield _error(node, NOT_A_DATACLASS.format(node.name))
+        return
+    yield from _check_dataclass_flags(node, flags)
+    field_count = _get_dataclass_field_count(node)
+    if field_count > MAX_DATACLASS_FIELDS:
+        message = TOO_MANY_FIELDS.format(node.name, field_count, MAX_DATACLASS_FIELDS)
+        yield _error(node, message)
+
+
+def _check_method_count(node: ast.ClassDef) -> Iterator[ClassError]:
+    method_count = _get_class_method_count(node)
+    if method_count > MAX_CLASS_METHODS:
+        message = TOO_MANY_METHODS.format(node.name, method_count, MAX_CLASS_METHODS)
+        yield _error(node, message)
+
+
 def check_class(
     node: ast.ClassDef, abstractmethod_names: AbstractSet[str]
 ) -> Iterator[ClassError]:
@@ -275,17 +303,6 @@ def check_class(
     yield from bad_name_errors_as(node.name, node.lineno, node.col_offset, ClassError)
     yield from check_abstract_decorators(node.decorator_list, abstractmethod_names)
     yield from _check_class_bases(node)
-    flags = _dataclass_flags(node)
-    if flags is not None:
-        yield from _check_dataclass_flags(node, flags)
-        field_count = _get_dataclass_field_count(node)
-        if field_count > MAX_DATACLASS_FIELDS:
-            yield _error(
-                node, SLD608.format(node.name, field_count, MAX_DATACLASS_FIELDS)
-            )
-    elif not _has_allowed_base(node):
-        yield _error(node, SLD504.format(node.name))
-    method_count = _get_class_method_count(node)
-    if method_count > MAX_CLASS_METHODS:
-        yield _error(node, SLD603.format(node.name, method_count, MAX_CLASS_METHODS))
+    yield from _check_dataclass_shape(node)
+    yield from _check_method_count(node)
     yield from _check_class_method_bodies(node, abstractmethod_names)

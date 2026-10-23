@@ -6,7 +6,7 @@ import unittest
 
 from ._sld80x_shared import CONCRETE_DEF, PROTOCOL_DEF, assert_absent, assert_present
 
-_SLD802_PRESENT: list[tuple[str, dict[str, str]]] = [
+_CONCRETE_CLASS_ANNOTATION_PRESENT: list[tuple[str, dict[str, str]]] = [
     (
         "concrete_in_arg",
         {
@@ -69,7 +69,7 @@ _SLD802_PRESENT: list[tuple[str, dict[str, str]]] = [
 ]
 
 
-_SLD802_ABSENT: list[tuple[str, dict[str, str]]] = [
+_CONCRETE_CLASS_ANNOTATION_ABSENT: list[tuple[str, dict[str, str]]] = [
     (
         "protocol_in_annotation",
         {
@@ -142,7 +142,7 @@ _SLD802_ABSENT: list[tuple[str, dict[str, str]]] = [
 ]
 
 
-_SLD803_PRESENT: list[tuple[str, dict[str, str]]] = [
+_CONCRETE_CONTAINER_ANNOTATION_PRESENT: list[tuple[str, dict[str, str]]] = [
     (
         "list_param",
         {"b.py": "def join(items: list[str]) -> str: ...\n"},
@@ -175,7 +175,7 @@ _SLD803_PRESENT: list[tuple[str, dict[str, str]]] = [
 ]
 
 
-_SLD803_ABSENT: list[tuple[str, dict[str, str]]] = [
+_CONCRETE_CONTAINER_ANNOTATION_ABSENT: list[tuple[str, dict[str, str]]] = [
     (
         "sequence_instead_of_list",
         {
@@ -201,7 +201,7 @@ _SLD803_ABSENT: list[tuple[str, dict[str, str]]] = [
 ]
 
 
-_SLD804_PRESENT: list[tuple[str, dict[str, str]]] = [
+_VARIADIC_TUPLE_ANNOTATION_PRESENT: list[tuple[str, dict[str, str]]] = [
     (
         "variadic_tuple",
         {"b.py": "def pack(xs: tuple[int, ...]) -> None: ...\n"},
@@ -217,7 +217,7 @@ _SLD804_PRESENT: list[tuple[str, dict[str, str]]] = [
 ]
 
 
-_SLD804_ABSENT: list[tuple[str, dict[str, str]]] = [
+_VARIADIC_TUPLE_ANNOTATION_ABSENT: list[tuple[str, dict[str, str]]] = [
     (
         "fixed_arity_tuple",
         {"b.py": "def pair() -> tuple[int, str]: ...\n"},
@@ -238,11 +238,11 @@ class TestSLD802ConcreteClass(unittest.TestCase):
 
     def test_present(self) -> None:
         """Verify present cases emit SLD802."""
-        assert_present(self, _SLD802_PRESENT, "SLD802")
+        assert_present(self, _CONCRETE_CLASS_ANNOTATION_PRESENT, "SLD802")
 
     def test_absent(self) -> None:
         """Verify absent cases emit no SLD802."""
-        assert_absent(self, _SLD802_ABSENT, "SLD802")
+        assert_absent(self, _CONCRETE_CLASS_ANNOTATION_ABSENT, "SLD802")
 
 
 class TestSLD803ConcreteContainer(unittest.TestCase):
@@ -250,11 +250,11 @@ class TestSLD803ConcreteContainer(unittest.TestCase):
 
     def test_present(self) -> None:
         """Verify present cases emit SLD803."""
-        assert_present(self, _SLD803_PRESENT, "SLD803")
+        assert_present(self, _CONCRETE_CONTAINER_ANNOTATION_PRESENT, "SLD803")
 
     def test_absent(self) -> None:
         """Verify absent cases emit no SLD803."""
-        assert_absent(self, _SLD803_ABSENT, "SLD803")
+        assert_absent(self, _CONCRETE_CONTAINER_ANNOTATION_ABSENT, "SLD803")
 
 
 class TestSLD804VariadicTuple(unittest.TestCase):
@@ -262,8 +262,8 @@ class TestSLD804VariadicTuple(unittest.TestCase):
 
     def test_present(self) -> None:
         """Verify present cases emit SLD804."""
-        assert_present(self, _SLD804_PRESENT, "SLD804")
+        assert_present(self, _VARIADIC_TUPLE_ANNOTATION_PRESENT, "SLD804")
 
     def test_absent(self) -> None:
         """Verify absent cases emit no SLD804."""
-        assert_absent(self, _SLD804_ABSENT, "SLD804")
+        assert_absent(self, _VARIADIC_TUPLE_ANNOTATION_ABSENT, "SLD804")

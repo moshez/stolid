@@ -49,7 +49,7 @@ def find_bad_name_word(name: str) -> str | None:
     return None
 
 
-SLD701 = "SLD701 Name '{}' contains forbidden word '{}' (use a more specific name)"
+VAGUE_WORD = "SLD701 Name '{}' contains forbidden word '{}' (use a more specific name)"
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -86,7 +86,9 @@ def bad_name_errors(name: str, lineno: int, col_offset: int) -> Iterator[BadName
     bad_word = find_bad_name_word(name)
     if bad_word is not None:
         yield BadNameError(
-            lineno=lineno, col_offset=col_offset, message=SLD701.format(name, bad_word)
+            lineno=lineno,
+            col_offset=col_offset,
+            message=VAGUE_WORD.format(name, bad_word),
         )
 
 

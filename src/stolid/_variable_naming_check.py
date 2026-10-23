@@ -21,7 +21,7 @@ from ._ast_inspection import (
     iter_name_targets,
 )
 
-SLD703 = (
+NEAR_DUPLICATE_NAME = (
     "SLD703 Name '{}' differs from earlier '{}' by only one character "
     "(rename to disambiguate)"
 )
@@ -238,7 +238,7 @@ def _check_scope(scope: ast.AST) -> Iterator[VariableNamingError]:
                 yield VariableNamingError(
                     lineno=later.lineno,
                     col_offset=later.col_offset,
-                    message=SLD703.format(later.name, earlier.name),
+                    message=NEAR_DUPLICATE_NAME.format(later.name, earlier.name),
                 )
                 break
 

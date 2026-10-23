@@ -8,18 +8,18 @@ from hamcrest import assert_that, empty
 
 from .code_parser import assert_absent, assert_count, assert_present, get_error_codes
 
-_SLD201_PRESENT: list[tuple[str, str]] = [
+_ABC_IMPORT_PRESENT: list[tuple[str, str]] = [
     ("import_abc_from_abc", "from abc import ABC\n"),
     ("import_abc_with_alias", "from abc import ABC as AbstractBaseClass\n"),
 ]
 
 
-_SLD201_ABSENT: list[tuple[str, str]] = [
+_ABC_IMPORT_ABSENT: list[tuple[str, str]] = [
     ("import_abcmeta_allowed", "from abc import ABCMeta\n"),
 ]
 
 
-_SLD202_PRESENT: list[tuple[str, str]] = [
+_ABSTRACTMETHOD_USE_PRESENT: list[tuple[str, str]] = [
     ("import_abstractmethod", "from abc import abstractmethod\n"),
     (
         "abstractmethod_via_abc_module",
@@ -40,7 +40,7 @@ _SLD202_PRESENT: list[tuple[str, str]] = [
 ]
 
 
-_SLD202_COUNT: list[tuple[str, str, int]] = [
+_ABSTRACTMETHOD_USE_COUNT: list[tuple[str, str, int]] = [
     (
         "abstractmethod_decorator_direct",
         "from abc import abstractmethod\n\n"
@@ -57,7 +57,7 @@ _SLD202_COUNT: list[tuple[str, str, int]] = [
 ]
 
 
-_SLD203_PRESENT: list[tuple[str, str]] = [
+_TYPING_CAST_PRESENT: list[tuple[str, str]] = [
     ("cast_from_typing", "from typing import cast\nx = cast(int, value)\n"),
     (
         "cast_aliased",
@@ -67,7 +67,7 @@ _SLD203_PRESENT: list[tuple[str, str]] = [
 ]
 
 
-_SLD203_ABSENT: list[tuple[str, str]] = [
+_TYPING_CAST_ABSENT: list[tuple[str, str]] = [
     ("non_typing_cast_allowed", "from mylib import cast\nx = cast(value)\n"),
     (
         "other_module_cast_attribute_allowed",
@@ -77,7 +77,7 @@ _SLD203_ABSENT: list[tuple[str, str]] = [
 ]
 
 
-_SLD204_PRESENT: list[tuple[str, str]] = [
+_LATE_IMPORT_PRESENT: list[tuple[str, str]] = [
     ("import_after_assignment", "x = 1\nimport os\n"),
     ("from_import_after_assignment", "x = 1\nfrom os import path\n"),
     (
@@ -114,7 +114,7 @@ _SLD204_PRESENT: list[tuple[str, str]] = [
 ]
 
 
-_SLD204_ABSENT: list[tuple[str, str]] = [
+_LATE_IMPORT_ABSENT: list[tuple[str, str]] = [
     ("single_import", "import os\n"),
     ("single_from_import", "from os import path\n"),
     (
@@ -180,14 +180,14 @@ _TYPE_CHECKING_ELSE = (
 )
 
 
-_SLD205_PRESENT: list[tuple[str, str]] = [
+_OVER_IMPORTED_MODULE_PRESENT: list[tuple[str, str]] = [
     ("from_import_eight_names", _BIG_FROM),
     ("from_import_aggregated_across_statements", _BIG_FROM_SPLIT),
     ("type_checking_else_branch_runs_at_runtime", _TYPE_CHECKING_ELSE),
 ]
 
 
-_SLD205_ABSENT: list[tuple[str, str]] = [
+_OVER_IMPORTED_MODULE_ABSENT: list[tuple[str, str]] = [
     (
         "from_import_seven_names_under_limit",
         "from somelib import a1, a2, a3, a4, a5, a6, a7\n",
@@ -213,7 +213,7 @@ _SLD205_ABSENT: list[tuple[str, str]] = [
 ]
 
 
-_SLD205_COUNT: list[tuple[str, str, int]] = [
+_OVER_IMPORTED_MODULE_COUNT: list[tuple[str, str, int]] = [
     ("from_import_eight_names_one_error", _BIG_FROM, 1),
     ("split_from_imports_one_error", _BIG_FROM_SPLIT, 1),
     (
@@ -225,13 +225,13 @@ _SLD205_COUNT: list[tuple[str, str, int]] = [
 ]
 
 
-_SLD207_PRESENT: list[tuple[str, str]] = [
+_OVERUSED_MODULE_ATTRIBUTES_PRESENT: list[tuple[str, str]] = [
     ("import_plus_eight_attribute_accesses", _BIG_IMPORT),
     ("import_with_alias_plus_attribute_accesses", _BIG_IMPORT_ALIAS),
 ]
 
 
-_SLD207_ABSENT: list[tuple[str, str]] = [
+_OVERUSED_MODULE_ATTRIBUTES_ABSENT: list[tuple[str, str]] = [
     (
         "import_plus_seven_attribute_accesses",
         "import somelib\n"
@@ -262,7 +262,7 @@ _SLD207_ABSENT: list[tuple[str, str]] = [
 ]
 
 
-_SLD207_COUNT: list[tuple[str, str, int]] = [
+_OVERUSED_MODULE_ATTRIBUTES_COUNT: list[tuple[str, str, int]] = [
     ("import_eight_attrs_one_error", _BIG_IMPORT, 1),
     (
         "two_modules_two_errors",
@@ -276,7 +276,7 @@ _SLD207_COUNT: list[tuple[str, str, int]] = [
 ]
 
 
-_SLD204_COUNT: list[tuple[str, str, int]] = [
+_LATE_IMPORT_COUNT: list[tuple[str, str, int]] = [
     (
         "multiple_imports_after_code",
         "x = 1\nimport os\nimport sys\n",
@@ -300,11 +300,11 @@ class TestSLD201ABCProhibited(unittest.TestCase):
 
     def test_present(self) -> None:
         """Verify present."""
-        assert_present(self, _SLD201_PRESENT, "SLD201")
+        assert_present(self, _ABC_IMPORT_PRESENT, "SLD201")
 
     def test_absent(self) -> None:
         """Verify absent."""
-        assert_absent(self, _SLD201_ABSENT, "SLD201")
+        assert_absent(self, _ABC_IMPORT_ABSENT, "SLD201")
 
 
 class TestSLD202AbstractMethodProhibited(unittest.TestCase):
@@ -312,11 +312,11 @@ class TestSLD202AbstractMethodProhibited(unittest.TestCase):
 
     def test_present(self) -> None:
         """Verify present."""
-        assert_present(self, _SLD202_PRESENT, "SLD202")
+        assert_present(self, _ABSTRACTMETHOD_USE_PRESENT, "SLD202")
 
     def test_count(self) -> None:
         """Verify count."""
-        assert_count(self, _SLD202_COUNT, "SLD202")
+        assert_count(self, _ABSTRACTMETHOD_USE_COUNT, "SLD202")
 
 
 class TestSLD203CastProhibited(unittest.TestCase):
@@ -324,11 +324,11 @@ class TestSLD203CastProhibited(unittest.TestCase):
 
     def test_present(self) -> None:
         """Verify present."""
-        assert_present(self, _SLD203_PRESENT, "SLD203")
+        assert_present(self, _TYPING_CAST_PRESENT, "SLD203")
 
     def test_absent(self) -> None:
         """Verify absent."""
-        assert_absent(self, _SLD203_ABSENT, "SLD203")
+        assert_absent(self, _TYPING_CAST_ABSENT, "SLD203")
 
 
 class TestSLD204ImportPlacement(unittest.TestCase):
@@ -336,15 +336,15 @@ class TestSLD204ImportPlacement(unittest.TestCase):
 
     def test_present(self) -> None:
         """Verify present."""
-        assert_present(self, _SLD204_PRESENT, "SLD204")
+        assert_present(self, _LATE_IMPORT_PRESENT, "SLD204")
 
     def test_absent(self) -> None:
         """Verify absent."""
-        assert_absent(self, _SLD204_ABSENT, "SLD204")
+        assert_absent(self, _LATE_IMPORT_ABSENT, "SLD204")
 
     def test_count(self) -> None:
         """Verify count."""
-        assert_count(self, _SLD204_COUNT, "SLD204")
+        assert_count(self, _LATE_IMPORT_COUNT, "SLD204")
 
     def test_no_errors_on_well_formed_module(self) -> None:
         """Verify no errors on well formed module."""
@@ -367,15 +367,15 @@ class TestSLD205ModuleOveruse(unittest.TestCase):
 
     def test_present(self) -> None:
         """Verify present."""
-        assert_present(self, _SLD205_PRESENT, "SLD205")
+        assert_present(self, _OVER_IMPORTED_MODULE_PRESENT, "SLD205")
 
     def test_absent(self) -> None:
         """Verify absent."""
-        assert_absent(self, _SLD205_ABSENT, "SLD205")
+        assert_absent(self, _OVER_IMPORTED_MODULE_ABSENT, "SLD205")
 
     def test_count(self) -> None:
         """Verify count."""
-        assert_count(self, _SLD205_COUNT, "SLD205")
+        assert_count(self, _OVER_IMPORTED_MODULE_COUNT, "SLD205")
 
 
 class TestSLD207ModuleAttributeOveruse(unittest.TestCase):
@@ -383,12 +383,12 @@ class TestSLD207ModuleAttributeOveruse(unittest.TestCase):
 
     def test_present(self) -> None:
         """Verify present."""
-        assert_present(self, _SLD207_PRESENT, "SLD207")
+        assert_present(self, _OVERUSED_MODULE_ATTRIBUTES_PRESENT, "SLD207")
 
     def test_absent(self) -> None:
         """Verify absent."""
-        assert_absent(self, _SLD207_ABSENT, "SLD207")
+        assert_absent(self, _OVERUSED_MODULE_ATTRIBUTES_ABSENT, "SLD207")
 
     def test_count(self) -> None:
         """Verify count."""
-        assert_count(self, _SLD207_COUNT, "SLD207")
+        assert_count(self, _OVERUSED_MODULE_ATTRIBUTES_COUNT, "SLD207")

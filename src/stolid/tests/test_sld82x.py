@@ -9,17 +9,17 @@ from .code_parser import (
     assert_present,
 )
 
-_SLD821_PRESENT: list[tuple[str, str]] = [
+_PRIVATE_MODULE_DOCSTRING_PRESENT: list[tuple[str, str]] = [
     ("private_module_with_docstring", '"""Internals."""\nx = 1\n'),
 ]
 
 
-_SLD821_ABSENT: list[tuple[str, str]] = [
+_PRIVATE_MODULE_DOCSTRING_ABSENT: list[tuple[str, str]] = [
     ("private_module_no_docstring", "x = 1\n"),
 ]
 
 
-_SLD822_PRESENT: list[tuple[str, str]] = [
+_PRIVATE_CLASS_DOCSTRING_PRESENT: list[tuple[str, str]] = [
     (
         "private_class_with_docstring",
         'class _Foo:\n    """A foo."""\n    x: int = 0\n',
@@ -27,7 +27,7 @@ _SLD822_PRESENT: list[tuple[str, str]] = [
 ]
 
 
-_SLD822_ABSENT: list[tuple[str, str]] = [
+_PRIVATE_CLASS_DOCSTRING_ABSENT: list[tuple[str, str]] = [
     ("private_class_no_docstring", "class _Foo:\n    pass\n"),
     (
         "dunder_class_name_not_treated_as_private",
@@ -40,7 +40,7 @@ _SLD822_ABSENT: list[tuple[str, str]] = [
 ]
 
 
-_SLD823_PRESENT: list[tuple[str, str]] = [
+_PRIVATE_FUNCTION_DOCSTRING_PRESENT: list[tuple[str, str]] = [
     (
         "private_function_with_docstring",
         'def _foo() -> None:\n    """Do foo."""\n    pass\n',
@@ -56,7 +56,7 @@ _SLD823_PRESENT: list[tuple[str, str]] = [
 ]
 
 
-_SLD823_ABSENT: list[tuple[str, str]] = [
+_PRIVATE_FUNCTION_DOCSTRING_ABSENT: list[tuple[str, str]] = [
     ("private_function_no_docstring", "def _foo():\n    pass\n"),
     (
         "dunder_method_with_docstring",
@@ -81,11 +81,15 @@ class TestSLD821PrivateModuleDocstring(unittest.TestCase):
 
     def test_present(self) -> None:
         """Verify SLD821 fires for a ``_foo.py`` module that has a docstring."""
-        assert_present(self, _SLD821_PRESENT, "SLD821", filename="_foo.py")
+        assert_present(
+            self, _PRIVATE_MODULE_DOCSTRING_PRESENT, "SLD821", filename="_foo.py"
+        )
 
     def test_absent(self) -> None:
         """Verify SLD821 is silent when a private module has no docstring."""
-        assert_absent(self, _SLD821_ABSENT, "SLD821", filename="_foo.py")
+        assert_absent(
+            self, _PRIVATE_MODULE_DOCSTRING_ABSENT, "SLD821", filename="_foo.py"
+        )
 
     def test_public_module_with_docstring_not_flagged(self) -> None:
         """Verify SLD821 does not fire for a public module with a docstring."""
@@ -102,11 +106,11 @@ class TestSLD822PrivateClassDocstring(unittest.TestCase):
 
     def test_present(self) -> None:
         """Verify SLD822 fires when a private class carries a docstring."""
-        assert_present(self, _SLD822_PRESENT, "SLD822")
+        assert_present(self, _PRIVATE_CLASS_DOCSTRING_PRESENT, "SLD822")
 
     def test_absent(self) -> None:
         """Verify SLD822 stays silent in the negative cases."""
-        assert_absent(self, _SLD822_ABSENT, "SLD822")
+        assert_absent(self, _PRIVATE_CLASS_DOCSTRING_ABSENT, "SLD822")
 
 
 class TestSLD823PrivateFunctionDocstring(unittest.TestCase):
@@ -114,8 +118,8 @@ class TestSLD823PrivateFunctionDocstring(unittest.TestCase):
 
     def test_present(self) -> None:
         """Verify SLD823 fires when a private function/method has a docstring."""
-        assert_present(self, _SLD823_PRESENT, "SLD823")
+        assert_present(self, _PRIVATE_FUNCTION_DOCSTRING_PRESENT, "SLD823")
 
     def test_absent(self) -> None:
         """Verify SLD823 is silent for dunders, inner privates, and undocumented."""
-        assert_absent(self, _SLD823_ABSENT, "SLD823")
+        assert_absent(self, _PRIVATE_FUNCTION_DOCSTRING_ABSENT, "SLD823")

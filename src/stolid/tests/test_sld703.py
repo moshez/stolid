@@ -178,7 +178,7 @@ _ABSENT: list[tuple[str, str]] = [
 ]
 
 
-class TestSLD703(unittest.TestCase):
+class TestSLD703NearDuplicateName(unittest.TestCase):
     """Tests for SLD703 near-duplicate name detection."""
 
     def test_present(self) -> None:

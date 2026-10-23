@@ -15,33 +15,33 @@ from ._constants import MAX_FUNCTION_LINES
 from ._import_placement_check import check_import_placement
 from ._private_access_check import PrivacyKind, check_private_access
 
-SLD204 = (
+LATE_IMPORT = (
     "SLD204 Import not at top of module "
     "(move all imports above any other statements; "
     "do not import inside functions or classes)"
 )
-SLD601 = (
+COMPLEX_FUNCTION = (
     "SLD601 Function '{}' complexity {:.1f} (limit: {}); "
     "heaviest line {} weight {:.1f} (indent depth {}, bracket depth {})"
 )
-SLD901 = (
+PRIVATE_READ = (
     "SLD901 External read of private attribute '{}' "
     "(access only from the defining class)"
 )
-SLD902 = (
+PRIVATE_WRITE = (
     "SLD902 External write of private attribute '{}' "
     "(assign only from the defining class)"
 )
-SLD903 = (
+PRIVATE_NAME_IMPORT = (
     "SLD903 Private name '{}' imported across a package boundary "
     "(only 'from . import _name' may import a private name)"
 )
-SLD904 = (
+PRIVATE_SUBMODULE_IMPORT = (
     "SLD904 Import reaches into private submodule '{}' "
     "(reach a private submodule only within its own package, "
     "as 'from ._sub import ...')"
 )
-SLD905 = (
+PRIVATE_ATTRIBUTE_ON_IMPORT = (
     "SLD905 Access to private attribute '{}' on an imported name "
     "(use the module's public surface)"
 )
@@ -107,11 +107,11 @@ class CheckContext:
 
 
 _PRIVACY_CODES: dict[PrivacyKind, str] = {
-    PrivacyKind.EXTERNAL_PRIVATE_READ: SLD901,
-    PrivacyKind.EXTERNAL_PRIVATE_WRITE: SLD902,
-    PrivacyKind.PRIVATE_NAME_IMPORT: SLD903,
-    PrivacyKind.PRIVATE_SUBMODULE_IMPORT: SLD904,
-    PrivacyKind.MODULE_PRIVATE_ATTR: SLD905,
+    PrivacyKind.EXTERNAL_PRIVATE_READ: PRIVATE_READ,
+    PrivacyKind.EXTERNAL_PRIVATE_WRITE: PRIVATE_WRITE,
+    PrivacyKind.PRIVATE_NAME_IMPORT: PRIVATE_NAME_IMPORT,
+    PrivacyKind.PRIVATE_SUBMODULE_IMPORT: PRIVATE_SUBMODULE_IMPORT,
+    PrivacyKind.MODULE_PRIVATE_ATTR: PRIVATE_ATTRIBUTE_ON_IMPORT,
 }
 
 
@@ -125,7 +125,9 @@ def import_placement_errors(tree: ast.Module) -> Iterator[AdaptedError]:
         Each SLD204 import-placement violation found in ``tree``.
     """
     for err in check_import_placement(tree):
-        yield AdaptedError(lineno=err.lineno, col_offset=err.col_offset, message=SLD204)
+        yield AdaptedError(
+            lineno=err.lineno, col_offset=err.col_offset, message=LATE_IMPORT
+        )
 
 
 def privacy_errors(tree: ast.Module) -> Iterator[AdaptedError]:
@@ -207,7 +209,7 @@ def format_sld601(name: str, complexity: FunctionComplexity) -> str:
     Returns:
         The fully-formatted SLD601 diagnostic string.
     """
-    return SLD601.format(
+    return COMPLEX_FUNCTION.format(
         name,
         complexity.weight,
         MAX_FUNCTION_LINES,

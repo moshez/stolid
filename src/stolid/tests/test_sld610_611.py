@@ -11,7 +11,7 @@ from .code_parser import (
     assert_present,
 )
 
-_SLD610_PRESENT: list[tuple[str, str]] = [
+_RANGE_LEN_LOOP_PRESENT: list[tuple[str, str]] = [
     ("range_len_direct", "for i in range(len(seq)):\n    use(seq[i])\n"),
     ("range_len_with_start", "for i in range(0, len(seq)):\n    use(seq[i])\n"),
     ("range_len_minus_one", "for i in range(len(seq) - 1):\n    use(seq[i])\n"),
@@ -25,7 +25,7 @@ _SLD610_PRESENT: list[tuple[str, str]] = [
     ),
 ]
 
-_SLD610_ABSENT: list[tuple[str, str]] = [
+_RANGE_LEN_LOOP_ABSENT: list[tuple[str, str]] = [
     ("range_plain_count", "for i in range(10):\n    use(i)\n"),
     ("range_numeric_interval", "for i in range(start, stop):\n    use(i)\n"),
     ("direct_iteration", "for item in seq:\n    use(item)\n"),
@@ -34,7 +34,7 @@ _SLD610_ABSENT: list[tuple[str, str]] = [
     ("len_call_not_in_range", "for x in chunked(items, len(items)):\n    use(x)\n"),
 ]
 
-_SLD611_PRESENT: list[tuple[str, str]] = [
+_WHILE_INDEX_LOOP_PRESENT: list[tuple[str, str]] = [
     ("less_than", "while i < len(seq):\n    use(seq[i])\n    i += 1\n"),
     ("less_equal", "while i <= len(seq):\n    use(seq[i])\n    i += 1\n"),
     ("reversed_greater", "while len(seq) > i:\n    use(seq[i])\n    i += 1\n"),
@@ -45,7 +45,7 @@ _SLD611_PRESENT: list[tuple[str, str]] = [
     ("len_with_arithmetic", "while i < len(seq) - 1:\n    use(seq[i])\n    i += 1\n"),
 ]
 
-_SLD611_ABSENT: list[tuple[str, str]] = [
+_WHILE_INDEX_LOOP_ABSENT: list[tuple[str, str]] = [
     ("worklist_drained_to_empty", "while len(stack) > 0:\n    stack.pop()\n"),
     ("truthiness", "while running:\n    step()\n"),
     ("no_len_comparison", "while i < n:\n    i += 1\n"),
@@ -57,7 +57,7 @@ _SLD611_ABSENT: list[tuple[str, str]] = [
     ),
 ]
 
-_SLD610_COUNT: list[tuple[str, str, int]] = [
+_RANGE_LEN_LOOP_COUNT: list[tuple[str, str, int]] = [
     (
         "two_independent_loops",
         "for i in range(len(a)):\n    use(a[i])\n"
@@ -72,15 +72,15 @@ class TestSLD610RangeLen(unittest.TestCase):
 
     def test_present(self) -> None:
         """Verify present."""
-        assert_present(self, _SLD610_PRESENT, "SLD610")
+        assert_present(self, _RANGE_LEN_LOOP_PRESENT, "SLD610")
 
     def test_absent(self) -> None:
         """Verify absent."""
-        assert_absent(self, _SLD610_ABSENT, "SLD610")
+        assert_absent(self, _RANGE_LEN_LOOP_ABSENT, "SLD610")
 
     def test_count(self) -> None:
         """Verify count."""
-        assert_count(self, _SLD610_COUNT, "SLD610")
+        assert_count(self, _RANGE_LEN_LOOP_COUNT, "SLD610")
 
     def test_message_mentions_enumerate(self) -> None:
         """Verify the SLD610 message points at enumerate."""
@@ -94,11 +94,11 @@ class TestSLD611WhileIndex(unittest.TestCase):
 
     def test_present(self) -> None:
         """Verify present."""
-        assert_present(self, _SLD611_PRESENT, "SLD611")
+        assert_present(self, _WHILE_INDEX_LOOP_PRESENT, "SLD611")
 
     def test_absent(self) -> None:
         """Verify absent."""
-        assert_absent(self, _SLD611_ABSENT, "SLD611")
+        assert_absent(self, _WHILE_INDEX_LOOP_ABSENT, "SLD611")
 
     def test_message_mentions_enumerate(self) -> None:
         """Verify the SLD611 message points at enumerate."""

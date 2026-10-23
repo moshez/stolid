@@ -10,7 +10,7 @@ from ._report_line import ReportLine, format_line
 
 __all__ = ["ReportLine", "SourceReader", "format_line", "report_lines"]
 
-SLD801 = "SLD801 duplicated structure ({} nodes); also at {}"
+DUPLICATED_STRUCTURE = "SLD801 duplicated structure ({} nodes); also at {}"
 
 
 class SourceReader(Protocol):
@@ -38,7 +38,9 @@ def _occurrence_to_line(occurrence: CloneOccurrence, group: CloneGroup) -> Repor
         path=occurrence.location.path,
         line=occurrence.location.line,
         col=occurrence.location.col,
-        message=SLD801.format(occurrence.node_count, _format_others(occurrence, group)),
+        message=DUPLICATED_STRUCTURE.format(
+            occurrence.node_count, _format_others(occurrence, group)
+        ),
     )
 
 

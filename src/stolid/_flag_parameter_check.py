@@ -22,7 +22,7 @@ from typing import Iterator
 
 from ._ast_inspection import COLLECTION_NODES, FUNCTION_DEF_NODES, FunctionType
 
-SLD609 = (
+FLAG_PARAMETER = (
     "SLD609 Parameter '{}' of '{}' is used only as a branch condition "
     "(split the function instead of passing a flag)"
 )
@@ -232,7 +232,7 @@ def _function_errors(node: FunctionType) -> Iterator[FlagParameterError]:
             yield FlagParameterError(
                 lineno=p.lineno,
                 col_offset=p.col_offset,
-                message=SLD609.format(name, node.name),
+                message=FLAG_PARAMETER.format(name, node.name),
             )
 
 

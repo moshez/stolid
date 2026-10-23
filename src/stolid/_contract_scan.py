@@ -29,23 +29,23 @@ from ._noqa import is_suppressed
 from ._report_line import ReportLine
 from ._workspace_walk import FileSystem, iter_python_files
 
-SLD802 = (
+CONCRETE_CLASS_ANNOTATION = (
     "SLD802 Public annotation references concrete class '{}' "
     "(use a Protocol, ABC, or other contract)"
 )
-SLD803 = (
+CONCRETE_CONTAINER_ANNOTATION = (
     "SLD803 Public annotation uses concrete container '{}' "
     "(use Mapping, Sequence, Iterable, or another abstract from collections.abc)"
 )
-SLD804 = (
+VARIADIC_TUPLE_ANNOTATION = (
     "SLD804 Public annotation uses variadic tuple "
     "(use a fixed-arity tuple or an abstract Sequence/Iterable)"
 )
 
 _MESSAGE_BY_KIND: dict[ContractViolation, str] = {
-    ContractViolation.CONCRETE_CLASS: SLD802,
-    ContractViolation.CONCRETE_CONTAINER: SLD803,
-    ContractViolation.VARIADIC_TUPLE: SLD804,
+    ContractViolation.CONCRETE_CLASS: CONCRETE_CLASS_ANNOTATION,
+    ContractViolation.CONCRETE_CONTAINER: CONCRETE_CONTAINER_ANNOTATION,
+    ContractViolation.VARIADIC_TUPLE: VARIADIC_TUPLE_ANNOTATION,
 }
 
 _CODE_BY_KIND: dict[ContractViolation, str] = {

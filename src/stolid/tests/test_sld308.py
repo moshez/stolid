@@ -6,7 +6,7 @@ import unittest
 
 from .code_parser import assert_absent, assert_count, assert_present
 
-_SLD308_PRESENT: list[tuple[str, str]] = [
+_IDENTIFIER_STRING_CONSTANT_PRESENT: list[tuple[str, str]] = [
     (
         "two_upper_case_identifier_constants",
         "OPEN = 'open'\nCLOSED = 'closed'\n",
@@ -30,7 +30,7 @@ _SLD308_PRESENT: list[tuple[str, str]] = [
 ]
 
 
-_SLD308_ABSENT: list[tuple[str, str]] = [
+_IDENTIFIER_STRING_CONSTANT_ABSENT: list[tuple[str, str]] = [
     (
         "single_identifier_constant",
         "DEFAULT = 'anonymous'\n",
@@ -87,11 +87,11 @@ class TestSLD308ModuleStringConstants(unittest.TestCase):
 
     def test_present(self) -> None:
         """Verify present."""
-        assert_present(self, _SLD308_PRESENT, "SLD308")
+        assert_present(self, _IDENTIFIER_STRING_CONSTANT_PRESENT, "SLD308")
 
     def test_absent(self) -> None:
         """Verify absent."""
-        assert_absent(self, _SLD308_ABSENT, "SLD308")
+        assert_absent(self, _IDENTIFIER_STRING_CONSTANT_ABSENT, "SLD308")
 
     def test_one_report_per_constant(self) -> None:
         """Verify one report per identifier-valued constant."""

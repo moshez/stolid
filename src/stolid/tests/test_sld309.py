@@ -6,7 +6,7 @@ import unittest
 
 from .code_parser import assert_absent, assert_count, assert_present
 
-_SLD309_PRESENT: list[tuple[str, str]] = [
+_IDENTIFIER_ENUM_VALUE_PRESENT: list[tuple[str, str]] = [
     (
         "plain_enum_all_identifier_strings",
         "from enum import Enum\n"
@@ -47,7 +47,7 @@ _SLD309_PRESENT: list[tuple[str, str]] = [
 ]
 
 
-_SLD309_ABSENT: list[tuple[str, str]] = [
+_IDENTIFIER_ENUM_VALUE_ABSENT: list[tuple[str, str]] = [
     (
         "enum_with_auto",
         "from enum import Enum, auto\n"
@@ -100,11 +100,11 @@ class TestSLD309EnumIdentifierValues(unittest.TestCase):
 
     def test_present(self) -> None:
         """Verify present."""
-        assert_present(self, _SLD309_PRESENT, "SLD309")
+        assert_present(self, _IDENTIFIER_ENUM_VALUE_PRESENT, "SLD309")
 
     def test_absent(self) -> None:
         """Verify absent."""
-        assert_absent(self, _SLD309_ABSENT, "SLD309")
+        assert_absent(self, _IDENTIFIER_ENUM_VALUE_ABSENT, "SLD309")
 
     def test_one_report_per_member(self) -> None:
         """Verify one report per identifier-valued member."""

@@ -42,7 +42,7 @@ def _bracket_heavy_function(lines: int) -> str:
     return "def bracket_heavy():\n" + body + "\n"
 
 
-_SLD601_PRESENT: list[tuple[str, str]] = [
+_COMPLEX_FUNCTION_PRESENT: list[tuple[str, str]] = [
     ("function_exceeds_limit", _function_body("def long_function():", 35)),
     ("method_exceeds_limit", _method_body(35)),
     ("async_function_exceeds_limit", _function_body("async def long_async():", 35)),
@@ -53,14 +53,14 @@ _SLD601_PRESENT: list[tuple[str, str]] = [
 ]
 
 
-_SLD602_PRESENT: list[tuple[str, str]] = [
+_TOO_MANY_ARGUMENTS_PRESENT: list[tuple[str, str]] = [
     ("function_exceeds_limit", "def func(a, b, c, d, e):\n    pass\n"),
     ("kwonly_args_counted", "def func(a, b, *, c, d, e):\n    pass\n"),
     ("posonly_args_counted", "def func(a, b, c, /, d, e):\n    pass\n"),
 ]
 
 
-_SLD602_ABSENT: list[tuple[str, str]] = [
+_TOO_MANY_ARGUMENTS_ABSENT: list[tuple[str, str]] = [
     ("function_within_limit", "def func(a, b, c, d):\n    pass\n"),
     (
         "method_self_not_counted",
@@ -126,7 +126,7 @@ def _comment_padded_function(comments: int) -> str:
     return head + pad + "    return x\n"
 
 
-_SLD601_ABSENT: list[tuple[str, str]] = [
+_COMPLEX_FUNCTION_ABSENT: list[tuple[str, str]] = [
     ("short_function", "def short_function():\n    x = 1\n    return x\n"),
     # 200 blank lines weigh 0; the body has 2 real lines.
     ("blank_lines_not_counted", _blank_padded_function(200)),
@@ -135,7 +135,7 @@ _SLD601_ABSENT: list[tuple[str, str]] = [
 ]
 
 
-_SLD603_ABSENT: list[tuple[str, str]] = [
+_TOO_MANY_METHODS_ABSENT: list[tuple[str, str]] = [
     (
         "class_within_limit",
         "class MyClass:\n    def method1(self): pass\n"
@@ -145,7 +145,7 @@ _SLD603_ABSENT: list[tuple[str, str]] = [
 ]
 
 
-_SLD604_ABSENT: list[tuple[str, str]] = [
+_LONG_MODULE_ABSENT: list[tuple[str, str]] = [
     ("short_module", "x = 1\ny = 2\n"),
 ]
 
@@ -162,12 +162,12 @@ def _dataclass_with_fields(n: int) -> str:
     )
 
 
-_SLD608_PRESENT: list[tuple[str, str]] = [
+_TOO_MANY_FIELDS_PRESENT: list[tuple[str, str]] = [
     ("dataclass_exceeds_limit", _dataclass_with_fields(11)),
 ]
 
 
-_SLD608_ABSENT: list[tuple[str, str]] = [
+_TOO_MANY_FIELDS_ABSENT: list[tuple[str, str]] = [
     ("dataclass_within_limit", _dataclass_with_fields(10)),
     (
         "classvar_not_counted",
@@ -191,11 +191,11 @@ class TestSLD601FunctionLineLimit(unittest.TestCase):
 
     def test_present(self) -> None:
         """Verify present."""
-        assert_present(self, _SLD601_PRESENT, "SLD601")
+        assert_present(self, _COMPLEX_FUNCTION_PRESENT, "SLD601")
 
     def test_absent(self) -> None:
         """Verify absent."""
-        assert_absent(self, _SLD601_ABSENT, "SLD601")
+        assert_absent(self, _COMPLEX_FUNCTION_ABSENT, "SLD601")
 
     def test_message_reports_heaviest_line(self) -> None:
         """Verify the SLD601 message names the heaviest line and its breakdown."""
@@ -212,11 +212,11 @@ class TestSLD602ArgumentLimit(unittest.TestCase):
 
     def test_present(self) -> None:
         """Verify present."""
-        assert_present(self, _SLD602_PRESENT, "SLD602")
+        assert_present(self, _TOO_MANY_ARGUMENTS_PRESENT, "SLD602")
 
     def test_absent(self) -> None:
         """Verify absent."""
-        assert_absent(self, _SLD602_ABSENT, "SLD602")
+        assert_absent(self, _TOO_MANY_ARGUMENTS_ABSENT, "SLD602")
 
 
 class TestSLD603ClassMethodLimit(unittest.TestCase):
@@ -228,7 +228,7 @@ class TestSLD603ClassMethodLimit(unittest.TestCase):
 
     def test_absent(self) -> None:
         """Verify absent."""
-        assert_absent(self, _SLD603_ABSENT, "SLD603")
+        assert_absent(self, _TOO_MANY_METHODS_ABSENT, "SLD603")
 
 
 class TestSLD604ModuleLineLimit(unittest.TestCase):
@@ -240,7 +240,7 @@ class TestSLD604ModuleLineLimit(unittest.TestCase):
 
     def test_absent(self) -> None:
         """Verify absent."""
-        assert_absent(self, _SLD604_ABSENT, "SLD604")
+        assert_absent(self, _LONG_MODULE_ABSENT, "SLD604")
 
     def test_error_message_includes_line_count(self) -> None:
         """Verify error message includes line count."""
@@ -252,11 +252,11 @@ class TestSLD608DataclassFieldLimit(unittest.TestCase):
 
     def test_present(self) -> None:
         """Verify present."""
-        assert_present(self, _SLD608_PRESENT, "SLD608")
+        assert_present(self, _TOO_MANY_FIELDS_PRESENT, "SLD608")
 
     def test_absent(self) -> None:
         """Verify absent."""
-        assert_absent(self, _SLD608_ABSENT, "SLD608")
+        assert_absent(self, _TOO_MANY_FIELDS_ABSENT, "SLD608")
 
     def test_error_message_includes_field_count(self) -> None:
         """Verify error message includes field count and limit."""
@@ -265,7 +265,7 @@ class TestSLD608DataclassFieldLimit(unittest.TestCase):
         )
 
 
-_SLD605_PRESENT: list[tuple[str, str]] = [
+_NESTED_WITH_PRESENT: list[tuple[str, str]] = [
     (
         "two_level_direct_nest",
         "with a() as x:\n" "    with b(x) as y:\n" "        do(y)\n",
@@ -295,7 +295,7 @@ _SLD605_PRESENT: list[tuple[str, str]] = [
 ]
 
 
-_SLD605_ABSENT: list[tuple[str, str]] = [
+_NESTED_WITH_ABSENT: list[tuple[str, str]] = [
     ("single_with", "with a() as x:\n    do(x)\n"),
     ("multi_item_with_no_nest", "with a() as x, b() as y:\n    do(x, y)\n"),
     (
@@ -323,7 +323,7 @@ _SLD605_ABSENT: list[tuple[str, str]] = [
 ]
 
 
-_SLD605_COUNT: list[tuple[str, str, int]] = [
+_NESTED_WITH_COUNT: list[tuple[str, str, int]] = [
     (
         "triple_nest_counts_two",
         "with a() as x:\n"
@@ -350,15 +350,15 @@ class TestSLD605NestedWith(unittest.TestCase):
 
     def test_present(self) -> None:
         """Verify present."""
-        assert_present(self, _SLD605_PRESENT, "SLD605")
+        assert_present(self, _NESTED_WITH_PRESENT, "SLD605")
 
     def test_absent(self) -> None:
         """Verify absent."""
-        assert_absent(self, _SLD605_ABSENT, "SLD605")
+        assert_absent(self, _NESTED_WITH_ABSENT, "SLD605")
 
     def test_count(self) -> None:
         """Verify count."""
-        assert_count(self, _SLD605_COUNT, "SLD605")
+        assert_count(self, _NESTED_WITH_COUNT, "SLD605")
 
     def test_message_mentions_exitstack(self) -> None:
         """Verify the SLD605 message points at contextlib.ExitStack."""
