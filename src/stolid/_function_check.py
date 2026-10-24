@@ -14,8 +14,8 @@ from ._ast_names import bad_name_errors_as
 from ._check_runner import format_sld601
 from ._constants import MAX_FUNCTION_ARGS, MAX_FUNCTION_LINES
 
-SLD602 = "SLD602 Function '{}' has {} arguments (limit: {})"
-SLD704 = (
+TOO_MANY_ARGUMENTS = "SLD602 Function '{}' has {} arguments (limit: {})"
+NON_BOOL_PREDICATE = (
     "SLD704 Function '{}' uses 'is_' prefix but return annotation is not bool "
     "(annotate '-> bool' or drop the predicate prefix)"
 )
@@ -59,7 +59,7 @@ def _check_is_predicate(node: FunctionType) -> Iterator[FunctionError]:
         return
     if get_base_name(node.returns) in _BOOL_RETURN_NAMES:
         return
-    yield _error(node, SLD704.format(node.name))
+    yield _error(node, NON_BOOL_PREDICATE.format(node.name))
 
 
 def check_function(
@@ -88,4 +88,6 @@ def check_function(
         yield _error(node, format_sld601(node.name, complexity))
     arg_count = get_function_arg_count(node)
     if arg_count > MAX_FUNCTION_ARGS:
-        yield _error(node, SLD602.format(node.name, arg_count, MAX_FUNCTION_ARGS))
+        yield _error(
+            node, TOO_MANY_ARGUMENTS.format(node.name, arg_count, MAX_FUNCTION_ARGS)
+        )

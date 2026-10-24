@@ -10,13 +10,13 @@ from .code_parser import (
     assert_source_absent,
 )
 
-_SLD811_PRESENT: list[tuple[str, str]] = [
+_MODULE_MISSING_DOCSTRING_PRESENT: list[tuple[str, str]] = [
     ("public_module_no_docstring", "x = 1\n"),
     ("public_module_just_imports", "import os\n"),
 ]
 
 
-_SLD811_ABSENT: list[tuple[str, str]] = [
+_MODULE_MISSING_DOCSTRING_ABSENT: list[tuple[str, str]] = [
     ("public_module_with_docstring", '"""Hello."""\nx = 1\n'),
 ]
 
@@ -32,7 +32,7 @@ _DUNDER_MODULE_NEEDS_DOC = [
 ]
 
 
-_SLD812_PRESENT: list[tuple[str, str]] = [
+_CLASS_MISSING_DOCSTRING_PRESENT: list[tuple[str, str]] = [
     ("public_class_no_docstring", "class Foo:\n    pass\n"),
     (
         "public_class_inside_private_module",
@@ -41,7 +41,7 @@ _SLD812_PRESENT: list[tuple[str, str]] = [
 ]
 
 
-_SLD812_ABSENT: list[tuple[str, str]] = [
+_CLASS_MISSING_DOCSTRING_ABSENT: list[tuple[str, str]] = [
     ("private_class_no_docstring", "class _Foo:\n    pass\n"),
     (
         "public_class_with_docstring",
@@ -54,7 +54,7 @@ _SLD812_ABSENT: list[tuple[str, str]] = [
 ]
 
 
-_SLD813_PRESENT: list[tuple[str, str]] = [
+_FUNCTION_MISSING_DOCSTRING_PRESENT: list[tuple[str, str]] = [
     ("public_function_no_docstring", "def foo():\n    pass\n"),
     (
         "public_method_in_private_class",
@@ -71,7 +71,7 @@ _SLD813_PRESENT: list[tuple[str, str]] = [
 ]
 
 
-_SLD813_ABSENT: list[tuple[str, str]] = [
+_FUNCTION_MISSING_DOCSTRING_ABSENT: list[tuple[str, str]] = [
     ("private_function_no_docstring", "def _foo():\n    pass\n"),
     (
         "private_method_no_docstring",
@@ -88,7 +88,7 @@ _SLD813_ABSENT: list[tuple[str, str]] = [
 ]
 
 
-_SLD814_PRESENT: list[tuple[str, str]] = [
+_UNDOCUMENTED_ARGUMENT_PRESENT: list[tuple[str, str]] = [
     (
         "missing_arg_x",
         'def f(x: int) -> None:\n    """Do something."""\n    pass\n',
@@ -108,7 +108,7 @@ _SLD814_PRESENT: list[tuple[str, str]] = [
 ]
 
 
-_SLD814_ABSENT: list[tuple[str, str]] = [
+_UNDOCUMENTED_ARGUMENT_ABSENT: list[tuple[str, str]] = [
     (
         "all_args_named",
         "def f(a: int, b: int) -> None:\n"
@@ -133,7 +133,7 @@ _SLD814_ABSENT: list[tuple[str, str]] = [
 ]
 
 
-_SLD815_PRESENT: list[tuple[str, str]] = [
+_UNDOCUMENTED_RETURN_PRESENT: list[tuple[str, str]] = [
     (
         "no_return_mention",
         'def f() -> int:\n    """Compute."""\n    return 0\n',
@@ -145,7 +145,7 @@ _SLD815_PRESENT: list[tuple[str, str]] = [
 ]
 
 
-_SLD815_ABSENT: list[tuple[str, str]] = [
+_UNDOCUMENTED_RETURN_ABSENT: list[tuple[str, str]] = [
     (
         "returns_mention",
         'def f() -> int:\n    """Return the answer."""\n    return 42\n',
@@ -165,7 +165,7 @@ _SLD815_ABSENT: list[tuple[str, str]] = [
 ]
 
 
-_SLD816_PRESENT: list[tuple[str, str]] = [
+_UNDOCUMENTED_FIELD_PRESENT: list[tuple[str, str]] = [
     (
         "field_missing",
         "from dataclasses import dataclass\n\n"
@@ -184,7 +184,7 @@ _SLD816_PRESENT: list[tuple[str, str]] = [
 ]
 
 
-_SLD816_ABSENT: list[tuple[str, str]] = [
+_UNDOCUMENTED_FIELD_ABSENT: list[tuple[str, str]] = [
     (
         "all_fields_mentioned",
         "from dataclasses import dataclass\n\n"
@@ -226,11 +226,15 @@ class TestSLD811PublicModuleDocstring(unittest.TestCase):
 
     def test_present(self) -> None:
         """Verify SLD811 fires for public modules without a module docstring."""
-        assert_present(self, _SLD811_PRESENT, "SLD811", filename="public.py")
+        assert_present(
+            self, _MODULE_MISSING_DOCSTRING_PRESENT, "SLD811", filename="public.py"
+        )
 
     def test_absent_when_docstring_present(self) -> None:
         """Verify SLD811 stays silent when the module has a docstring."""
-        assert_absent(self, _SLD811_ABSENT, "SLD811", filename="public.py")
+        assert_absent(
+            self, _MODULE_MISSING_DOCSTRING_ABSENT, "SLD811", filename="public.py"
+        )
 
     def test_private_modules_skipped(self) -> None:
         """Verify SLD811 is silent for filenames starting with a single underscore."""
@@ -254,11 +258,11 @@ class TestSLD812PublicClassDocstring(unittest.TestCase):
 
     def test_present(self) -> None:
         """Verify SLD812 fires for public classes without a docstring."""
-        assert_present(self, _SLD812_PRESENT, "SLD812")
+        assert_present(self, _CLASS_MISSING_DOCSTRING_PRESENT, "SLD812")
 
     def test_absent(self) -> None:
         """Verify SLD812 stays silent in the negative cases."""
-        assert_absent(self, _SLD812_ABSENT, "SLD812")
+        assert_absent(self, _CLASS_MISSING_DOCSTRING_ABSENT, "SLD812")
 
 
 class TestSLD813PublicFunctionDocstring(unittest.TestCase):
@@ -266,11 +270,11 @@ class TestSLD813PublicFunctionDocstring(unittest.TestCase):
 
     def test_present(self) -> None:
         """Verify SLD813 fires for public functions/methods without a docstring."""
-        assert_present(self, _SLD813_PRESENT, "SLD813")
+        assert_present(self, _FUNCTION_MISSING_DOCSTRING_PRESENT, "SLD813")
 
     def test_absent(self) -> None:
         """Verify SLD813 stays silent in the negative cases."""
-        assert_absent(self, _SLD813_ABSENT, "SLD813")
+        assert_absent(self, _FUNCTION_MISSING_DOCSTRING_ABSENT, "SLD813")
 
 
 class TestSLD814FunctionArgDocumentation(unittest.TestCase):
@@ -278,11 +282,11 @@ class TestSLD814FunctionArgDocumentation(unittest.TestCase):
 
     def test_present(self) -> None:
         """Verify SLD814 fires when an argument name is missing from the docstring."""
-        assert_present(self, _SLD814_PRESENT, "SLD814")
+        assert_present(self, _UNDOCUMENTED_ARGUMENT_PRESENT, "SLD814")
 
     def test_absent(self) -> None:
         """Verify SLD814 stays silent when all arguments are mentioned."""
-        assert_absent(self, _SLD814_ABSENT, "SLD814")
+        assert_absent(self, _UNDOCUMENTED_ARGUMENT_ABSENT, "SLD814")
 
 
 class TestSLD815FunctionReturnDocumentation(unittest.TestCase):
@@ -290,11 +294,11 @@ class TestSLD815FunctionReturnDocumentation(unittest.TestCase):
 
     def test_present(self) -> None:
         """Verify SLD815 fires when no return/yield word appears in the docstring."""
-        assert_present(self, _SLD815_PRESENT, "SLD815")
+        assert_present(self, _UNDOCUMENTED_RETURN_PRESENT, "SLD815")
 
     def test_absent(self) -> None:
         """Verify SLD815 is silent when return/yield is mentioned or return is None."""
-        assert_absent(self, _SLD815_ABSENT, "SLD815")
+        assert_absent(self, _UNDOCUMENTED_RETURN_ABSENT, "SLD815")
 
 
 class TestSLD816DataclassFieldDocumentation(unittest.TestCase):
@@ -302,11 +306,11 @@ class TestSLD816DataclassFieldDocumentation(unittest.TestCase):
 
     def test_present(self) -> None:
         """Verify SLD816 fires when a public dataclass field is unmentioned."""
-        assert_present(self, _SLD816_PRESENT, "SLD816")
+        assert_present(self, _UNDOCUMENTED_FIELD_PRESENT, "SLD816")
 
     def test_absent(self) -> None:
         """Verify SLD816 stays silent for documented, private, or field(doc=) fields."""
-        assert_absent(self, _SLD816_ABSENT, "SLD816")
+        assert_absent(self, _UNDOCUMENTED_FIELD_ABSENT, "SLD816")
 
 
 class TestSLD816EdgeCases(unittest.TestCase):

@@ -161,7 +161,7 @@ _ABSENT: list[tuple[str, str]] = [
 ]
 
 
-class TestSLD704(unittest.TestCase):
+class TestSLD704NonBoolPredicate(unittest.TestCase):
     """Tests for SLD704: 'is_'-prefixed names must return bool."""
 
     def test_present(self) -> None:

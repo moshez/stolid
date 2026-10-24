@@ -9,7 +9,7 @@ from typing import Iterator
 from ._ast_inspection import NAMED_DEF_NODES, TUPLE_LIST_NODES
 from ._reserved_names import reserved_name_source
 
-SLD702 = "SLD702 Global name '{}' shadows {} (rename to disambiguate)"
+SHADOWING_NAME = "SLD702 Global name '{}' shadows {} (rename to disambiguate)"
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -44,7 +44,7 @@ def _check_name(name: str, lineno: int, col_offset: int) -> Iterator[GlobalNameE
         yield GlobalNameError(
             lineno=lineno,
             col_offset=col_offset,
-            message=SLD702.format(name, source),
+            message=SHADOWING_NAME.format(name, source),
         )
 
 

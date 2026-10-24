@@ -32,17 +32,17 @@ from ._string_enum_check import check_string_enum
 from ._try_check import check_try
 from ._variable_naming_check import check_variable_naming
 
-SLD102 = "SLD102 Use of patch/patch.object is prohibited (use dependency injection)"
-SLD103 = (
+MOCK_PATCH = "SLD102 Use of patch/patch.object is prohibited (use dependency injection)"
+DYNAMIC_EXECUTION = (
     "SLD103 Use of '{}' is prohibited "
     "(dynamic code execution; add # noqa: SLD103 to silence if intentional)"
 )
-SLD203 = (
+TYPING_CAST = (
     "SLD203 Use of typing.cast is prohibited "
     "(use type narrowing; add # noqa: SLD203 to silence if intentional)"
 )
-SLD604 = "SLD604 Module has {} lines (limit: {})"
-SLD605 = (
+LONG_MODULE = "SLD604 Module has {} lines (limit: {})"
+NESTED_WITH = (
     "SLD605 'with' statement's body ends in a nested 'with' "
     "(flatten into contextlib.ExitStack)"
 )
@@ -94,7 +94,7 @@ def _check_import_from(node: ast.ImportFrom) -> Iterator[Error]:
         return
     for alias in node.names:
         if alias.name == "patch":  # noqa: SLD306
-            yield _error(node, SLD102)
+            yield _error(node, MOCK_PATCH)
 
 
 def _check_attribute(node: ast.Attribute) -> Iterator[Error]:
@@ -103,9 +103,9 @@ def _check_attribute(node: ast.Attribute) -> Iterator[Error]:
         return
     value = node.value
     if is_attribute_attr(value, "mock"):
-        yield _error(node, SLD102)
+        yield _error(node, MOCK_PATCH)
     elif is_name_id(value, "mock"):  # pragma: no branch
-        yield _error(node, SLD102)
+        yield _error(node, MOCK_PATCH)
 
 
 def _check_call(
@@ -114,9 +114,9 @@ def _check_call(
     # Check function calls.
     if isinstance(node.func, ast.Name):
         if node.func.id in patch_names:
-            yield _error(node, SLD102)
+            yield _error(node, MOCK_PATCH)
         elif node.func.id in cast_names:
-            yield _error(node, SLD203)
+            yield _error(node, TYPING_CAST)
     elif isinstance(node.func, ast.Attribute):  # pragma: no branch
         yield from _check_call_attribute(node, patch_names)
 
@@ -129,22 +129,22 @@ def _check_call_attribute(
     assert isinstance(func, ast.Attribute)
     if func.attr == "cast":  # noqa: SLD304
         if is_name_id(func.value, "typing"):
-            yield _error(node, SLD203)
+            yield _error(node, TYPING_CAST)
         return
     if func.attr != "object":  # noqa: SLD304
         return
     if isinstance(func.value, ast.Name):
         if func.value.id in patch_names:
-            yield _error(node, SLD102)
+            yield _error(node, MOCK_PATCH)
     elif isinstance(func.value, ast.Attribute):  # pragma: no branch
         if func.value.attr == "patch":  # noqa: SLD306
-            yield _error(node, SLD102)
+            yield _error(node, MOCK_PATCH)
 
 
 def _check_dangerous_name(node: ast.Name) -> Iterator[Error]:
     # Flag any load-context reference to exec/eval/__import__.
     if isinstance(node.ctx, ast.Load) and node.id in DANGEROUS_BUILTINS:
-        yield _error(node, SLD103.format(node.id))
+        yield _error(node, DYNAMIC_EXECUTION.format(node.id))
 
 
 def _check_with(node: ast.With, patch_names: AbstractSet[str]) -> Iterator[Error]:
@@ -154,9 +154,9 @@ def _check_with(node: ast.With, patch_names: AbstractSet[str]) -> Iterator[Error
         if not isinstance(call, ast.Call) or not isinstance(call.func, ast.Name):
             continue
         if call.func.id in patch_names:
-            yield _error(node, SLD102)
+            yield _error(node, MOCK_PATCH)
     if isinstance(node.body[-1], ast.With):
-        yield _error(node, SLD605)
+        yield _error(node, NESTED_WITH)
 
 
 def _module_name_for_bad_name_check(filename: str) -> str | None:
@@ -172,7 +172,7 @@ def _module_level_errors(lines: Sequence[str], filename: str) -> Iterator[ErrorL
         yield Error(
             lineno=1,
             col_offset=0,
-            message=SLD604.format(len(lines), MAX_MODULE_LINES),
+            message=LONG_MODULE.format(len(lines), MAX_MODULE_LINES),
         )
     module_name = _module_name_for_bad_name_check(filename)
     if module_name is not None:

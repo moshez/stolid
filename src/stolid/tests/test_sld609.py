@@ -10,7 +10,7 @@ from .code_parser import (
     assert_present,
 )
 
-_SLD609_PRESENT: list[tuple[str, str]] = [
+_FLAG_PARAMETER_PRESENT: list[tuple[str, str]] = [
     (
         "boolean_flag",
         "def fetch(uid, mark):\n"
@@ -115,7 +115,7 @@ _SLD609_PRESENT: list[tuple[str, str]] = [
 ]
 
 
-_SLD609_ABSENT: list[tuple[str, str]] = [
+_FLAG_PARAMETER_ABSENT: list[tuple[str, str]] = [
     (
         "data_assignment",
         "def set_enabled(widget, enabled):\n    widget.enabled = enabled\n",
@@ -246,11 +246,11 @@ class TestSLD609FlagParameter(unittest.TestCase):
 
     def test_present(self) -> None:
         """Verify present."""
-        assert_present(self, _SLD609_PRESENT, "SLD609")
+        assert_present(self, _FLAG_PARAMETER_PRESENT, "SLD609")
 
     def test_absent(self) -> None:
         """Verify absent."""
-        assert_absent(self, _SLD609_ABSENT, "SLD609")
+        assert_absent(self, _FLAG_PARAMETER_ABSENT, "SLD609")
 
     def test_message_names_parameter_and_function(self) -> None:
         """Verify the SLD609 message names the parameter and the function."""

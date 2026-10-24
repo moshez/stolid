@@ -6,7 +6,7 @@ import unittest
 
 from .code_parser import assert_absent, assert_count, assert_present
 
-_SLD304_PRESENT: list[tuple[str, str]] = [
+_MULTI_STRING_COMPARISON_PRESENT: list[tuple[str, str]] = [
     (
         "two_equality_comparisons",
         "def f(x):\n"
@@ -57,7 +57,7 @@ _SLD304_PRESENT: list[tuple[str, str]] = [
 ]
 
 
-_SLD304_ABSENT: list[tuple[str, str]] = [
+_MULTI_STRING_COMPARISON_ABSENT: list[tuple[str, str]] = [
     (
         "single_equality",
         "def f(x):\n" "    if x == 'open':\n" "        return 1\n",
@@ -116,7 +116,7 @@ _SLD304_ABSENT: list[tuple[str, str]] = [
 ]
 
 
-_SLD305_PRESENT: list[tuple[str, str]] = [
+_STRING_MATCH_CASE_PRESENT: list[tuple[str, str]] = [
     (
         "match_two_string_cases",
         "def f(x):\n"
@@ -147,7 +147,7 @@ _SLD305_PRESENT: list[tuple[str, str]] = [
 ]
 
 
-_SLD305_ABSENT: list[tuple[str, str]] = [
+_STRING_MATCH_CASE_ABSENT: list[tuple[str, str]] = [
     (
         "single_string_case",
         "def f(x):\n"
@@ -169,7 +169,7 @@ _SLD305_ABSENT: list[tuple[str, str]] = [
 ]
 
 
-_SLD306_PRESENT: list[tuple[str, str]] = [
+_REPEATED_STRING_LITERAL_PRESENT: list[tuple[str, str]] = [
     (
         "string_three_times_across_module",
         "def f(x):\n"
@@ -205,7 +205,7 @@ _SLD306_PRESENT: list[tuple[str, str]] = [
 ]
 
 
-_SLD306_ABSENT: list[tuple[str, str]] = [
+_REPEATED_STRING_LITERAL_ABSENT: list[tuple[str, str]] = [
     (
         "string_twice_only",
         "def f(x):\n"
@@ -224,7 +224,7 @@ _SLD306_ABSENT: list[tuple[str, str]] = [
 ]
 
 
-_SLD307_PRESENT: list[tuple[str, str]] = [
+_STRING_LITERAL_ANNOTATION_PRESENT: list[tuple[str, str]] = [
     (
         "literal_two_strings",
         "from typing import Literal\n"
@@ -249,7 +249,7 @@ _SLD307_PRESENT: list[tuple[str, str]] = [
 ]
 
 
-_SLD307_ABSENT: list[tuple[str, str]] = [
+_STRING_LITERAL_ANNOTATION_ABSENT: list[tuple[str, str]] = [
     (
         "literal_with_ints",
         "from typing import Literal\n"
@@ -274,11 +274,11 @@ class TestSLD304MultiCompare(unittest.TestCase):
 
     def test_present(self) -> None:
         """Verify present."""
-        assert_present(self, _SLD304_PRESENT, "SLD304")
+        assert_present(self, _MULTI_STRING_COMPARISON_PRESENT, "SLD304")
 
     def test_absent(self) -> None:
         """Verify absent."""
-        assert_absent(self, _SLD304_ABSENT, "SLD304")
+        assert_absent(self, _MULTI_STRING_COMPARISON_ABSENT, "SLD304")
 
     def test_one_per_literal(self) -> None:
         """Verify one per literal."""
@@ -304,11 +304,11 @@ class TestSLD305MatchStringCases(unittest.TestCase):
 
     def test_present(self) -> None:
         """Verify present."""
-        assert_present(self, _SLD305_PRESENT, "SLD305")
+        assert_present(self, _STRING_MATCH_CASE_PRESENT, "SLD305")
 
     def test_absent(self) -> None:
         """Verify absent."""
-        assert_absent(self, _SLD305_ABSENT, "SLD305")
+        assert_absent(self, _STRING_MATCH_CASE_ABSENT, "SLD305")
 
 
 class TestSLD306ModuleStringCount(unittest.TestCase):
@@ -316,11 +316,11 @@ class TestSLD306ModuleStringCount(unittest.TestCase):
 
     def test_present(self) -> None:
         """Verify present."""
-        assert_present(self, _SLD306_PRESENT, "SLD306")
+        assert_present(self, _REPEATED_STRING_LITERAL_PRESENT, "SLD306")
 
     def test_absent(self) -> None:
         """Verify absent."""
-        assert_absent(self, _SLD306_ABSENT, "SLD306")
+        assert_absent(self, _REPEATED_STRING_LITERAL_ABSENT, "SLD306")
 
 
 class TestSLD307LiteralAnnotation(unittest.TestCase):
@@ -328,8 +328,8 @@ class TestSLD307LiteralAnnotation(unittest.TestCase):
 
     def test_present(self) -> None:
         """Verify present."""
-        assert_present(self, _SLD307_PRESENT, "SLD307")
+        assert_present(self, _STRING_LITERAL_ANNOTATION_PRESENT, "SLD307")
 
     def test_absent(self) -> None:
         """Verify absent."""
-        assert_absent(self, _SLD307_ABSENT, "SLD307")
+        assert_absent(self, _STRING_LITERAL_ANNOTATION_ABSENT, "SLD307")

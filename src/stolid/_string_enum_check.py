@@ -13,21 +13,23 @@ from ._ast_inspection import (
     get_base_name,
 )
 
-SLD304 = (
+MULTI_STRING_COMPARISON = (
     "SLD304 Expression '{}' compared against multiple distinct string literals "
     "(use an enum)"
 )
-SLD305 = "SLD305 match case uses string literal '{}' (use an enum)"
-SLD306 = (
+STRING_MATCH_CASE = "SLD305 match case uses string literal '{}' (use an enum)"
+REPEATED_STRING_LITERAL = (
     "SLD306 String literal '{}' appears in {} equality contexts in this module "
     "(use an enum)"
 )
-SLD307 = "SLD307 Literal[...] annotation uses string literal '{}' (use an enum)"
-SLD308 = (
+STRING_LITERAL_ANNOTATION = (
+    "SLD307 Literal[...] annotation uses string literal '{}' (use an enum)"
+)
+IDENTIFIER_STRING_CONSTANT = (
     "SLD308 Module-level string constant has identifier value '{}' "
     "(define peers as Enum members)"
 )
-SLD309 = (
+IDENTIFIER_ENUM_VALUE = (
     "SLD309 Enum member has identifier-shaped string value '{}' "
     "(use auto() to avoid a stringly-typed backdoor)"
 )
@@ -170,7 +172,7 @@ def _emit_multi_compare(
                 yield StringEnumError(
                     lineno=node.lineno,
                     col_offset=node.col_offset,
-                    message=SLD304.format(name_key),
+                    message=MULTI_STRING_COMPARISON.format(name_key),
                 )
 
 
@@ -199,7 +201,7 @@ def _check_match_cases(match_node: ast.Match) -> Iterator[StringEnumError]:
         yield StringEnumError(
             lineno=node.lineno,
             col_offset=node.col_offset,
-            message=SLD305.format(value),
+            message=STRING_MATCH_CASE.format(value),
         )
 
 
@@ -249,7 +251,7 @@ def _check_module_string_count(tree: ast.Module) -> Iterator[StringEnumError]:
             yield StringEnumError(
                 lineno=node.lineno,
                 col_offset=node.col_offset,
-                message=SLD306.format(value, len(group)),
+                message=REPEATED_STRING_LITERAL.format(value, len(group)),
             )
 
 
@@ -286,7 +288,7 @@ def _check_literal_annotations(tree: ast.Module) -> Iterator[StringEnumError]:
             yield StringEnumError(
                 lineno=const.lineno,
                 col_offset=const.col_offset,
-                message=SLD307.format(value),
+                message=STRING_LITERAL_ANNOTATION.format(value),
             )
 
 
@@ -324,7 +326,7 @@ def _check_module_string_constants(tree: ast.Module) -> Iterator[StringEnumError
         yield StringEnumError(
             lineno=node.lineno,
             col_offset=node.col_offset,
-            message=SLD308.format(value),
+            message=IDENTIFIER_STRING_CONSTANT.format(value),
         )
 
 
@@ -360,7 +362,7 @@ def _check_enum_identifier_values(tree: ast.Module) -> Iterator[StringEnumError]
             yield StringEnumError(
                 lineno=const.lineno,
                 col_offset=const.col_offset,
-                message=SLD309.format(value),
+                message=IDENTIFIER_ENUM_VALUE.format(value),
             )
 
 

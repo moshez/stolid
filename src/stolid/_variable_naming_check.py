@@ -1,7 +1,8 @@
 # Variable-name similarity check (SLD703).
 #
 # Within each scope, flag any pair of bindings whose names differ by exactly
-# one edit (insertion, deletion, or single-character substitution). The only
+# one edit (insertion, deletion, or single-character substitution) of any
+# character. The only
 # exception is a single-letter name bound exclusively as a for-loop iteration
 # target -- "for i, thing in ..." is allowed.
 
@@ -20,8 +21,8 @@ from ._ast_inspection import (
     iter_name_targets,
 )
 
-SLD703 = (
-    "SLD703 Name '{}' differs from earlier '{}' by only one letter "
+NEAR_DUPLICATE_NAME = (
+    "SLD703 Name '{}' differs from earlier '{}' by only one character "
     "(rename to disambiguate)"
 )
 
@@ -163,9 +164,9 @@ def _all_scopes(tree: ast.Module) -> Iterator[ast.AST]:
 
 
 def _differ_by_one(left: str, right: str) -> bool:
-    # Return True iff ``left`` and ``right`` differ by exactly one insertion,
-    # deletion, or substitution AND the differing character is a letter (so
-    # that ``SLD102``/``SLD103``, ``foo1``/``foo2``, etc. are not flagged).
+    # Return True iff ``left`` and ``right`` differ by exactly one inserted,
+    # deleted, or substituted character -- any character: ``foo1``/``foo2``
+    # and ``_foo``/``foo`` are as easy to confuse as ``node``/``nodes``.
     if abs(len(left) - len(right)) > 1:
         return False
     if len(left) == len(right):
@@ -175,15 +176,9 @@ def _differ_by_one(left: str, right: str) -> bool:
 
 
 def _diff_by_substitution(left: str, right: str) -> bool:
-    diff_position: int | None = None
-    for index, (char_left, char_right) in enumerate(zip(left, right)):
-        if char_left == char_right:
-            continue
-        if diff_position is not None:
-            return False
-        diff_position = index
-    assert diff_position is not None  # distinct equal-length names always differ
-    return left[diff_position].isalpha() or right[diff_position].isalpha()
+    return (
+        sum(char_left != char_right for char_left, char_right in zip(left, right)) == 1
+    )
 
 
 def _diff_by_one_insertion(shorter: str, longer: str) -> bool:
@@ -198,9 +193,7 @@ def _diff_by_one_insertion(shorter: str, longer: str) -> bool:
         ),
         len(shorter),
     )
-    if shorter[prefix:] != longer[prefix + 1 :]:
-        return False
-    return longer[prefix].isalpha()
+    return shorter[prefix:] == longer[prefix + 1 :]
 
 
 def _is_dunder(name: str) -> bool:
@@ -245,7 +238,7 @@ def _check_scope(scope: ast.AST) -> Iterator[VariableNamingError]:
                 yield VariableNamingError(
                     lineno=later.lineno,
                     col_offset=later.col_offset,
-                    message=SLD703.format(later.name, earlier.name),
+                    message=NEAR_DUPLICATE_NAME.format(later.name, earlier.name),
                 )
                 break
 
@@ -257,7 +250,7 @@ def check_variable_naming(tree: ast.Module) -> Iterator[VariableNamingError]:
         tree: The module AST to check for near-duplicate variable names.
 
     Yields:
-        One error per binding that differs from an earlier binding by one letter.
+        One error per binding that differs from an earlier binding by one character.
     """
     for scope in _all_scopes(tree):
         yield from _check_scope(scope)

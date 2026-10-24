@@ -8,7 +8,7 @@ from hamcrest import assert_that, contains_string, equal_to
 
 from .code_parser import assert_absent, assert_present, check_code
 
-_SLD901_PRESENT: list[tuple[str, str]] = [
+_PRIVATE_READ_PRESENT: list[tuple[str, str]] = [
     ("external_read_top_level_function", "def f(x):\n    return x._private\n"),
     (
         "external_read_local_var_in_method",
@@ -58,7 +58,7 @@ _SLD901_PRESENT: list[tuple[str, str]] = [
 ]
 
 
-_SLD901_ABSENT: list[tuple[str, str]] = [
+_PRIVATE_READ_ABSENT: list[tuple[str, str]] = [
     (
         "self_access_in_method",
         "class A:\n    def m(self):\n        return self._cache\n",
@@ -95,7 +95,7 @@ _SLD901_ABSENT: list[tuple[str, str]] = [
 ]
 
 
-_SLD902_PRESENT: list[tuple[str, str]] = [
+_PRIVATE_WRITE_PRESENT: list[tuple[str, str]] = [
     ("external_assignment", "obj._token = 'x'\n"),
     ("external_augmented_assignment", "obj._retries += 1\n"),
     ("external_del", "del obj._cache\n"),
@@ -104,7 +104,7 @@ _SLD902_PRESENT: list[tuple[str, str]] = [
 ]
 
 
-_SLD902_ABSENT: list[tuple[str, str]] = [
+_PRIVATE_WRITE_ABSENT: list[tuple[str, str]] = [
     (
         "self_assignment_in_method",
         "class A:\n    def m(self):\n        self._cache = {}\n",
@@ -122,7 +122,7 @@ _SLD902_ABSENT: list[tuple[str, str]] = [
 
 
 # SLD903: a private name imported by any form other than ``from . import _x``.
-_SLD903_PRESENT: list[tuple[str, str]] = [
+_PRIVATE_NAME_IMPORT_PRESENT: list[tuple[str, str]] = [
     ("absolute_private_name", "from pkg import _helper\n"),
     ("mixed_public_and_private", "from pkg import alpha, _beta, gamma\n"),
     ("aliased_private_still_flagged", "from pkg import _x as y\n"),
@@ -132,7 +132,7 @@ _SLD903_PRESENT: list[tuple[str, str]] = [
 ]
 
 
-_SLD903_ABSENT: list[tuple[str, str]] = [
+_PRIVATE_NAME_IMPORT_ABSENT: list[tuple[str, str]] = [
     ("own_private_submodule", "from . import _helper\n"),
     ("own_private_submodule_aliased", "from . import _helper as h\n"),
     ("own_submodule_public_surface", "from ._sub import public\n"),
@@ -144,7 +144,7 @@ _SLD903_ABSENT: list[tuple[str, str]] = [
 
 # SLD904: a private segment in an import path that is not the current
 # package's own private submodule (a single-dot relative import).
-_SLD904_PRESENT: list[tuple[str, str]] = [
+_PRIVATE_SUBMODULE_IMPORT_PRESENT: list[tuple[str, str]] = [
     ("import_private_submodule", "import numpy._core\n"),
     ("from_import_private_module", "from numpy._core import multiarray\n"),
     ("top_level_private_package", "import _internal\n"),
@@ -154,7 +154,7 @@ _SLD904_PRESENT: list[tuple[str, str]] = [
 ]
 
 
-_SLD904_ABSENT: list[tuple[str, str]] = [
+_PRIVATE_SUBMODULE_IMPORT_ABSENT: list[tuple[str, str]] = [
     ("own_private_submodule_public", "from ._core import x\n"),
     ("own_private_submodule_bare", "from . import _core\n"),
     ("public_module_import", "import numpy\n"),
@@ -162,7 +162,7 @@ _SLD904_ABSENT: list[tuple[str, str]] = [
 ]
 
 
-_SLD905_PRESENT: list[tuple[str, str]] = [
+_PRIVATE_ATTRIBUTE_ON_IMPORT_PRESENT: list[tuple[str, str]] = [
     (
         "import_as_then_private_attr",
         "import numpy as np\nnp._core\n",
@@ -186,7 +186,7 @@ _SLD905_PRESENT: list[tuple[str, str]] = [
 ]
 
 
-_SLD905_ABSENT: list[tuple[str, str]] = [
+_PRIVATE_ATTRIBUTE_ON_IMPORT_ABSENT: list[tuple[str, str]] = [
     (
         "public_attr_on_imported_module",
         "import numpy as np\nnp.array\n",
@@ -207,11 +207,11 @@ class TestSLD901ExternalRead(unittest.TestCase):
 
     def test_present(self) -> None:
         """Verify present."""
-        assert_present(self, _SLD901_PRESENT, "SLD901")
+        assert_present(self, _PRIVATE_READ_PRESENT, "SLD901")
 
     def test_absent(self) -> None:
         """Verify absent."""
-        assert_absent(self, _SLD901_ABSENT, "SLD901")
+        assert_absent(self, _PRIVATE_READ_ABSENT, "SLD901")
 
 
 class TestSLD902ExternalWrite(unittest.TestCase):
@@ -219,11 +219,11 @@ class TestSLD902ExternalWrite(unittest.TestCase):
 
     def test_present(self) -> None:
         """Verify present."""
-        assert_present(self, _SLD902_PRESENT, "SLD902")
+        assert_present(self, _PRIVATE_WRITE_PRESENT, "SLD902")
 
     def test_absent(self) -> None:
         """Verify absent."""
-        assert_absent(self, _SLD902_ABSENT, "SLD902")
+        assert_absent(self, _PRIVATE_WRITE_ABSENT, "SLD902")
 
 
 class TestSLD903PrivateNameImport(unittest.TestCase):
@@ -231,11 +231,11 @@ class TestSLD903PrivateNameImport(unittest.TestCase):
 
     def test_present(self) -> None:
         """Verify present."""
-        assert_present(self, _SLD903_PRESENT, "SLD903")
+        assert_present(self, _PRIVATE_NAME_IMPORT_PRESENT, "SLD903")
 
     def test_absent(self) -> None:
         """Verify absent."""
-        assert_absent(self, _SLD903_ABSENT, "SLD903")
+        assert_absent(self, _PRIVATE_NAME_IMPORT_ABSENT, "SLD903")
 
 
 class TestSLD904PrivateSubmoduleImport(unittest.TestCase):
@@ -243,11 +243,11 @@ class TestSLD904PrivateSubmoduleImport(unittest.TestCase):
 
     def test_present(self) -> None:
         """Verify present."""
-        assert_present(self, _SLD904_PRESENT, "SLD904")
+        assert_present(self, _PRIVATE_SUBMODULE_IMPORT_PRESENT, "SLD904")
 
     def test_absent(self) -> None:
         """Verify absent."""
-        assert_absent(self, _SLD904_ABSENT, "SLD904")
+        assert_absent(self, _PRIVATE_SUBMODULE_IMPORT_ABSENT, "SLD904")
 
     def test_deep_path_one_violation(self) -> None:
         """Verify deep path one violation."""
@@ -262,11 +262,11 @@ class TestSLD905ModulePrivateAttr(unittest.TestCase):
 
     def test_present(self) -> None:
         """Verify present."""
-        assert_present(self, _SLD905_PRESENT, "SLD905")
+        assert_present(self, _PRIVATE_ATTRIBUTE_ON_IMPORT_PRESENT, "SLD905")
 
     def test_absent(self) -> None:
         """Verify absent."""
-        assert_absent(self, _SLD905_ABSENT, "SLD905")
+        assert_absent(self, _PRIVATE_ATTRIBUTE_ON_IMPORT_ABSENT, "SLD905")
 
 
 class TestErrorMessages(unittest.TestCase):

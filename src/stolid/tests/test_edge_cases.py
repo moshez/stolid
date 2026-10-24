@@ -119,7 +119,7 @@ _ERROR_MESSAGE_CASES: list[tuple[str, str, str, str]] = [
 ]
 
 
-_SLD303_EXEMPT: list[tuple[str, str]] = [
+_STATELESS_METHOD_EXEMPT: list[tuple[str, str]] = [
     (
         "test_method_on_testcase",
         "import unittest\n\nclass MyTest(unittest.TestCase):\n"
@@ -164,7 +164,7 @@ _SLD303_EXEMPT: list[tuple[str, str]] = [
 ]
 
 
-_SLD303_NOT_EXEMPT: list[tuple[str, str]] = [
+_STATELESS_METHOD_NOT_EXEMPT: list[tuple[str, str]] = [
     (
         "non_test_method_on_testcase",
         "import unittest\n\nclass MyTest(unittest.TestCase):\n"
@@ -224,12 +224,12 @@ class TestSLD303Exemptions(unittest.TestCase):
 
     def test_exempt(self) -> None:
         """Verify exempt."""
-        for name, code in _SLD303_EXEMPT:
+        for name, code in _STATELESS_METHOD_EXEMPT:
             with self.subTest(name=name):
                 assert_that("SLD303" in get_error_codes(code), equal_to(False))
 
     def test_not_exempt(self) -> None:
         """Verify not exempt."""
-        for name, code in _SLD303_NOT_EXEMPT:
+        for name, code in _STATELESS_METHOD_NOT_EXEMPT:
             with self.subTest(name=name):
                 assert_that(get_error_codes(code), has_item("SLD303"))

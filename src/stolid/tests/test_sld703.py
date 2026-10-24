@@ -79,6 +79,30 @@ _PRESENT: list[tuple[str, str]] = [
         ),
     ),
     (
+        "digit_substitution",
+        "SLD304 = 1\nSLD305 = 2\n",
+    ),
+    (
+        "digit_insertion",
+        "foo = 1\nfoo1 = 2\n",
+    ),
+    (
+        "underscore_insertion_start",
+        "foo = 1\n_foo = 2\n",
+    ),
+    (
+        "private_helper_beside_public_function",
+        "def _dry_release():\n    pass\ndef dry_release():\n    pass\n",
+    ),
+    (
+        "underscore_insertion_middle",
+        "foobar = 1\nfoo_bar = 2\n",
+    ),
+    (
+        "underscore_substitution",
+        "foo_bar = 1\nfoo1bar = 2\n",
+    ),
+    (
         "except_handler_name",
         (
             "def fn():\n"
@@ -138,18 +162,6 @@ _ABSENT: list[tuple[str, str]] = [
         "count = 1\ncount += 1\n",
     ),
     (
-        "digit_substitution_not_a_letter",
-        "SLD304 = 1\nSLD305 = 2\n",
-    ),
-    (
-        "digit_insertion_not_a_letter",
-        "foo = 1\nfoo1 = 2\n",
-    ),
-    (
-        "underscore_insertion_not_a_letter",
-        "foo = 1\n_foo = 2\n",
-    ),
-    (
         "dunder_methods_are_python_mandated",
         (
             "class Box:\n"
@@ -166,7 +178,7 @@ _ABSENT: list[tuple[str, str]] = [
 ]
 
 
-class TestSLD703(unittest.TestCase):
+class TestSLD703NearDuplicateName(unittest.TestCase):
     """Tests for SLD703 near-duplicate name detection."""
 
     def test_present(self) -> None:

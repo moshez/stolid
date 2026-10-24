@@ -85,7 +85,7 @@ class _State:
     _class_stack: list[str] = field(default_factory=list)
     _privileged_args: list[str | None] = field(default_factory=list)
     _imported_names: set[str] = field(default_factory=set)
-    _violations: list[PrivacyError] = field(default_factory=list)
+    _found: list[PrivacyError] = field(default_factory=list)
 
     def in_class(self) -> bool:
         """Return True iff at least one enclosing class is being visited.
@@ -156,7 +156,7 @@ class _State:
             kind: The category of privacy violation.
             attr: The private name that was accessed.
         """
-        self._violations.append(
+        self._found.append(
             PrivacyError(
                 lineno=node.lineno,
                 col_offset=node.col_offset,
@@ -171,7 +171,7 @@ class _State:
         Yields:
             Each recorded privacy error in insertion order.
         """
-        yield from self._violations
+        yield from self._found
 
 
 def _is_private(name: str) -> bool:

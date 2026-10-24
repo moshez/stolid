@@ -24,7 +24,7 @@ Imports of these names are fine — only definitions are flagged.
 
 **SLD703**: Flags any pair of names bound in the same scope (module,
 function, class, lambda, or comprehension) whose identifiers differ by
-exactly one inserted, deleted, or substituted *letter*. The classic
+exactly one inserted, deleted, or substituted character. The classic
 ``node`` / ``nodes`` and ``code`` / ``codes`` pairs are confusable at a
 glance and obscure intent — use distinct names instead.
 
@@ -34,10 +34,12 @@ targets: ``for i, thing in items:`` is fine, including pairings like
 the same scope. Multi-letter loop variables are *not* exempt; rewrite
 ``for node in nodes:`` as ``for n in nodes:`` or rename one of the names.
 
-The differing character must be a letter (a-z, A-Z) for the rule to
-fire — names that differ only in digits or punctuation
-(``SLD304`` / ``SLD305``, ``foo_1`` / ``foo_2``, ``foo`` / ``_foo``)
-are intentionally allowed.
+Any character counts, digits and underscores included: ``SLD304`` /
+``SLD305``, ``foo_1`` / ``foo_2``, and ``dry_release`` / ``_dry_release``
+are as easy to confuse as ``node`` / ``nodes``. Give a private helper a
+name that says what it does rather than an underscore-prefixed copy of
+its caller's, and keep numbered families in a mapping or enum instead of
+separate names.
 
 Dunder names (the ``__name__`` form, such as ``__init__``, ``__add__``,
 or ``__all__``) are never flagged: they are mandated by Python and a
