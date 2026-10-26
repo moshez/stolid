@@ -28,6 +28,31 @@ Use ``typing.Protocol`` for interfaces instead:
         def get(self, url: str) -> Response:
             ...
 
+**SLD204**: Requires every import to sit at the top of the module, before
+any other code. Imports hidden inside functions, classes, ``if`` blocks or
+``try`` blocks make a module's dependencies impossible to read off its
+header.
+
+One exception: Temporal's workflow sandbox requires third-party imports to
+be wrapped in ``with workflow.unsafe.imports_passed_through():`` so they are
+passed through instead of re-imported inside the sandbox. That block is
+treated as part of the import header — the imports directly inside it are
+fine — but the block itself still has to come before any non-import code,
+and imports nested deeper inside it (in a function defined within the
+block, say) are still flagged:
+
+.. code-block:: python
+
+    # Bad
+    def run() -> None:
+        import pandas
+
+    # Good
+    from temporalio import workflow
+
+    with workflow.unsafe.imports_passed_through():
+        import pandas
+
 **SLD205**: Flags too many distinct names imported from a single module
 via ``from Y import ...``. Heavy reliance on one dependency is a
 refactoring liability: changes to that module ripple through every

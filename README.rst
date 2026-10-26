@@ -51,8 +51,10 @@ whole family can be reasoned about — or silenced — together:
 
 - **SLD1xx** — testing and dynamic execution: no ``unittest.mock.patch``,
   no ``exec`` / ``eval`` / ``__import__``.
-- **SLD2xx** — abstract base classes: prefer ``Protocol`` over ``ABC``,
-  and keep any single module's imported surface narrow.
+- **SLD2xx** — abstract base classes and imports: prefer ``Protocol`` over
+  ``ABC``, keep every import at the top of the module (Temporal's
+  ``with workflow.unsafe.imports_passed_through():`` block counts as part
+  of that header), and keep any single module's imported surface narrow.
 - **SLD3xx** — object-oriented design: boring constructors, no private
   methods, and real enums instead of stringly-typed values.
 - **SLD4xx** — inheritance: no subclassing of concrete classes.
